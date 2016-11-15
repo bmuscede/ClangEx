@@ -1,0 +1,136 @@
+//Generated TA File
+//Author: Jingwei Wu & Bryan J Muscedere
+
+SCHEME TUPLE :
+cLinks		cRoot		cRoot
+contain		cRoot		cRoot
+call             cRoot           cRoot
+reference      cRoot       cRoot
+
+$INHERIT	cArchitecturalNds	cRoot
+$INHERIT	cAsgNds			cRoot
+$INHERIT	cSubSystem		cArchitecturalNds
+$INHERIT	cFile			cArchitecturalNds
+$INHERIT	cExecutable		cFile
+$INHERIT	cObjectFile		cFile
+$INHERIT	cArchiveFile		cFile
+$INHERIT	cFunction		cAsgNds
+$INHERIT	cObject			cAsgNds
+
+SCHEME ATTRIBUTE :
+$ENTITY {
+	x
+	y
+	width
+	height
+	label
+}
+
+cRoot {
+	elision = contain
+	color = (0.0 0.0 0.0)
+	file
+	line
+	name
+}
+
+cAsgNds {
+	beg
+	end
+	file
+	line
+	value
+	color = (0.0 0.0 0.0)
+}
+
+cArchitecturalNds {
+	class_style = 4
+	color = (0.0 0.0 1.0)
+	color = (0.0 0.0 0.0)
+}
+
+cSubSystem {
+	class_style = 4
+	color = (0.0 0.0 1.0)
+}
+
+cFile {
+	class_style = 2
+	color = (0.9 0.9 0.9)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cExecutable {
+	class_style = 4
+	color = (0.8 0.9 0.9)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cObjectFile {
+	class_style = 4
+	color = (0.6 0.8 0.6)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cArchiveFile {
+	class_style = 4
+	color = (0.5 0.5 0.1)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cFunction {
+	filename
+	color = (1.0 0.0 0.0)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cObject {
+	filename
+}
+
+(cLinks) {
+	color = (0.0 0.0 0.0)
+}
+
+FACT TUPLE : 
+$INSTANCE /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[main] cFunction
+$INSTANCE /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[test] cObject
+$INSTANCE /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[test2] cObject
+$INSTANCE / cSubSystem
+$INSTANCE home cSubSystem
+$INSTANCE bmuscede cSubSystem
+$INSTANCE School cSubSystem
+$INSTANCE Research cSubSystem
+$INSTANCE Programs cSubSystem
+$INSTANCE ClangEx cSubSystem
+$INSTANCE SampleCProgram cSubSystem
+$INSTANCE main.c cFile
+
+reference /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[main] /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[test2]
+reference /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[main] /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[test]
+contain / home
+contain home bmuscede
+contain bmuscede School
+contain School Research
+contain Research Programs
+contain Programs ClangEx
+contain ClangEx SampleCProgram
+contain SampleCProgram main.c
+contain main.c /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[main]
+contain main.c /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[test]
+contain main.c /home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[test2]
+
+FACT ATTRIBUTE : 
+/home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[main] { filename = "main.c" label = "main" }
+/home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[test] { filename = "main.c" label = "main::test" }
+/home/bmuscede/School/Research/Programs/ClangEx/SampleCProgram/main.c[test2] { filename = "main.c" label = "main::test2" }
+/ { label = "/" }
+home { label = "home" }
+bmuscede { label = "bmuscede" }
+School { label = "School" }
+Research { label = "Research" }
+Programs { label = "Programs" }
+ClangEx { label = "ClangEx" }
+SampleCProgram { label = "SampleCProgram" }
+main.c { label = "main.c" }
+
