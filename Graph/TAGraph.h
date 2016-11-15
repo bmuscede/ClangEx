@@ -25,6 +25,11 @@ public:
     bool nodeExists(std::string ID);
     bool edgeExists(std::string IDOne, std::string IDTwo);
 
+    bool addSingularAttribute(std::string ID, std::string key, std::string value);
+    bool addSinuglarAttribute(std::string IDSrc, std::string IDDst, std::string key, std::string value);
+    bool addAttribute(std::string ID, std::string key, std::string value);
+    bool addAttribute(std::string IDSrc, std::string IDDst, std::string key, std::string value);
+
     std::string generateTAFormat();
     void addNodesToFile();
 

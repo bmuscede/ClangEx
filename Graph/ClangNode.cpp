@@ -56,6 +56,8 @@ bool ClangNode::addAttribute(string key, string value) {
 }
 
 bool ClangNode::clearAttributes(string key){
+    if (key.compare(NAME_FLAG) == 0) return false;
+
     //Check if we already have an empty set of attributes.
     if (nodeAttributes[key].size() == 0) return false;
 

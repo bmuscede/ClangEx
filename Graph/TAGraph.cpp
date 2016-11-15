@@ -115,6 +115,46 @@ bool TAGraph::edgeExists(string IDOne, string IDTwo) {
     return false;
 }
 
+bool TAGraph::addSingularAttribute(string ID, string key, string value){
+    //Get the ClangNode.
+    ClangNode* node = findNodeByID(ID);
+    if (node == NULL) return false;
+
+    //Clears the vector and adds the attribute.
+    node->clearAttributes(key);
+    return node->addAttribute(key, value);
+}
+
+bool TAGraph::addSinuglarAttribute(string IDSrc, string IDDst, string key, string value){
+    //Get the ClangEdge.
+    ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst);
+    if (edge == NULL) return false;
+
+    //Clears the vector and adds the attribute.
+    edge->clearAttribute(key);
+    edge->addAttribute(key, value);
+    return true;
+}
+
+bool TAGraph::addAttribute(string ID, string key, string value){
+    //Get the node.
+    ClangNode* node = findNodeByID(ID);
+    if (node == NULL) return false;
+
+    //Add the node attribute.
+    return node->addAttribute(key, value);
+}
+
+bool TAGraph::addAttribute(string IDSrc, string IDDst, string key, string value){
+    //Get the edge.
+    ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst);
+    if (edge == NULL) return false;
+
+    //Add the attribute.
+    edge->addAttribute(key, value);
+    return true;
+}
+
 string TAGraph::generateTAFormat() {
     string format = "";
 
