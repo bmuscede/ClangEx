@@ -18,7 +18,7 @@ using namespace boost::filesystem;
 
 static const string PLACEHOLDER = "PLACEHOLDER";
 static const string DEFAULT_OUT = "a.out";
-static const string CLANG_SYS_LIB = "./include";
+static const string CLANG_SYS_LIB = "include";
 
 static const string INCLUDE_ERROR_MSG = "Error: Clang system libraries not found! Check if the " + CLANG_SYS_LIB +
                                         " directory exists and retry!";
@@ -128,25 +128,28 @@ const char** generateArguments(const char** oldArgv, int argc, vector<string> ar
 
     //Converts argv to vector.
     vector<string> argVector;
+    bool inserted = false;
     for (int i = 0; i < argc; i++){
         //Push the argument.
         argVector.push_back(string(oldArgv[i]));
+        if (i == argc - 1) break;
 
         //See where we are.
         if (i == 0){
             //Copy the argument vector.
             argVector.insert(argVector.end(), args.begin(), args.end());
-        } else if (i + 2 == argc && string(oldArgv[argc - 1]).compare("--") == 0){
+        } else if (string(oldArgv[i + 1]).compare("--") == 0){
             //Copy the file vector.
             argVector.insert(argVector.end(), files.begin(), files.end());
-        } else if (i + 1 == argc && !(string(oldArgv[argc - 1]).compare("--") == 0)){
-            //Copy the file vector.
-            argVector.insert(argVector.end(), files.begin(), files.end());
+            inserted = true;
         }
     }
 
+    //Check if we added the files.
+    if (!inserted) argVector.insert(argVector.end(), files.begin(), files.end());
+
     //Next, generates a new argv.
-    char** returnArgv = new char*[argc];
+    char** returnArgv = new char*[(int) argVector.size()];
 
     //Iterate through our master vector.
     int pos = 0;
@@ -182,13 +185,13 @@ int main(int argc, const char **argv) {
 
     //Check if the include directory is found.
     if (!TAExcludeCommand.getValue()){
-        path path(CLANG_SYS_LIB);
+        path path(system_complete(CLANG_SYS_LIB));
         if (!is_directory(path)){
             cerr << INCLUDE_ERROR_MSG << endl << endl;
             return 1;
         } else {
             //Generate the command to add this library.
-            arguments.push_back("--extra-arg=\"-I" + CLANG_SYS_LIB + "\"");
+            arguments.push_back("--extra-arg=-I" + system_complete(CLANG_SYS_LIB).string());
         }
     } else {
         //Notify the user.
@@ -205,8 +208,8 @@ int main(int argc, const char **argv) {
     }
 
     //Next, modify argc and argv to allow for new arguments.
-    argc = argc + (int) (arguments.size() + files.size());
     const char **modArgv = generateArguments(argv, argc, arguments, files);
+    argc = argc + (int) (arguments.size() + files.size());
 
     //Reruns the options parser.
     CommonOptionsParser UpdatedOptionsParser(argc, modArgv, ClangExCategory);

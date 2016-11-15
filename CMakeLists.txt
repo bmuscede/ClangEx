@@ -175,3 +175,7 @@ target_link_libraries(ClangEx
 target_link_libraries(ClangEx
         ${Boost_LIBRARIES}
         )
+
+add_custom_command(TARGET ClangEx POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/include $<TARGET_FILE_DIR:ClangEx>/include)
