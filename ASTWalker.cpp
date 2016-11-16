@@ -159,23 +159,24 @@ void ASTWalker::addUnresolvedRef(string callerID, string calleeID, ClangEdge::Ed
 
 void ASTWalker::addUnresolvedRefAttr(string callerID, string calleeID, string attrName, string attrValue) {
     //Find if we already have a attr entry for this list.
-    //TODO: This may not work.
     for (auto current : unresolvedRefAttr){
-        if (current.first.first.compare(callerID) == 0 &&
-                current.first.second.compare(calleeID) == 0 &&
-                current.second.first.compare(attrName) == 0){
+        if (current->first.first.compare(callerID) == 0 &&
+                current->first.second.compare(calleeID) == 0 &&
+                current->second.first.compare(attrName) == 0){
+
             //We already have an entry.
-            current.second.second.push_back(attrValue);
+            current->second.second.push_back(attrValue);
             return;
         }
     }
 
     //Creates the entry for the vector.
-    pair<pair<string, string>, pair<string, vector<string>>> entry;
-    entry.first.first = callerID;
-    entry.first.second = calleeID;
-    entry.second.first = attrName;
-    entry.second.second.push_back(attrValue);
+    pair<pair<string, string>, pair<string, vector<string>>> *entry = new pair<pair<string, string>, pair<string, vector<string>>>();
+
+    entry->first.first = callerID;
+    entry->first.second = calleeID;
+    entry->second.first = attrName;
+    entry->second.second.push_back(attrValue);
 
     //Adds it to the vector.
     unresolvedRefAttr.push_back(entry);
@@ -186,11 +187,11 @@ vector<pair<string, vector<string>>> ASTWalker::findAttributes(string callerID, 
 
     //Find all associated values.
     for (auto entry : unresolvedRefAttr){
-        if (entry.first.first.compare(callerID) == 0 && entry.first.second.compare(calleeID) == 0){
+        if (entry->first.first.compare(callerID) == 0 && entry->first.second.compare(calleeID) == 0){
             //Adds the entry.
             pair<string, vector<string>> value;
-            value.first = entry.second.first;
-            value.second = entry.second.second;
+            value.first = entry->second.first;
+            value.second = entry->second.second;
 
             values.push_back(value);
         }

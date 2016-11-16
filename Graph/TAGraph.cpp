@@ -141,6 +141,9 @@ bool TAGraph::addAttribute(string ID, string key, string value){
     ClangNode* node = findNodeByID(ID);
     if (node == NULL) return false;
 
+    //Check if the attribute exists.
+    if (node->doesAttributeExist(key, value)) return true;
+
     //Add the node attribute.
     return node->addAttribute(key, value);
 }
@@ -149,6 +152,9 @@ bool TAGraph::addAttribute(string IDSrc, string IDDst, string key, string value)
     //Get the edge.
     ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst);
     if (edge == NULL) return false;
+
+    //Check if the attribute exists.
+    if (edge->doesAttributeExist(key, value)) return true;
 
     //Add the attribute.
     edge->addAttribute(key, value);

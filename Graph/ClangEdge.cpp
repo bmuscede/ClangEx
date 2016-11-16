@@ -63,6 +63,18 @@ vector<string> ClangEdge::getAttribute(string key) {
     return edgeAttributes[key];
 }
 
+bool ClangEdge::doesAttributeExist(string key, string value) {
+    //Check if the attribute key exists.
+    vector<string> attr = edgeAttributes[key];
+    if (attr.size() == 0) return false;
+
+    //Now, look for the value.
+    for (string attrVal : attr){
+        if (value.compare(attrVal) == 0) return true;
+    }
+
+    return false;
+}
 string ClangEdge::generateRelationship() {
     return getTypeString(type) + " " + src->getID() + " " + dst->getID();
 }
@@ -72,7 +84,7 @@ string ClangEdge::generateAttribute() {
     if (edgeAttributes.size() == 0) return "";
 
     //Starts the string.
-    string attributeList = src->getID() + " " + dst->getID() + " { ";
+    string attributeList = "(" + src->getID() + " " + dst->getID() + ") { ";
 
     //Loop through and add all KVs.
     bool nBegin = false;
@@ -89,7 +101,7 @@ string ClangEdge::generateAttribute() {
 
         nBegin = true;
     }
-    attributeList + " }";
+    attributeList += " }";
 
     return attributeList;
 }

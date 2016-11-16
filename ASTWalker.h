@@ -40,7 +40,7 @@ private:
     TAGraph graph;
     FileParse fileParser;
     std::vector<std::pair<std::pair<std::string, std::string>, ClangEdge::EdgeType>> unresolvedRef;
-    std::vector<std::pair<std::pair<std::string, std::string>, std::pair<std::string, std::vector<std::string>>>> unresolvedRefAttr;
+    std::vector<std::pair<std::pair<std::string, std::string>, std::pair<std::string, std::vector<std::string>>>*> unresolvedRefAttr;
 
     void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
     void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);

@@ -72,6 +72,19 @@ vector<string> ClangNode::getAttribute(string key) {
     return nodeAttributes[key];
 }
 
+bool ClangNode::doesAttributeExist(string key, string value){
+    //Check if the attribute key exists.
+    vector<string> attr = nodeAttributes[key];
+    if (attr.size() == 0) return false;
+
+    //Now, look for the value.
+    for (string attrVal : attr){
+        if (value.compare(attrVal) == 0) return true;
+    }
+
+    return false;
+}
+
 string ClangNode::generateInstance() {
     return INSTANCE_FLAG + " " + ID + " " + getTypeString(type);
 }

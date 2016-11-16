@@ -34,6 +34,8 @@ public:
     bool clearAttribute(std::string key);
     std::vector<std::string> getAttribute(std::string key);
 
+    bool doesAttributeExist(std::string key, std::string value);
+
     std::string generateRelationship();
     std::string generateAttribute();
 
