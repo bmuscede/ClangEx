@@ -11,6 +11,15 @@
 #include "ClangNode.h"
 
 class ClangEdge {
+private:
+    /** ATTRIBUTE FLAGS */
+    typedef struct {
+        const std::string attrName = "access";
+
+        const std::string READ_FLAG = "read";
+        const std::string WRITE_FLAG = "write";
+    } AccessStruct;
+
 public:
     enum EdgeType {CALLS, REFERENCES, CONTAINS};
     static std::string getTypeString(EdgeType type);
@@ -27,6 +36,9 @@ public:
 
     std::string generateRelationship();
     std::string generateAttribute();
+
+    /** ATTRIBUTE VARS */
+    static AccessStruct ACCESS_ATTRIBUTE;
 
 private:
     ClangNode* src;

@@ -8,8 +8,20 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <boost/filesystem/path.hpp>
 
 class ClangNode {
+private:
+    /** ATTRIBUTE STRUCTS */
+    typedef struct {
+        const std::string attrName = "filename";
+
+        std::string processFileName(std::string path){
+            boost::filesystem::path p(path);
+            return p.filename().string();
+        }
+    } AttributeStruct;
+
 public:
     enum NodeType {FILE, OBJECT, FUNCTION, SUBSYSTEM, CLASS};
     static std::string getTypeString(NodeType type);
@@ -26,6 +38,9 @@ public:
 
     std::string generateInstance();
     std::string generateAttribute();
+
+    /** ATTRIBUTE VARS */
+    static AttributeStruct FILE_ATTRIBUTE;
 
 private:
     const std::string INSTANCE_FLAG = "$INSTANCE";

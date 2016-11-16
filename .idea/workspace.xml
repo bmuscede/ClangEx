@@ -13,9 +13,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f675393-629d-48b3-9912-95e376c809d1" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ASTWalker.cpp" afterPath="$PROJECT_DIR$/ASTWalker.cpp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ASTWalker.h" afterPath="$PROJECT_DIR$/ASTWalker.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/ClangEdge.cpp" afterPath="$PROJECT_DIR$/Graph/ClangEdge.cpp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/ClangEdge.h" afterPath="$PROJECT_DIR$/Graph/ClangEdge.h" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/ClangNode.cpp" afterPath="$PROJECT_DIR$/Graph/ClangNode.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/TAGraph.cpp" afterPath="$PROJECT_DIR$/Graph/TAGraph.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/TAGraph.h" afterPath="$PROJECT_DIR$/Graph/TAGraph.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/ClangNode.h" afterPath="$PROJECT_DIR$/Graph/ClangNode.h" />
     </list>
     <ignored path="ClangEx.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -35,7 +38,29 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="TAGraph.h" pinned="false" current-in-tab="true">
+      <file leaf-file-name="ClangEdge.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="556">
+              <caret line="40" column="4" selection-start-line="40" selection-start-column="4" selection-end-line="40" selection-end-column="41" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ClangNode.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Graph/ClangNode.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="576">
+              <caret line="41" column="0" selection-start-line="41" selection-start-column="0" selection-end-line="42" selection-end-column="42" />
+              <folding>
+                <element signature="e#100#117#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TAGraph.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Graph/TAGraph.h">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="227">
@@ -45,11 +70,33 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ClangEdge.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.cpp">
+      <file leaf-file-name="ASTWalker.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/ASTWalker.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="181">
+              <caret line="309" column="44" selection-start-line="309" selection-start-column="44" selection-end-line="309" selection-end-column="44" />
+              <folding>
+                <element signature="e#240#258#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ASTWalker.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/ASTWalker.h">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="317">
-              <caret line="50" column="16" selection-start-line="50" selection-start-column="16" selection-end-line="50" selection-end-column="16" />
+              <caret line="54" column="63" selection-start-line="54" selection-start-column="63" selection-end-line="54" selection-end-column="63" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ClangEdge.cpp" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="180">
+              <caret line="10" column="44" selection-start-line="10" selection-start-column="44" selection-end-line="10" selection-end-column="44" />
               <folding />
             </state>
           </provider>
@@ -68,8 +115,8 @@
       <file leaf-file-name="ClangNode.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Graph/ClangNode.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="461">
-              <caret line="59" column="0" selection-start-line="59" selection-start-column="0" selection-end-line="59" selection-end-column="0" />
+            <state relative-caret-position="180">
+              <caret line="10" column="48" selection-start-line="10" selection-start-column="48" selection-end-line="10" selection-end-column="48" />
               <folding />
             </state>
           </provider>
@@ -85,16 +132,16 @@
       <list>
         <option value="$PROJECT_DIR$/File/FileParse.cpp" />
         <option value="$PROJECT_DIR$/File/FileParse.h" />
+        <option value="$PROJECT_DIR$/CMakeLists.txt" />
+        <option value="$PROJECT_DIR$/main.cpp" />
+        <option value="$PROJECT_DIR$/Graph/TAGraph.cpp" />
+        <option value="$PROJECT_DIR$/Graph/TAGraph.h" />
         <option value="$PROJECT_DIR$/ASTWalker.h" />
         <option value="$PROJECT_DIR$/ASTWalker.cpp" />
+        <option value="$PROJECT_DIR$/Graph/ClangNode.cpp" />
         <option value="$PROJECT_DIR$/Graph/ClangNode.h" />
         <option value="$PROJECT_DIR$/Graph/ClangEdge.h" />
         <option value="$PROJECT_DIR$/Graph/ClangEdge.cpp" />
-        <option value="$PROJECT_DIR$/CMakeLists.txt" />
-        <option value="$PROJECT_DIR$/main.cpp" />
-        <option value="$PROJECT_DIR$/Graph/ClangNode.cpp" />
-        <option value="$PROJECT_DIR$/Graph/TAGraph.cpp" />
-        <option value="$PROJECT_DIR$/Graph/TAGraph.h" />
       </list>
     </option>
   </component>
@@ -435,12 +482,12 @@
       <workItem from="1479066625957" duration="611000" />
       <workItem from="1479139563524" duration="19379000" />
       <workItem from="1479235470467" duration="2838000" />
-      <workItem from="1479238323500" duration="15741000" />
+      <workItem from="1479238323500" duration="20251000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="100108000" />
+    <option name="totallyTimeSpent" value="104618000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="24" width="1855" height="1056" extended-state="6" />
@@ -448,7 +495,7 @@
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25067386" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32925585" sideWeight="0.49811321" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32925585" sideWeight="0.49811321" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2640163" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32960325" sideWeight="0.5018868" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
@@ -482,7 +529,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/ASTWalker.cpp</url>
-          <line>295</line>
+          <line>362</line>
           <option name="timeStamp" value="52" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
@@ -507,7 +554,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/Graph/ClangNode.cpp</url>
-          <line>77</line>
+          <line>79</line>
           <option name="timeStamp" value="68" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
@@ -519,7 +566,7 @@
       <breakpoints-dialog>
         <breakpoints-dialog />
       </breakpoints-dialog>
-      <option name="time" value="80" />
+      <option name="time" value="85" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -549,7 +596,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="630">
           <caret line="35" column="0" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#240#258#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -794,49 +843,11 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ASTWalker.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="720">
-          <caret line="40" column="5" selection-start-line="40" selection-start-column="5" selection-end-line="40" selection-end-column="5" />
-          <folding>
-            <element signature="e#100#117#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file:///usr/include/c++/6/bits/stl_vector.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="564">
           <caret line="803" column="0" selection-start-line="803" selection-start-column="0" selection-end-line="803" selection-end-column="0" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ASTWalker.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2376">
-          <caret line="137" column="20" selection-start-line="137" selection-start-column="20" selection-end-line="137" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/ClangNode.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="524">
-          <caret line="39" column="2" selection-start-line="39" selection-start-column="2" selection-end-line="39" selection-end-column="2" />
-          <folding>
-            <element signature="e#100#117#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="269">
-          <caret line="28" column="33" selection-start-line="28" selection-start-column="33" selection-end-line="28" selection-end-column="33" />
-          <folding>
-            <element signature="e#100#117#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -874,22 +885,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/ClangNode.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="461">
-          <caret line="59" column="0" selection-start-line="59" selection-start-column="0" selection-end-line="59" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="317">
-          <caret line="50" column="16" selection-start-line="50" selection-start-column="16" selection-end-line="50" selection-end-column="16" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Graph/TAGraph.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="160">
@@ -902,6 +897,58 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="227">
           <caret line="30" column="9" selection-start-line="30" selection-start-column="9" selection-end-line="30" selection-end-column="9" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ASTWalker.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="317">
+          <caret line="54" column="63" selection-start-line="54" selection-start-column="63" selection-end-line="54" selection-end-column="63" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="556">
+          <caret line="40" column="4" selection-start-line="40" selection-start-column="4" selection-end-line="40" selection-end-column="41" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Graph/ClangNode.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="576">
+          <caret line="41" column="0" selection-start-line="41" selection-start-column="0" selection-end-line="42" selection-end-column="42" />
+          <folding>
+            <element signature="e#100#117#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ASTWalker.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="181">
+          <caret line="309" column="44" selection-start-line="309" selection-start-column="44" selection-end-line="309" selection-end-column="44" />
+          <folding>
+            <element signature="e#240#258#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Graph/ClangNode.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="10" column="48" selection-start-line="10" selection-start-column="48" selection-end-line="10" selection-end-column="48" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="10" column="44" selection-start-line="10" selection-start-column="44" selection-end-line="10" selection-end-column="44" />
           <folding />
         </state>
       </provider>

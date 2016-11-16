@@ -6,6 +6,8 @@
 
 using namespace std;
 
+ClangEdge::AccessStruct ClangEdge::ACCESS_ATTRIBUTE;
+
 string ClangEdge::getTypeString(EdgeType type) {
     //Goes through and checks for type.
     if (type == CONTAINS){

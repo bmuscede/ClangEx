@@ -6,6 +6,8 @@
 
 using namespace std;
 
+ClangNode::AttributeStruct ClangNode::FILE_ATTRIBUTE;
+
 string ClangNode::getTypeString(NodeType type) {
     //Generates switch statement.
     if (type == FILE){

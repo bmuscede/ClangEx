@@ -40,11 +40,12 @@ private:
     TAGraph graph;
     FileParse fileParser;
     std::vector<std::pair<std::pair<std::string, std::string>, ClangEdge::EdgeType>> unresolvedRef;
-
-    std::string VAR_READ = "read";
-    std::string VAR_WRITE = "write";
+    std::vector<std::pair<std::pair<std::string, std::string>, std::pair<std::string, std::vector<std::string>>>> unresolvedRefAttr;
 
     void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
+    void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
+    std::vector<std::pair<std::string, std::vector<std::string>>> findAttributes(std::string callerID, std::string calleeID);
+
     std::string generateID(std::string fileName, std::string signature);
     std::string generateID(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl);
     std::string generateFileName(const MatchFinder::MatchResult result, clang::SourceLocation loc);
@@ -57,7 +58,6 @@ private:
                         const clang::VarDecl *decl, const clang::DeclaratorDecl* caller, const clang::DeclRefExpr* expr);
     void addClassDecl(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *decl);
 
-    std::string processFileName(std::string path);
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
     std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::VarDecl *var);
 };
