@@ -15,12 +15,8 @@
     <list default="true" id="7f675393-629d-48b3-9912-95e376c809d1" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ASTWalker.cpp" afterPath="$PROJECT_DIR$/ASTWalker.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ASTWalker.h" afterPath="$PROJECT_DIR$/ASTWalker.h" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/ClangEdge.cpp" afterPath="$PROJECT_DIR$/Graph/ClangEdge.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/ClangEdge.h" afterPath="$PROJECT_DIR$/Graph/ClangEdge.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/ClangNode.cpp" afterPath="$PROJECT_DIR$/Graph/ClangNode.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/ClangNode.h" afterPath="$PROJECT_DIR$/Graph/ClangNode.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/TAGraph.cpp" afterPath="$PROJECT_DIR$/Graph/TAGraph.cpp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Graph/TAGraph.h" afterPath="$PROJECT_DIR$/Graph/TAGraph.h" />
     </list>
     <ignored path="ClangEx.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -53,7 +49,7 @@
       <file leaf-file-name="ClangNode.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Graph/ClangNode.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="484">
+            <state relative-caret-position="124">
               <caret line="38" column="4" selection-start-line="38" selection-start-column="4" selection-end-line="38" selection-end-column="64" />
               <folding>
                 <element signature="e#100#117#0" expanded="true" />
@@ -62,21 +58,21 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TAGraph.cpp" pinned="false" current-in-tab="true">
+      <file leaf-file-name="TAGraph.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Graph/TAGraph.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="127">
+            <state relative-caret-position="594">
               <caret line="141" column="35" selection-start-line="141" selection-start-column="35" selection-end-line="141" selection-end-column="35" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ClangEdge.cpp" pinned="false" current-in-tab="false">
+      <file leaf-file-name="ClangEdge.cpp" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="412">
-              <caret line="73" column="5" selection-start-line="73" selection-start-column="5" selection-end-line="73" selection-end-column="5" />
+            <state relative-caret-position="124">
+              <caret line="86" column="110" selection-start-line="86" selection-start-column="110" selection-end-line="86" selection-end-column="110" />
               <folding />
             </state>
           </provider>
@@ -85,8 +81,8 @@
       <file leaf-file-name="TAGraph.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Graph/TAGraph.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="20" column="29" selection-start-line="20" selection-start-column="29" selection-end-line="20" selection-end-column="29" />
+            <state relative-caret-position="414">
+              <caret line="56" column="84" selection-start-line="56" selection-start-column="84" selection-end-line="56" selection-end-column="84" />
               <folding />
             </state>
           </provider>
@@ -95,8 +91,8 @@
       <file leaf-file-name="ASTWalker.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ASTWalker.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-364">
-              <caret line="141" column="28" selection-start-line="141" selection-start-column="28" selection-end-line="141" selection-end-column="28" />
+            <state relative-caret-position="1166">
+              <caret line="91" column="1" selection-start-line="91" selection-start-column="1" selection-end-line="91" selection-end-column="1" />
               <folding>
                 <element signature="e#240#258#0" expanded="true" />
               </folding>
@@ -107,7 +103,7 @@
       <file leaf-file-name="ASTWalker.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ASTWalker.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="371">
+            <state relative-caret-position="232">
               <caret line="50" column="99" selection-start-line="50" selection-start-column="99" selection-end-line="50" selection-end-column="99" />
               <folding />
             </state>
@@ -135,16 +131,16 @@
         <option value="$PROJECT_DIR$/File/FileParse.cpp" />
         <option value="$PROJECT_DIR$/File/FileParse.h" />
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
-        <option value="$PROJECT_DIR$/Graph/TAGraph.h" />
         <option value="$PROJECT_DIR$/main.cpp" />
         <option value="$PROJECT_DIR$/ClangArgParse.h" />
         <option value="$PROJECT_DIR$/ClangArgParse.cpp" />
-        <option value="$PROJECT_DIR$/ASTWalker.cpp" />
         <option value="$PROJECT_DIR$/ASTWalker.h" />
         <option value="$PROJECT_DIR$/Graph/ClangEdge.h" />
         <option value="$PROJECT_DIR$/Graph/ClangNode.h" />
         <option value="$PROJECT_DIR$/Graph/TAGraph.cpp" />
         <option value="$PROJECT_DIR$/Graph/ClangNode.cpp" />
+        <option value="$PROJECT_DIR$/ASTWalker.cpp" />
+        <option value="$PROJECT_DIR$/Graph/TAGraph.h" />
         <option value="$PROJECT_DIR$/Graph/ClangEdge.cpp" />
       </list>
     </option>
@@ -487,16 +483,16 @@
       <workItem from="1479139563524" duration="19379000" />
       <workItem from="1479235470467" duration="2838000" />
       <workItem from="1479238323500" duration="20251000" />
-      <workItem from="1479304461029" duration="15901000" />
+      <workItem from="1479304461029" duration="19760000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="120519000" />
+    <option name="totallyTimeSpent" value="124378000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="24" width="1855" height="1056" extended-state="6" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25067386" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -881,47 +877,45 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Graph/ClangNode.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="299">
+          <caret line="75" column="0" selection-start-line="75" selection-start-column="0" selection-end-line="84" selection-end-column="17" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/ASTWalker.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="371">
+        <state relative-caret-position="232">
           <caret line="50" column="99" selection-start-line="50" selection-start-column="99" selection-end-line="50" selection-end-column="99" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Graph/TAGraph.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="594">
+          <caret line="141" column="35" selection-start-line="141" selection-start-column="35" selection-end-line="141" selection-end-column="35" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Graph/TAGraph.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="414">
+          <caret line="56" column="84" selection-start-line="56" selection-start-column="84" selection-end-line="56" selection-end-column="84" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ASTWalker.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-364">
-          <caret line="141" column="28" selection-start-line="141" selection-start-column="28" selection-end-line="141" selection-end-column="28" />
+        <state relative-caret-position="1166">
+          <caret line="91" column="1" selection-start-line="91" selection-start-column="1" selection-end-line="91" selection-end-column="1" />
           <folding>
             <element signature="e#240#258#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/TAGraph.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="20" column="29" selection-start-line="20" selection-start-column="29" selection-end-line="20" selection-end-column="29" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/ClangNode.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="484">
-          <caret line="38" column="4" selection-start-line="38" selection-start-column="4" selection-end-line="38" selection-end-column="64" />
-          <folding>
-            <element signature="e#100#117#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/ClangNode.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="299">
-          <caret line="75" column="0" selection-start-line="75" selection-start-column="0" selection-end-line="84" selection-end-column="17" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -933,18 +927,20 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.cpp">
+    <entry file="file://$PROJECT_DIR$/Graph/ClangNode.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="412">
-          <caret line="73" column="5" selection-start-line="73" selection-start-column="5" selection-end-line="73" selection-end-column="5" />
-          <folding />
+        <state relative-caret-position="124">
+          <caret line="38" column="4" selection-start-line="38" selection-start-column="4" selection-end-line="38" selection-end-column="64" />
+          <folding>
+            <element signature="e#100#117#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Graph/TAGraph.cpp">
+    <entry file="file://$PROJECT_DIR$/Graph/ClangEdge.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="127">
-          <caret line="141" column="35" selection-start-line="141" selection-start-column="35" selection-end-line="141" selection-end-column="35" />
+        <state relative-caret-position="124">
+          <caret line="86" column="110" selection-start-line="86" selection-start-column="110" selection-end-line="86" selection-end-column="110" />
           <folding />
         </state>
       </provider>

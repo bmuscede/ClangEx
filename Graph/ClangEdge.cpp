@@ -84,7 +84,7 @@ string ClangEdge::generateAttribute() {
     if (edgeAttributes.size() == 0) return "";
 
     //Starts the string.
-    string attributeList = "(" + src->getID() + " " + dst->getID() + ") { ";
+    string attributeList = "(" + ClangEdge::getTypeString(type) + " " + src->getID() + " " + dst->getID() + ") { ";
 
     //Loop through and add all KVs.
     bool nBegin = false;

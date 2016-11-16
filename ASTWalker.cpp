@@ -46,8 +46,10 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
 
         addVariableRef(result, dec, caller, expr);
     } else if (const CXXRecordDecl *dec = result.Nodes.getNodeAs<clang::CXXRecordDecl>(types[CLASS_DEC])){
+        cout << dec->getQualifiedNameAsString() << endl;
+
         //If a class declaration was found.
-        addClassDecl(result, dec);
+        //addClassDecl(result, dec);
     }
 }
 
@@ -86,7 +88,7 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
                                    hasAncestor(functionDecl().bind(types[CALLER_VAR]))).bind(types[VAR_EXPR]), this);
 
     //Finds any class declarations.
-    //finder->addMatcher(cxxRecordDecl(isClass()).bind(types[CLASS_DEC]), this);
+    finder->addMatcher(cxxRecordDecl(isExpansionInMainFile()).bind(types[CLASS_DEC]), this);
 }
 
 void ASTWalker::resolveExternalReferences() {

@@ -1,0 +1,102 @@
+//Generated TA File
+//Author: Jingwei Wu & Bryan J Muscedere
+
+SCHEME TUPLE :
+//Nodes
+$INHERIT	cArchitecturalNds	cRoot
+$INHERIT	cAsgNds			cRoot
+$INHERIT	cSubSystem		cArchitecturalNds
+$INHERIT	cFile			cArchitecturalNds
+$INHERIT	cExecutable		cFile
+$INHERIT	cObjectFile		cFile
+$INHERIT	cArchiveFile		cFile
+$INHERIT	cClass			cAsgNds
+$INHERIT	cFunction		cAsgNds
+$INHERIT	cObject			cAsgNds
+
+//Relationships
+contain		cRoot		cRoot
+call		cFunction	cFunction
+reference	cFunction	cObject
+
+SCHEME ATTRIBUTE :
+$ENTITY {
+	x
+	y
+	width
+	height
+	label
+}
+
+cRoot {
+	elision = contain
+	color = (0.0 0.0 0.0)
+	file
+	line
+	name
+}
+
+cAsgNds {
+	beg
+	end
+	file
+	line
+	value
+	color = (0.0 0.0 0.0)
+}
+
+cArchitecturalNds {
+	class_style = 4
+	color = (0.0 0.0 1.0)
+	color = (0.0 0.0 0.0)
+}
+
+cSubSystem {
+	class_style = 4
+	color = (0.0 0.0 1.0)
+}
+
+cFile {
+	class_style = 2
+	color = (0.9 0.9 0.9)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cExecutable {
+	class_style = 4
+	color = (0.8 0.9 0.9)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cObjectFile {
+	class_style = 4
+	color = (0.6 0.8 0.6)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cArchiveFile {
+	class_style = 4
+	color = (0.5 0.5 0.1)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cFunction {
+	filename
+	color = (1.0 0.0 0.0)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cObject {
+	filename
+}
+
+cClass {
+	filename
+	color = (0.2 0.4 0.1)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+(reference) {
+	access
+}
+
