@@ -8,6 +8,7 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "ASTWalker.h"
+#include "ClangArgParse.h"
 
 using namespace std;
 using namespace clang;
@@ -165,6 +166,54 @@ const char** generateArguments(const char** oldArgv, int argc, vector<string> ar
 }
 
 int main(int argc, const char **argv) {
+    //Starts by creating an argument parser.
+    ClangArgParse parser = ClangArgParse();
+    bool succ = parser.parseArguments(argc, argv);
+
+    //Check return code.
+    if (!succ) return 1;
+
+    //Generates a specialized version of arguments for Clang.
+    int genArgC = 0;
+    const char** genArgV = parser.generateClangArgv(genArgC);
+
+    //Now, runs Clang.
+    CommonOptionsParser OptionsParser(genArgC, genArgV, ClangExCategory);
+    ClangTool tool(OptionsParser.getCompilations(),
+                   OptionsParser.getSourcePathList());
+
+    //Generates a matcher system.
+    ASTWalker walker = ASTWalker();
+    MatchFinder finder;
+
+    //Next, processes the matching conditions.
+    walker.generateASTMatches(&finder);
+
+    //Runs the Clang tool.
+    cout << "Compiling the source code..." << endl;
+    int code = tool.run(newFrontendActionFactory(&finder).get());
+    if (code != 0) {
+        return code;
+    }
+
+    //Resolves references.
+    cout << "Resolving external references..." << endl;
+    walker.resolveExternalReferences();
+
+    //Generates file paths.
+    walker.resolveFiles();
+
+    //Processes the TA file.
+    vector<string> outputFiles = parser.getOption(ClangArgParse::OUT_LONG);
+    if (outputFiles.size() == 0){
+        walker.buildGraph(DEFAULT_OUT);
+    } else {
+        for (string file : outputFiles)
+            walker.buildGraph(file);
+    }
+    return code;
+
+    /* OLD CLANG MANAGEMENT
     //Sets up command line options.
     TAOutCommand.setInitialValue(DEFAULT_OUT);
     TAOutCommand.setDescription(OUTPUT_HELP);
@@ -239,5 +288,5 @@ int main(int argc, const char **argv) {
 
     //Processes the TA file.
     walker.buildGraph(output);
-    return code;
+    return code; */
 }

@@ -8,9 +8,11 @@
       <sourceFolder url="file://$MODULE_DIR$/Graph/ClangEdge.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Graph/ClangEdge.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Graph/TAGraph.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ClangArgParse.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/ASTWalker.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ClangArgParse.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/File/FileParse.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/File/FileParse.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/ASTWalker.h" isTestSource="false" />
