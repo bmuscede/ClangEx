@@ -1,0 +1,5 @@
+# Ignore CMake related files.
+.idea/
+CMakeFiles/
+cmake_install.cmake
+CMakeCache.txt
