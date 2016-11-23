@@ -31,8 +31,8 @@ public:
     void resolveFiles();
 
 private:
-    enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR, VAR_EXPR, CLASS_DEC, VAR_STMT};
-    const char* types[9] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var", "expr_var", "class_dec", "var_stmt"};
+    enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR, VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR};
+    const char* types[9] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var", "expr_var", "class_dec_func", "class_dec_var"};
 
     const char* assignmentOperators[17] = {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "^=", "|=", "&", "|", "^", "~", "<<", ">>"};
     const char* incDecOperators[2] = {"++", "--"};
@@ -56,7 +56,7 @@ private:
                          const clang::CallExpr *expr, const clang::DeclaratorDecl* decl);
     void addVariableRef(const MatchFinder::MatchResult result,
                         const clang::VarDecl *decl, const clang::DeclaratorDecl* caller, const clang::DeclRefExpr* expr);
-    void addClassDecl(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *decl);
+    void addClassDecl(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDec, std::string fileName);
 
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
     std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::VarDecl *var);

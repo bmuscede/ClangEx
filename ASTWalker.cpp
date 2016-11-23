@@ -45,11 +45,27 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
         auto *expr = result.Nodes.getNodeAs<clang::DeclRefExpr>(types[VAR_EXPR]);
 
         addVariableRef(result, dec, caller, expr);
-    } else if (const CXXRecordDecl *dec = result.Nodes.getNodeAs<clang::CXXRecordDecl>(types[CLASS_DEC])){
-        cout << dec->getQualifiedNameAsString() << endl;
+    } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_FUNC])){
+        //Get the CXXRecordDecl.
+        CXXRecordDecl *record = dec->getQualifier()->getAsType()->getAsCXXRecordDecl();
+        if (record == NULL) return;
+
+        //Get the filename.
+        string filename = generateFileName(result, dec->getInnerLocStart());
 
         //If a class declaration was found.
-        //addClassDecl(result, dec);
+        addClassDecl(result, record, filename);
+    } else if (const VarDecl *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR])){
+        //Get the CXXRecordDecl.
+        if (dec->getQualifier() == NULL || dec->getQualifier()->getAsType() == NULL) return;
+        CXXRecordDecl *record = dec->getQualifier()->getAsType()->getAsCXXRecordDecl();
+        if (record == NULL) return;
+
+        //Get the filename.
+        string filename = generateFileName(result, dec->getInnerLocStart());
+
+        //If a class declaration was found.
+        addClassDecl(result, record, filename);
     }
 }
 
@@ -88,7 +104,8 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
                                    hasAncestor(functionDecl().bind(types[CALLER_VAR]))).bind(types[VAR_EXPR]), this);
 
     //Finds any class declarations.
-    finder->addMatcher(cxxRecordDecl(isExpansionInMainFile()).bind(types[CLASS_DEC]), this);
+    finder->addMatcher(functionDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_FUNC]), this);
+    //finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_VAR]), this);
 }
 
 void ASTWalker::resolveExternalReferences() {
@@ -324,18 +341,19 @@ void ASTWalker::addVariableRef(const MatchFinder::MatchResult result,
                        ClangEdge::ACCESS_ATTRIBUTE.attrName, getVariableAccess(result, decl));
 }
 
-void ASTWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *decl) {
-    //Generates the filename.
-    string fileName = generateFileName(result, decl->getInnerLocStart());
-
+void ASTWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *classDec, string fileName) {
     //Get the name & ID of the class.
-    string classID = generateID(fileName, decl->getNameAsString());
-    string className = generateLabel(decl, ClangNode::CLASS);
+    string classID = generateID(fileName, classDec->getNameAsString());
+    string className = generateLabel(classDec, ClangNode::CLASS);
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(classID, className, ClangNode::CLASS);
-    node->addAttribute(ClangNode::FILE_ATTRIBUTE.attrName, ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
     graph.addNode(node);
+
+    //Process attributes.
+    graph.addSingularAttribute(node->getID(),
+                               ClangNode::FILE_ATTRIBUTE.attrName,
+                               ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
 }
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
@@ -356,6 +374,9 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
             string parentQualName = static_cast<const FunctionDecl*>(parentContext)->getQualifiedNameAsString();
             label = parentQualName + "::" + label;
         }
+    } else if (type == ClangNode::CLASS){
+        const CXXRecordDecl* record = static_cast<const CXXRecordDecl*>(decl);
+        label = record->getQualifiedNameAsString();
     }
 
     return label;
