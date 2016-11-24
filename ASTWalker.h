@@ -31,11 +31,15 @@ public:
     void resolveFiles();
 
 private:
-    enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR, VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR};
-    const char* types[9] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var", "expr_var", "class_dec_func", "class_dec_var"};
+    enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR,
+        VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, CLASS_DEC_VAR_TWO, CLASS_DEC_VAR_THREE};
+    const char* types[11] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
+                            "expr_var", "class_dec_func", "class_dec_var", "class_dec_var_two", "class_dec_var_three"};
 
-    const char* assignmentOperators[17] = {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "^=", "|=", "&", "|", "^", "~", "<<", ">>"};
+    const char* assignmentOperators[17] = {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=",
+                                           "&=", "^=", "|=", "&", "|", "^", "~", "<<", ">>"};
     const char* incDecOperators[2] = {"++", "--"};
+    const std::string CLASS_PREPEND = "class-";
 
     TAGraph graph;
     FileParse fileParser;
@@ -46,8 +50,8 @@ private:
     void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
     std::vector<std::pair<std::string, std::vector<std::string>>> findAttributes(std::string callerID, std::string calleeID);
 
-    std::string generateID(std::string fileName, std::string signature);
-    std::string generateID(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl);
+    std::string generateID(std::string fileName, std::string signature, ClangNode::NodeType type);
+    std::string generateID(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl, ClangNode::NodeType type);
     std::string generateFileName(const MatchFinder::MatchResult result, clang::SourceLocation loc);
 
     void addVariableDecl(const MatchFinder::MatchResult result, const clang::VarDecl *decl);
