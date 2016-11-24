@@ -41,6 +41,10 @@ ClangNode* ClangEdge::getDst() {
     return dst;
 }
 
+ClangEdge::EdgeType ClangEdge::getType(){
+    return type;
+}
+
 bool ClangEdge::addAttribute(string key, string value){
     //Add the attribute by key.
     edgeAttributes[key].push_back(value);

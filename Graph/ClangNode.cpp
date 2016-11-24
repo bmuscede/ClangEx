@@ -47,6 +47,10 @@ string ClangNode::getName() {
     return nodeAttributes.at(NAME_FLAG).at(0);
 }
 
+ClangNode::NodeType ClangNode::getType(){
+    return type;
+}
+
 bool ClangNode::addAttribute(string key, string value) {
     //Check if we're trying to modify the name.
     if (key.compare(NAME_FLAG) == 0){

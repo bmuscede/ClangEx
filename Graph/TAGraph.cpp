@@ -87,6 +87,30 @@ ClangEdge* TAGraph::findEdgeByIDs(string IDOne, string IDTwo) {
     return NULL;
 }
 
+vector<ClangNode*> TAGraph::findSrcNodesByEdge(ClangNode* dst, ClangEdge::EdgeType type){
+    vector<ClangNode*> srcNodes;
+
+    //Iterate through our edge list.
+    for (auto edge : edgeList){
+        if (edge->getType() == type && edge->getDst() == dst)
+            srcNodes.push_back(edge->getSrc());
+    }
+
+    return srcNodes;
+}
+
+vector<ClangNode*> TAGraph::findDstNodesByEdge(ClangNode* src, ClangEdge::EdgeType type){
+    vector<ClangNode*> dstNodes;
+
+    //Iterate through our edge list.
+    for (auto edge : edgeList){
+        if (edge->getType() == type && edge->getSrc() == src)
+            dstNodes.push_back(edge->getDst());
+    }
+
+    return dstNodes;
+}
+
 bool TAGraph::nodeExists(string ID) {
     //Iterate through the node list.
     for (int i = 0; i < nodeList.size(); i++){
@@ -179,6 +203,9 @@ void TAGraph::addNodesToFile() {
         vector<string> fileAttrVec = node->getAttribute(FILE_ATTRIBUTE);
         if (fileAttrVec.size() != 1) continue;
 
+        //First, get all the current edges for this attribute.
+        if (isPartOfClass(node)) continue;
+
         string file = fileAttrVec.at(0);
         if (file.compare("") != 0){
             //Find the appropriate node.
@@ -190,6 +217,17 @@ void TAGraph::addNodesToFile() {
             addEdge(edge);
         }
     }
+}
+
+bool TAGraph::isPartOfClass(ClangNode* node){
+    //First, find all source edges with contains.
+    vector<ClangNode*> srcNodes = findSrcNodesByEdge(node, ClangEdge::CONTAINS);
+
+    //Look for a class node in the src list.
+    for (auto srcNode : srcNodes)
+        if (srcNode->getType() == ClangNode::CLASS) return true;
+
+    return false;
 }
 
 string TAGraph::generateInstances() {

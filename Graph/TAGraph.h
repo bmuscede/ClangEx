@@ -21,6 +21,8 @@ public:
     ClangNode* findNodeByID(std::string ID);
     std::vector<ClangNode*> findNodeByName(std::string name);
     ClangEdge* findEdgeByIDs(std::string IDOne, std::string IDTwo);
+    std::vector<ClangNode*> findSrcNodesByEdge(ClangNode* dst, ClangEdge::EdgeType type);
+    std::vector<ClangNode*> findDstNodesByEdge(ClangNode* src, ClangEdge::EdgeType type);
 
     bool nodeExists(std::string ID);
     bool edgeExists(std::string IDOne, std::string IDTwo);
@@ -32,6 +34,8 @@ public:
 
     std::string generateTAFormat();
     void addNodesToFile();
+
+    bool isPartOfClass(ClangNode* node);
 
     static const std::string FILE_ATTRIBUTE;
 

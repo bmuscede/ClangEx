@@ -61,6 +61,11 @@ private:
     void addVariableRef(const MatchFinder::MatchResult result,
                         const clang::VarDecl *decl, const clang::DeclaratorDecl* caller, const clang::DeclRefExpr* expr);
     void addClassDecl(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDec, std::string fileName);
+    void addClassRef(const MatchFinder::MatchResult result,
+                     const clang::CXXRecordDecl* classRec, const clang::DeclaratorDecl* funcRec);
+    void addClassRef(const MatchFinder::MatchResult result,
+                     const clang::CXXRecordDecl* classRec, const clang::VarDecl* varRec);
+    void addClassRef(std::string srcLabel, std::string dstLabel);
 
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
     std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::VarDecl *var);

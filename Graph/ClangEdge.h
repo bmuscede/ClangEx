@@ -29,6 +29,7 @@ public:
 
     ClangNode* getSrc();
     ClangNode* getDst();
+    ClangEdge::EdgeType getType();
 
     bool addAttribute(std::string key, std::string value);
     bool clearAttribute(std::string key);

@@ -3,10 +3,9 @@
 //
 
 //TODO:
-// - Add class nodes.
+// - Move all functions and objects to inside classes.
 // - Update schema.
 // - Create attribute structs in Node and Edge classes (Improve with functions in struct).
-// - Fix undefined references to allow for attributes.
 
 #include <fstream>
 #include <iostream>
@@ -56,6 +55,7 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
 
         //If a class declaration was found.
         addClassDecl(result, record, filename);
+        addClassRef(result, record, dec);
     } else if (const VarDecl *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR])){
         //Get the CXXRecordDecl.
         if (var->getQualifier() == NULL || var->getQualifier()->getAsType() == NULL) return;
@@ -67,6 +67,7 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
 
         //If a class declaration was found.
         addClassDecl(result, record, filename);
+        addClassRef(result, record, var);
     } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_VAR_TWO])){
         //Get the variable declaration.
         auto *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR_THREE]);
@@ -81,6 +82,7 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
 
         //If a class declaration was found.
         addClassDecl(result, record, filename);
+        addClassRef(result, record, var);
     }
 }
 
@@ -375,6 +377,48 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRec
     graph.addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
+}
+
+void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
+                            const CXXRecordDecl* classRec, const DeclaratorDecl* funcRec){
+    //Generate the label of the class and the function.
+    string className = generateLabel(classRec, ClangNode::CLASS);
+    string funcName = generateLabel(funcRec, ClangNode::FUNCTION);
+
+    addClassRef(className, funcName);
+}
+
+void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
+                            const CXXRecordDecl* classRec, const VarDecl* varRec){
+    //Generate the label of the class and the object.
+    string className = generateLabel(classRec, ClangNode::CLASS);
+    string objName = generateLabel(varRec, ClangNode::OBJECT);
+
+    addClassRef(className, objName);
+}
+
+void ASTWalker::addClassRef(string srcLabel, string dstLabel){
+    //Get the nodes by their label.
+    vector<ClangNode*> classNode = graph.findNodeByName(srcLabel);
+    vector<ClangNode*> innerNode = graph.findNodeByName(dstLabel);
+
+    //Check to see if we have these entries already done.
+    if (classNode.size() == 0 || innerNode.size() == 0){
+        //Add to unresolved reference list.
+        addUnresolvedRef(srcLabel, dstLabel, ClangEdge::CONTAINS);
+
+        //Add attributes.
+        //TODO: Any class reference attributes?
+
+        return;
+    }
+
+    //Add the edge.
+    ClangEdge* edge = new ClangEdge(classNode.at(0), innerNode.at(0), ClangEdge::CONTAINS);
+    graph.addEdge(edge);
+
+    //Process attributes.
+    //TODO: Any class reference attributes?
 }
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){

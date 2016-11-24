@@ -31,6 +31,7 @@ public:
 
     std::string getID();
     std::string getName();
+    ClangNode::NodeType getType();
 
     bool addAttribute(std::string key, std::string value);
     bool clearAttributes(std::string key);
