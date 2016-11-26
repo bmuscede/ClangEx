@@ -9,6 +9,7 @@
 #include <map>
 #include <vector>
 #include <boost/filesystem/path.hpp>
+#include <clang/Basic/Specifiers.h>
 
 class ClangNode {
 private:
@@ -24,6 +25,28 @@ private:
     typedef struct {
         const std::string attrName = "baseNum";
     } BaseStruct;
+    typedef struct {
+        const std::string staticName = "isStatic";
+        const std::string constName = "isConst";
+        const std::string volName = "isVolatile";
+        const std::string varName = "isVariadic";
+    } FuncIsAStruct;
+    typedef struct {
+        const std::string attrName = "visibility";
+
+        std::string processAccessSpec(clang::AccessSpecifier spec){
+            //Check the enum value.
+            if (spec == clang::AccessSpecifier::AS_private){
+                return "private";
+            } else if (spec == clang::AccessSpecifier::AS_protected){
+                return "protected";
+            } else if (spec == clang::AccessSpecifier::AS_public){
+                return "public";
+            }
+
+            return "none";
+        }
+    } AccessStruct;
 
 public:
     enum NodeType {FILE, OBJECT, FUNCTION, SUBSYSTEM, CLASS};
@@ -48,6 +71,8 @@ public:
     /** ATTRIBUTE VARS */
     static AttributeStruct FILE_ATTRIBUTE;
     static BaseStruct BASE_ATTRIBUTE;
+    static FuncIsAStruct FUNC_IS_ATTRIBUTE;
+    static AccessStruct VIS_ATTRIBUTE;
 
 private:
     const std::string INSTANCE_FLAG = "$INSTANCE";

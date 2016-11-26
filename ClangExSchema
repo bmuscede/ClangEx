@@ -84,6 +84,9 @@ cArchiveFile {
 cFunction {
 	filename
 	isStatic
+	isConst
+	isVolatile
+	isVariadic
 	visibility
 	color = (1.0 0.0 0.0)
 	labelcolor = (0.0 0.0 0.0)

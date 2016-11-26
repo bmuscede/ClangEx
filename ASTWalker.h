@@ -31,6 +31,8 @@ public:
     void resolveFiles();
 
 private:
+    std::string curFileName;
+
     enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR,
         VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, CLASS_DEC_VAR_TWO, CLASS_DEC_VAR_THREE};
     const char* types[11] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
@@ -70,6 +72,7 @@ private:
 
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
     std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::VarDecl *var);
+    void printFileName(std::string curFile);
 };
 
 

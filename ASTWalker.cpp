@@ -23,7 +23,10 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-ASTWalker::ASTWalker(){ }
+ASTWalker::ASTWalker(){
+    //Sets the current file name to blank.
+    curFileName = "";
+}
 
 ASTWalker::~ASTWalker() { }
 
@@ -266,6 +269,9 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result, Source
     //Adds the file path.
     fileParser.addPath(fileName);
 
+    //Print file name.
+    printFileName(fileName);
+
     return fileName;
 }
 
@@ -305,6 +311,37 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult result, const Dec
     graph.addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
+
+
+    //Check if we have a CXXMethodDecl.
+    if (isa<CXXMethodDecl>(decl->getAsFunction())){
+        //Perform a static cast.
+        const CXXMethodDecl* methDecl = static_cast<const CXXMethodDecl*>(decl->getAsFunction());
+
+        //Process method decls.
+        bool isStatic = methDecl->isStatic();
+        bool isConst = methDecl ->isConst();
+        bool isVol = methDecl->isVolatile();
+        bool isVari = methDecl->isVariadic();
+        AccessSpecifier spec = methDecl->getAccess();
+
+        //Add these types of attributes.
+        graph.addSingularAttribute(node->getID(),
+                                   ClangNode::FUNC_IS_ATTRIBUTE.staticName,
+                                   std::to_string(isStatic));
+        graph.addSingularAttribute(node->getID(),
+                                   ClangNode::FUNC_IS_ATTRIBUTE.constName,
+                                   std::to_string(isConst));
+        graph.addSingularAttribute(node->getID(),
+                                   ClangNode::FUNC_IS_ATTRIBUTE.volName,
+                                   std::to_string(isVol));
+        graph.addSingularAttribute(node->getID(),
+                                   ClangNode::FUNC_IS_ATTRIBUTE.varName,
+                                   std::to_string(isVari));
+        graph.addSingularAttribute(node->getID(),
+                                   ClangNode::VIS_ATTRIBUTE.attrName,
+                                   ClangNode::VIS_ATTRIBUTE.processAccessSpec(spec));
+    }
 }
 
 void ASTWalker::addFunctionCall(const MatchFinder::MatchResult result,
@@ -553,4 +590,11 @@ string ASTWalker::getVariableAccess(const MatchFinder::MatchResult result, const
         return ClangEdge::ACCESS_ATTRIBUTE.WRITE_FLAG;
     }
     return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
+}
+
+void ASTWalker::printFileName(std::string curFile){
+    if (curFile.compare(curFileName) != 0){
+        cout << "\tCurrently processing: " << curFile << endl;
+        curFileName = curFile;
+    }
 }

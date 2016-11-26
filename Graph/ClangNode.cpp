@@ -8,6 +8,8 @@ using namespace std;
 
 ClangNode::AttributeStruct ClangNode::FILE_ATTRIBUTE;
 ClangNode::BaseStruct ClangNode::BASE_ATTRIBUTE;
+ClangNode::FuncIsAStruct ClangNode::FUNC_IS_ATTRIBUTE;
+ClangNode::AccessStruct ClangNode::VIS_ATTRIBUTE;
 
 string ClangNode::getTypeString(NodeType type) {
     //Generates switch statement.

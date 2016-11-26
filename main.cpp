@@ -197,7 +197,7 @@ int main(int argc, const char **argv) {
     }
 
     //Resolves references.
-    cout << "Resolving external references..." << endl;
+    cout << endl << "Resolving external references..." << endl;
     walker.resolveExternalReferences();
 
     //Generates file paths.
@@ -205,6 +205,7 @@ int main(int argc, const char **argv) {
 
     //Processes the TA file.
     vector<string> outputFiles = parser.getOption(ClangArgParse::OUT_LONG);
+    cout << endl;
     if (outputFiles.size() == 0){
         walker.buildGraph(DEFAULT_OUT);
     } else {
