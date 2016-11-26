@@ -440,7 +440,6 @@ void ASTWalker::addClassRef(string srcLabel, string dstLabel){
 void ASTWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXRecordDecl* baseDec){
     string classLabel = generateLabel(classDec, ClangNode::CLASS);
     string baseLabel = generateLabel(baseDec, ClangNode::CLASS);
-    cout << classLabel << " " << baseLabel << endl;
 
     //Get the nodes by their label.
     vector<ClangNode*> classNode = graph.findNodeByName(classLabel);
