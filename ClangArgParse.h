@@ -11,6 +11,13 @@
 
 class ClangArgParse {
 public:
+    typedef struct {
+        bool cClass = false;
+        bool cObject = false;
+        bool cSubSystem = false;
+        bool cFunction = false;
+    } ClangExclude;
+
     ClangArgParse();
     ~ClangArgParse();
 
@@ -33,6 +40,8 @@ public:
     std::vector<std::string> getOption(std::string key);
     bool getFlag(std::string key);
     std::vector<std::string> getArguments();
+
+    ClangArgParse::ClangExclude generateExclusions();
 
     /** PUBLIC ARGUMENTS AND FLAGS */
     const static std::string OUT_LONG;
@@ -62,6 +71,9 @@ private:
     const static std::string HELP_LONG;
     const static std::string HELP_SHORT;
     const static std::string HELP_HELP;
+    const static std::string EXMETA_LONG;
+    const static std::string EXMETA_SHORT;
+    const static std::string EXMETA_HELP;
 
     const std::string cExtensions[4] = {".c", ".cc", ".cpp", ".cxx"};
 

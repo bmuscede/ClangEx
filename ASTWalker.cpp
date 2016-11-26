@@ -16,6 +16,7 @@
 #include "ASTWalker.h"
 #include "Graph/ClangNode.h"
 #include "Graph/ClangEdge.h"
+#include "ClangArgParse.h"
 
 using namespace std;
 using namespace clang;
@@ -23,7 +24,9 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-ASTWalker::ASTWalker(){
+ASTWalker::ASTWalker(ClangArgParse::ClangExclude exclusions){
+    this->exclusions = exclusions;
+
     //Sets the current file name to blank.
     curFileName = "";
 }
@@ -111,24 +114,30 @@ void ASTWalker::buildGraph(string fileName) {
 }
 
 void ASTWalker::generateASTMatches(MatchFinder *finder) {
-    //Finds function declarations for current C/C++ file.
-    finder->addMatcher(functionDecl(isExpansionInMainFile()).bind(types[FUNC_DEC]), this);
+    if (!exclusions.cFunction){
+        //Finds function declarations for current C/C++ file.
+        finder->addMatcher(functionDecl(isExpansionInMainFile()).bind(types[FUNC_DEC]), this);
 
-    //Finds function calls from one function to another.
-    finder->addMatcher(callExpr(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CALLER]))).bind(types[FUNC_CALL]), this);
+        //Finds function calls from one function to another.
+        finder->addMatcher(callExpr(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CALLER]))).bind(types[FUNC_CALL]), this);
+    }
 
-    //Finds variables in functions or in class declaration.
-    finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[VAR_DEC]), this);
+    if (!exclusions.cObject){
+        //Finds variables in functions or in class declaration.
+        finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[VAR_DEC]), this);
 
-    //Finds variable uses from a function to a variable.
-    finder->addMatcher(declRefExpr(hasDeclaration(varDecl(isExpansionInMainFile()).bind(types[VAR_CALL])),
-                                   hasAncestor(functionDecl().bind(types[CALLER_VAR]))).bind(types[VAR_EXPR]), this);
+        //Finds variable uses from a function to a variable.
+        finder->addMatcher(declRefExpr(hasDeclaration(varDecl(isExpansionInMainFile()).bind(types[VAR_CALL])),
+                                       hasAncestor(functionDecl().bind(types[CALLER_VAR]))).bind(types[VAR_EXPR]), this);
+    }
 
-    //Finds any class declarations.
-    finder->addMatcher(functionDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_FUNC]), this);
-    finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_VAR]), this);
-    finder->addMatcher(varDecl(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CLASS_DEC_VAR_TWO])))
-                               .bind(types[CLASS_DEC_VAR_THREE]), this);
+    if (!exclusions.cClass){
+        //Finds any class declarations.
+        finder->addMatcher(functionDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_FUNC]), this);
+        finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_VAR]), this);
+        finder->addMatcher(varDecl(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CLASS_DEC_VAR_TWO])))
+                                   .bind(types[CLASS_DEC_VAR_THREE]), this);
+    }
 }
 
 void ASTWalker::resolveExternalReferences() {
@@ -176,12 +185,16 @@ void ASTWalker::resolveFiles(){
 
     //Adds them to the graph.
     for (ClangNode* file : fileNodes){
-        graph.addNode(file);
+        if (!(exclusions.cSubSystem && file->getType() == ClangNode::NodeType::SUBSYSTEM)){
+            graph.addNode(file);
+        }
     }
 
     //Adds the edges to the graph.
     for (ClangEdge* edge : fileEdges){
-        graph.addEdge(edge);
+        if (!(exclusions.cSubSystem && edge->getType() == ClangEdge::EdgeType::CONTAINS)){
+            graph.addEdge(edge);
+        }
     }
 
     //Next, for each item in the graph, add it to a file.

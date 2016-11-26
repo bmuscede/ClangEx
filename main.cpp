@@ -177,13 +177,16 @@ int main(int argc, const char **argv) {
     int genArgC = 0;
     const char** genArgV = parser.generateClangArgv(genArgC);
 
+    //Get the exclusions.
+    ClangArgParse::ClangExclude exclude = parser.generateExclusions();
+
     //Now, runs Clang.
     CommonOptionsParser OptionsParser(genArgC, genArgV, ClangExCategory);
     ClangTool tool(OptionsParser.getCompilations(),
                    OptionsParser.getSourcePathList());
 
     //Generates a matcher system.
-    ASTWalker walker = ASTWalker();
+    ASTWalker walker = ASTWalker(exclude);
     MatchFinder finder;
 
     //Next, processes the matching conditions.

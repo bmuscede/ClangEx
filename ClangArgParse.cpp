@@ -8,6 +8,8 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include "ClangArgParse.h"
 
 using namespace std;
@@ -41,7 +43,12 @@ const string ClangArgParse::DB_HELP = "This tells the Clang compiler to use a pr
 const string ClangArgParse::HELP_LONG = "help";
 const string ClangArgParse::HELP_SHORT = "h";
 const string ClangArgParse::HELP_HELP = "Display's program help.";
-
+const string ClangArgParse::EXMETA_LONG = "exclude";
+const string ClangArgParse::EXMETA_SHORT = "r";
+const string ClangArgParse::EXMETA_HELP ="Allows users to exclude metamodel features from the tuple-attribute\n"
+        "graph. Features that can be excluded are:\n\t- cSubSystem: Removes folders and directories.\n\t"
+        "- cClass: Removes classes.\n\t- cFunction: Removes functions.\n\t- cObject: Removes variables.\nChain"
+        " these features through commas. For instance cClass,cObject,cSubSystem";
 const string ClangArgParse::CLANG_SYS_LIB = "include";
 const string ClangArgParse::INCLUDE_ERROR_MSG = "Error: Clang system libraries not found! Check if the " + CLANG_SYS_LIB +
                                              " directory exists and retry!";
@@ -56,6 +63,7 @@ ClangArgParse::ClangArgParse(){
     addOption(ClangArgParse::FIND_LONG, ClangArgParse::FIND_SHORT, ClangArgParse::FIND_HELP);
     addOption(ClangArgParse::EXTRA_LONG, ClangArgParse::EXTRA_SHORT, ClangArgParse::EXTRA_HELP);
     addOption(ClangArgParse::OUT_LONG, ClangArgParse::OUT_SHORT, ClangArgParse::OUT_HELP);
+    addOption(ClangArgParse::EXMETA_LONG, ClangArgParse::EXMETA_SHORT, ClangArgParse::EXMETA_HELP);
 
     //Adds flags.
     addFlag(ClangArgParse::EXCLUDE_LONG, ClangArgParse::EXCLUDE_SHORT, ClangArgParse::EXCLUDE_HELP);
@@ -286,6 +294,41 @@ bool ClangArgParse::getFlag(string key){
 
 vector<string> ClangArgParse::getArguments(){
     return argumentList;
+}
+
+ClangArgParse::ClangExclude ClangArgParse::generateExclusions(){
+    ClangArgParse::ClangExclude exVals;
+
+    //Get the value of the exclusion.
+    vector<string> exclusions = getOption(ClangArgParse::EXMETA_LONG);
+    if (exclusions.size() == 0){
+        ClangArgParse::ClangExclude exclude;
+        return exclude;
+    }
+
+    //Split the commas.
+    for (string exclusion : exclusions){
+        vector<std::string> ex;
+        boost::split(ex, exclusion, boost::is_any_of(","), boost::token_compress_on);
+
+        //Deal with each of the exclusions
+        for (string item : ex){
+            if (item.compare("cSubSystem") == 0){
+                exVals.cSubSystem = true;
+            } else if (item.compare("cClass") == 0){
+                exVals.cClass = true;
+            } else if (item.compare("cFunction") == 0){
+                exVals.cFunction = true;
+            } else if (item.compare("cObject") == 0){
+                exVals.cObject = true;
+            } else {
+                cerr << "Error processing metamodel exclusion: " << item << endl;
+                _exit(1);
+            }
+        }
+    }
+
+    return exVals;
 }
 
 const char** ClangArgParse::generateClangArgv(int& argc){

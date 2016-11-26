@@ -15,12 +15,13 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "Graph/TAGraph.h"
 #include "File/FileParse.h"
+#include "ClangArgParse.h"
 
 using namespace clang::ast_matchers;
 
 class ASTWalker : public MatchFinder::MatchCallback {
 public:
-    ASTWalker();
+    ASTWalker(ClangArgParse::ClangExclude exclusions);
     virtual ~ASTWalker();
 
     virtual void run(const MatchFinder::MatchResult &result);
@@ -32,6 +33,7 @@ public:
 
 private:
     std::string curFileName;
+    ClangArgParse::ClangExclude exclusions;
 
     enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR,
         VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, CLASS_DEC_VAR_TWO, CLASS_DEC_VAR_THREE};
