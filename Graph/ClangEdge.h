@@ -21,7 +21,7 @@ private:
     } AccessStruct;
 
 public:
-    enum EdgeType {CALLS, REFERENCES, CONTAINS};
+    enum EdgeType {CALLS, REFERENCES, CONTAINS, INHERITS};
     static std::string getTypeString(EdgeType type);
 
     ClangEdge(ClangNode* src, ClangNode* dst, EdgeType type);

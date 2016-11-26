@@ -6,6 +6,7 @@
 // - Move all functions and objects to inside classes.
 // - Update schema.
 // - Create attribute structs in Node and Edge classes (Improve with functions in struct).
+// - CHECK IF INHERITANCE SYSTEM WORKS.
 
 #include <fstream>
 #include <iostream>
@@ -377,6 +378,21 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRec
     graph.addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
+    graph.addSingularAttribute(node->getID(),
+                               ClangNode::BASE_ATTRIBUTE.attrName,
+                               std::to_string(classDec->getNumBases()));
+
+    //Get base classes.
+    if (classDec->getNumBases() > 0) {
+        for (auto base = classDec->bases_begin(); base != classDec->bases_end(); base++) {
+            if (base->getType().getTypePtr() == NULL) continue;
+            CXXRecordDecl *baseClass = base->getType().getTypePtr()->getAsCXXRecordDecl();
+            if (baseClass == NULL) continue;
+
+            //Add a linkage in our graph.
+            addClassInheritanceRef(classDec, baseClass);
+        }
+    }
 }
 
 void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
@@ -419,6 +435,33 @@ void ASTWalker::addClassRef(string srcLabel, string dstLabel){
 
     //Process attributes.
     //TODO: Any class reference attributes?
+}
+
+void ASTWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXRecordDecl* baseDec){
+    string classLabel = generateLabel(classDec, ClangNode::CLASS);
+    string baseLabel = generateLabel(baseDec, ClangNode::CLASS);
+    cout << classLabel << " " << baseLabel << endl;
+
+    //Get the nodes by their label.
+    vector<ClangNode*> classNode = graph.findNodeByName(classLabel);
+    vector<ClangNode*> baseNode = graph.findNodeByName(baseLabel);
+
+    //Check to see if we don't have these entries.
+    if (classNode.size() == 0 || baseNode.size() == 0){
+        addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
+
+        //Add attributes.
+        //TODO: Any inheritance attributes?
+
+        return;
+    }
+
+    //Add the edge.
+    ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
+    graph.addEdge(edge);
+
+    //Process  attributes.
+    //TODO: Any inheritance attributes?
 }
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){

@@ -7,6 +7,7 @@
 using namespace std;
 
 ClangNode::AttributeStruct ClangNode::FILE_ATTRIBUTE;
+ClangNode::BaseStruct ClangNode::BASE_ATTRIBUTE;
 
 string ClangNode::getTypeString(NodeType type) {
     //Generates switch statement.

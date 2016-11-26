@@ -21,6 +21,9 @@ private:
             return p.filename().string();
         }
     } AttributeStruct;
+    typedef struct {
+        const std::string attrName = "baseNum";
+    } BaseStruct;
 
 public:
     enum NodeType {FILE, OBJECT, FUNCTION, SUBSYSTEM, CLASS};
@@ -44,6 +47,7 @@ public:
 
     /** ATTRIBUTE VARS */
     static AttributeStruct FILE_ATTRIBUTE;
+    static BaseStruct BASE_ATTRIBUTE;
 
 private:
     const std::string INSTANCE_FLAG = "$INSTANCE";

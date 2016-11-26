@@ -57,8 +57,8 @@ private:
             "le {\n\tclass_style = 4\n\tcolor = (0.6 0.8 0.6)\n\tlabelcolor = (0.0 0.0 0.0)\n}\n\ncArchiveFile {\n\tclas"
             "s_style = 4\n\tcolor = (0.5 0.5 0.1)\n\tlabelcolor = (0.0 0.0 0.0)\n}\n\ncFunction {\n\tfilename\n\tisStati"
             "c\n\tvisibility\n\tcolor = (1.0 0.0 0.0)\n\tlabelcolor = (0.0 0.0 0.0)\n}\n\ncObject {\n\tfilename\n}\n\ncC"
-            "lass {\n\tfilename\n\tcolor = (0.2 0.4 0.1)\n\tlabelcolor = (0.0 0.0 0.0)\n}\n\n(reference) {\n\taccess\n}"
-            "\n\n";
+            "lass {\n\tfilename\n\tbaseNum\n\tcolor = (0.2 0.4 0.1)\n\tlabelcolor = (0.0 0.0 0.0)\n}\n\n(reference) {\n\t"
+            "access\n}\n\n";
 
     std::string generateInstances();
     std::string generateRelationships();

@@ -16,6 +16,8 @@ string ClangEdge::getTypeString(EdgeType type) {
         return "call";
     } else if (type == REFERENCES){
         return "reference";
+    } else if (type == INHERITS){
+        return "inherit";
     }
 
     //Default if the type isn't defined.

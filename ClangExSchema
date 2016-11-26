@@ -95,6 +95,7 @@ cObject {
 
 cClass {
 	filename
+	baseNum
 	color = (0.2 0.4 0.1)
 	labelcolor = (0.0 0.0 0.0)
 }
