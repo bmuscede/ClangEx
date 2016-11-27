@@ -23,6 +23,12 @@ string ClangNode::getTypeString(NodeType type) {
         return "cSubSystem";
     } else if (type == CLASS){
         return "cClass";
+    } else if (type == UNION){
+        return "cUnion";
+    } else if (type == STRUCT){
+        return "cStruct";
+    } else if (type == ENUM){
+        return "cEnum";
     }
 
     //Default value if there is no node type specified.

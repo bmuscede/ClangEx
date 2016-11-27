@@ -3,10 +3,8 @@
 //
 
 //TODO:
-// - Move all functions and objects to inside classes.
-// - Update schema.
 // - Create attribute structs in Node and Edge classes (Improve with functions in struct).
-// - CHECK IF INHERITANCE SYSTEM WORKS.
+// - Get unions and structs working
 
 #include <fstream>
 #include <iostream>
@@ -90,6 +88,12 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
         //If a class declaration was found.
         addClassDecl(result, record, filename);
         addClassRef(result, record, var);
+    } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DEC])){
+        cout << "The struct found is: " << rec->getQualifiedNameAsString() << endl;
+    } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[UNION_DEC])){
+        cout << "The union found is: " << rec->getQualifiedNameAsString() << endl;
+    } else if (const EnumDecl *dec = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])){
+        cout << "ENUM FOUND!!!!!" << endl;
     }
 }
 
@@ -114,6 +118,7 @@ void ASTWalker::buildGraph(string fileName) {
 }
 
 void ASTWalker::generateASTMatches(MatchFinder *finder) {
+    //Function methods.
     if (!exclusions.cFunction){
         //Finds function declarations for current C/C++ file.
         finder->addMatcher(functionDecl(isExpansionInMainFile()).bind(types[FUNC_DEC]), this);
@@ -122,6 +127,7 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
         finder->addMatcher(callExpr(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CALLER]))).bind(types[FUNC_CALL]), this);
     }
 
+    //Object methods.
     if (!exclusions.cObject){
         //Finds variables in functions or in class declaration.
         finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[VAR_DEC]), this);
@@ -131,6 +137,7 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
                                        hasAncestor(functionDecl().bind(types[CALLER_VAR]))).bind(types[VAR_EXPR]), this);
     }
 
+    //Class methods.
     if (!exclusions.cClass){
         //Finds any class declarations.
         finder->addMatcher(functionDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_FUNC]), this);
@@ -138,6 +145,14 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
         finder->addMatcher(varDecl(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CLASS_DEC_VAR_TWO])))
                                    .bind(types[CLASS_DEC_VAR_THREE]), this);
     }
+
+    //Finds unions and structs in the program.
+    //TODO: This doesn't work!
+    finder->addMatcher(recordDecl(isExpansionInMainFile(), isStruct()).bind(types[STRUCT_DEC]), this);
+    finder->addMatcher(recordDecl(isExpansionInMainFile(), isUnion()).bind(types[UNION_DEC]), this);
+
+    //Finds enums in the program.
+    finder->addMatcher(enumDecl(isExpansionInMainFile()).bind(types[ENUM_DEC]), this);
 }
 
 void ASTWalker::resolveExternalReferences() {
@@ -511,6 +526,18 @@ void ASTWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXR
 
     //Process  attributes.
     //TODO: Any inheritance attributes?
+}
+
+void ASTWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl){
+    //Get the type.
+    ClangNode::NodeType type;
+    if (decl->isUnion()){
+        type = ClangNode::UNION;
+    } else {
+        type = ClangNode::STRUCT;
+    }
+
+
 }
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){

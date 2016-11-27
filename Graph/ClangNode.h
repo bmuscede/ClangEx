@@ -49,7 +49,7 @@ private:
     } AccessStruct;
 
 public:
-    enum NodeType {FILE, OBJECT, FUNCTION, SUBSYSTEM, CLASS};
+    enum NodeType {FILE, OBJECT, FUNCTION, SUBSYSTEM, CLASS, UNION, STRUCT, ENUM};
     static std::string getTypeString(NodeType type);
 
     ClangNode(std::string ID, std::string name, NodeType type);

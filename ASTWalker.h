@@ -36,9 +36,10 @@ private:
     ClangArgParse::ClangExclude exclusions;
 
     enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR,
-        VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, CLASS_DEC_VAR_TWO, CLASS_DEC_VAR_THREE};
-    const char* types[11] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
-                            "expr_var", "class_dec_func", "class_dec_var", "class_dec_var_two", "class_dec_var_three"};
+        VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, CLASS_DEC_VAR_TWO, CLASS_DEC_VAR_THREE, STRUCT_DEC, UNION_DEC, ENUM_DEC};
+    const char* types[14] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
+                            "expr_var", "class_dec_func", "class_dec_var", "class_dec_var_two", "class_dec_var_three",
+                            "struct_dec", "union_dec", "enum_dec"};
 
     const char* assignmentOperators[17] = {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=",
                                            "&=", "^=", "|=", "&", "|", "^", "~", "<<", ">>"};
@@ -71,6 +72,7 @@ private:
                      const clang::CXXRecordDecl* classRec, const clang::VarDecl* varRec);
     void addClassRef(std::string srcLabel, std::string dstLabel);
     void addClassInheritanceRef(const clang::CXXRecordDecl* classDec, const clang::CXXRecordDecl* baseDec);
+    void addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl);
 
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
     std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::VarDecl *var);
