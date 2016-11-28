@@ -13,6 +13,10 @@ $INHERIT	cArchiveFile		cFile
 $INHERIT	cClass			cAsgNds
 $INHERIT	cFunction		cAsgNds
 $INHERIT	cObject			cAsgNds
+$INHERIT	cLang			cAsgNds
+$INHERIT	cEnum			cLang
+$INHERIT	cStruct			cLang
+$INHERIT	cUnion			cLang
 
 //Relationships
 contain		cRoot		cRoot
@@ -101,6 +105,12 @@ cClass {
 	baseNum
 	color = (0.2 0.4 0.1)
 	labelcolor = (0.0 0.0 0.0)
+}
+
+cLang {
+	filename
+	color = (0.9 0.2 0.5)
+        labelcolor = (0.0 0.0 0.0)
 }
 
 (reference) {

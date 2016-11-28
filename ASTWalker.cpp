@@ -5,6 +5,7 @@
 //TODO:
 // - Create attribute structs in Node and Edge classes (Improve with functions in struct).
 // - Get unions and structs working
+// - Verify correctness of union, struct, and enums.
 
 #include <fstream>
 #include <iostream>
@@ -93,7 +94,10 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
     } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[UNION_DEC])){
         cout << "The union found is: " << rec->getQualifiedNameAsString() << endl;
     } else if (const EnumDecl *dec = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])){
-        cout << "ENUM FOUND!!!!!" << endl;
+        //Get the parent type.
+        auto *parent = result.Nodes.getNodeAs<clang::VarDecl>(types[ENUM_VAR]);
+
+        addEnumDecl(result, dec, parent);
     }
 }
 
@@ -146,13 +150,20 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
                                    .bind(types[CLASS_DEC_VAR_THREE]), this);
     }
 
-    //Finds unions and structs in the program.
-    //TODO: This doesn't work!
-    finder->addMatcher(recordDecl(isExpansionInMainFile(), isStruct()).bind(types[STRUCT_DEC]), this);
-    finder->addMatcher(recordDecl(isExpansionInMainFile(), isUnion()).bind(types[UNION_DEC]), this);
+    //Finds unions in the program.
+    //finder->addMatcher(recordDecl(isExpansionInMainFile(), isStruct()).bind(types[STRUCT_DEC]), this);
+    //finder->addMatcher(varDecl(isExpansionInMainFile(),
+    //                           hasType(recordDecl(isStruct()).bind(types[STRUCT_DEC]))), this);
+
+    //Finds structs in the program.
+    //finder->addMatcher(recordDecl(isExpansionInMainFile(), isUnion()).bind(types[UNION_DEC]), this);
+    //finder->addMatcher(varDecl(isExpansionInMainFile(),
+    //                           hasType(recordDecl(isUnion()).bind(types[UNION_DEC]))), this);
 
     //Finds enums in the program.
     finder->addMatcher(enumDecl(isExpansionInMainFile()).bind(types[ENUM_DEC]), this);
+    finder->addMatcher(varDecl(isExpansionInMainFile(),
+                               hasType(enumType(hasDeclaration(enumDecl().bind(types[ENUM_DEC]))))).bind(types[ENUM_VAR]),this);
 }
 
 void ASTWalker::resolveExternalReferences() {
@@ -537,6 +548,27 @@ void ASTWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang
         type = ClangNode::STRUCT;
     }
 
+
+}
+
+void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *decl, const VarDecl *parent){
+    string fileName = generateFileName(result,
+                                       (parent == NULL) ? decl->getInnerLocStart() : parent->getInnerLocStart());
+
+    //First, generate the ID of the function.
+    string ID = generateID(fileName, decl->getNameAsString(), ClangNode::ENUM);
+
+    //Gets the qualified name.
+    string qualName = generateLabel(decl, ClangNode::ENUM);
+
+    //Creates a new function entry.
+    ClangNode* node = new ClangNode(ID, qualName, ClangNode::ENUM);
+    graph.addNode(node);
+
+    //Process attributes.
+    graph.addSingularAttribute(node->getID(),
+                               ClangNode::FILE_ATTRIBUTE.attrName,
+                               ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
 
 }
 

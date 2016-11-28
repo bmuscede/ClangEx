@@ -22,6 +22,8 @@ static const string CLANG_SYS_LIB = "include";
 
 static llvm::cl::OptionCategory ClangExCategory("ClangEx Options");
 
+enum Test{LOL, LOL_YOURSELF};
+
 int main(int argc, const char **argv) {
     //Starts by creating an argument parser.
     ClangArgParse parser = ClangArgParse();
