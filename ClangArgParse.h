@@ -16,6 +16,7 @@ public:
         bool cObject = false;
         bool cSubSystem = false;
         bool cFunction = false;
+        bool cEnum = false;
     } ClangExclude;
 
     ClangArgParse();

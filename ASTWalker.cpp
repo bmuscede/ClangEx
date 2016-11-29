@@ -97,7 +97,19 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
         //Get the parent type.
         auto *parent = result.Nodes.getNodeAs<clang::VarDecl>(types[ENUM_VAR]);
 
+        //Adds the enum decl.
         addEnumDecl(result, dec, parent);
+
+        //Add the parent relationship.
+        if (parent != NULL) addEnumRef(result, dec, parent);
+    } else if (const EnumConstantDecl *dec = result.Nodes.getNodeAs<clang::EnumConstantDecl>(types[ENUM_CONST])){
+        auto *parent = result.Nodes.getNodeAs<clang::FunctionDecl>(types[ENUM_CONST_PARENT]);
+
+        //Adds the enum constant.
+        addEnumConstDecl(result, dec);
+
+        //Next, adds the reference between parent and constant.
+        addEnumConstRef(result, dec, parent);
     }
 }
 
@@ -160,10 +172,17 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
     //finder->addMatcher(varDecl(isExpansionInMainFile(),
     //                           hasType(recordDecl(isUnion()).bind(types[UNION_DEC]))), this);
 
-    //Finds enums in the program.
-    finder->addMatcher(enumDecl(isExpansionInMainFile()).bind(types[ENUM_DEC]), this);
-    finder->addMatcher(varDecl(isExpansionInMainFile(),
-                               hasType(enumType(hasDeclaration(enumDecl().bind(types[ENUM_DEC]))))).bind(types[ENUM_VAR]),this);
+    if (!exclusions.cEnum){
+        //Finds enums in the program.
+        finder->addMatcher(enumDecl(isExpansionInMainFile()).bind(types[ENUM_DEC]), this);
+        finder->addMatcher(varDecl(isExpansionInMainFile(),
+                                   hasType(enumType(hasDeclaration(enumDecl().bind(types[ENUM_DEC]))))).bind(types[ENUM_VAR]), this);
+
+        //Finds enum constants and their usage.
+        finder->addMatcher(enumConstantDecl(isExpansionInMainFile(),
+                                            hasAncestor(functionDecl().bind(types[ENUM_CONST_PARENT]))).bind(types[ENUM_CONST]), this);
+    }
+
 }
 
 void ASTWalker::resolveExternalReferences() {
@@ -548,7 +567,7 @@ void ASTWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang
         type = ClangNode::STRUCT;
     }
 
-
+    //TODO: Stuff.
 }
 
 void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *decl, const VarDecl *parent){
@@ -570,6 +589,47 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
 
+    //Add the class reference.
+    string classLabel = getClassNameFromQualifier(qualName);
+    if (classLabel.compare(string()) == 0) return;
+    addClassRef(getClassNameFromQualifier(qualName), generateLabel(decl, ClangNode::ENUM));
+}
+
+void ASTWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,
+                           const VarDecl *parent) {
+    //First, get the names for both the parent and the enum.
+    string varLabel = generateLabel(parent, ClangNode::OBJECT);
+    string enumLabel = generateLabel(decl, ClangNode::ENUM);
+
+    //Get the nodes by their label.
+    vector<ClangNode*> varNode = graph.findNodeByName(varLabel);
+    vector<ClangNode*> enumNode = graph.findNodeByName(enumLabel);
+
+    //Check to see if we don't have these entries.
+    if (varNode.size() == 0 || enumNode.size() == 0){
+        addUnresolvedRef(varLabel, enumLabel, ClangEdge::REFERENCES);
+
+        //Add attributes.
+        //TODO: Any enum reference attributes?
+
+        return;
+    }
+
+    //Add the edge.
+    ClangEdge* edge = new ClangEdge(varNode.at(0), enumNode.at(0), ClangEdge::REFERENCES);
+    graph.addEdge(edge);
+
+    //Process  attributes.
+    //TODO: Any enum reference attributes?
+}
+
+void ASTWalker::addEnumConstDecl(const MatchFinder::MatchResult result, const EnumConstantDecl *decl) {
+    //TODO
+}
+
+void ASTWalker::addEnumConstRef(const MatchFinder::MatchResult result, const EnumConstantDecl *decl,
+                                const FunctionDecl *func) {
+    //TODO
 }
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
@@ -593,6 +653,9 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
     } else if (type == ClangNode::CLASS){
         const CXXRecordDecl* record = static_cast<const CXXRecordDecl*>(decl);
         label = record->getQualifiedNameAsString();
+    } else if (type == ClangNode::ENUM){
+        const EnumDecl* enumDec = static_cast<const EnumDecl*>(decl);
+        label = enumDec->getQualifiedNameAsString();
     }
 
     return label;
@@ -669,4 +732,23 @@ void ASTWalker::printFileName(std::string curFile){
         cout << "\tCurrently processing: " << curFile << endl;
         curFileName = curFile;
     }
+}
+
+string ASTWalker::getClassNameFromQualifier(string qualifiedName){
+    //TODO: Fix this. It may not be needed.
+    string cpyQual = qualifiedName;
+    string qualifier = "::";
+    vector<string> quals = vector<string>();
+
+    size_t pos = 0;
+    while ((pos = cpyQual.find(qualifier)) != std::string::npos) {
+        quals.push_back(cpyQual.substr(0, pos));
+        cpyQual.erase(0, pos + qualifier.length());
+    }
+    quals.push_back(cpyQual);
+
+    //Check if we have a class.
+    if (quals.size() == 1) return string();
+
+    return quals.at(quals.size() - 2);
 }

@@ -21,7 +21,7 @@ $INHERIT	cUnion			cLang
 //Relationships
 contain		cRoot		cRoot
 call		cFunction	cFunction
-reference	cFunction	cObject
+reference	cAsgNds		cAsgNds
 inherits	cClass		cClass
 
 SCHEME ATTRIBUTE :
@@ -107,9 +107,9 @@ cClass {
 	labelcolor = (0.0 0.0 0.0)
 }
 
-cLang {
-	filename
-	color = (0.9 0.2 0.5)
+cEnum {
+        filename
+        color = (0.9 0.2 0.5)
         labelcolor = (0.0 0.0 0.0)
 }
 
