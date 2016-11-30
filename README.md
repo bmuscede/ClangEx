@@ -112,6 +112,9 @@ Simply run the following command to download and install Boost libraries to your
 ```
 $ sudo apt-get install libboost-all-dev
 ```
+
+**IMPORTANT NOTE:** Boost libraries are also needed on your system *even if* you are simply running the executable built on another system. Follow the instructions above to get the necessary Boost libraries to run the portable executable.
+
 ###Building ClangEx
 Now that the prerequisties are all satisfied, you can now download and build ClangEx! If all prerequisties are truly satisfied, ClangEx should build without issue.
 
