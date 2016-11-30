@@ -79,6 +79,7 @@ Next, we need to build LLVM and Clang. Sit back and make a coffee during this pr
 There are two ways to build LLVM and Clang.
 
 **1)** Build using `make`:
+
 This is the standard way of building. To do this, run the following:
 ```
 $ mkdir Clang-Build
@@ -89,6 +90,7 @@ $ make install
 ```
 ---
 **2)** Build using `ninja`:
+
 Ninja is a lightweight build tool that promises to be faster than `make` and other build tools. To do this, run the following:
 ```
 $ mkdir Clang-Build
