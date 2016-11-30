@@ -15,7 +15,7 @@ string ClangNode::getTypeString(NodeType type) {
     //Generates switch statement.
     if (type == FILE){
         return "cFile";
-    } else if (type == OBJECT){
+    } else if (type == VARIABLE){
         return "cObject";
     } else if (type == FUNCTION){
         return  "cFunction";

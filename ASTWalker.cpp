@@ -143,8 +143,8 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
         finder->addMatcher(callExpr(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CALLER]))).bind(types[FUNC_CALL]), this);
     }
 
-    //Object methods.
-    if (!exclusions.cObject){
+    //Variable methods.
+    if (!exclusions.cVariable){
         //Finds variables in functions or in class declaration.
         finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[VAR_DEC]), this);
 
@@ -337,13 +337,13 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult result, const Var
     string fileName = generateFileName(result, decl->getInnerLocStart());
 
     //Get the ID of the variable.
-    string ID = generateID(fileName, decl->getNameAsString(), ClangNode::OBJECT);
+    string ID = generateID(fileName, decl->getNameAsString(), ClangNode::VARIABLE);
 
     //Next, gets the qualified name.
-    string qualName = generateLabel(decl, ClangNode::OBJECT);
+    string qualName = generateLabel(decl, ClangNode::VARIABLE);
 
     //Creates a variable entry.
-    ClangNode* node = new ClangNode(ID, qualName, ClangNode::OBJECT);
+    ClangNode* node = new ClangNode(ID, qualName, ClangNode::VARIABLE);
     graph.addNode(node);
 
     //Process attributes.
@@ -434,7 +434,7 @@ void ASTWalker::addVariableRef(const MatchFinder::MatchResult result,
                                const VarDecl *decl, const DeclaratorDecl *caller, const DeclRefExpr *expr) {
     //Start by generating the ID of the caller and callee.
     string callerName = generateLabel(caller, ClangNode::FUNCTION);
-    string varName = generateLabel(decl, ClangNode::OBJECT);
+    string varName = generateLabel(decl, ClangNode::VARIABLE);
 
     //Next, we find their IDs.
     vector<ClangNode*> callerNode = graph.findNodeByName(callerName);
@@ -501,9 +501,9 @@ void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
 
 void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
                             const CXXRecordDecl* classRec, const VarDecl* varRec){
-    //Generate the label of the class and the object.
+    //Generate the label of the class and the variable.
     string className = generateLabel(classRec, ClangNode::CLASS);
-    string objName = generateLabel(varRec, ClangNode::OBJECT);
+    string objName = generateLabel(varRec, ClangNode::VARIABLE);
 
     addClassRef(className, objName);
 }
@@ -598,7 +598,7 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
 void ASTWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,
                            const VarDecl *parent) {
     //First, get the names for both the parent and the enum.
-    string varLabel = generateLabel(parent, ClangNode::OBJECT);
+    string varLabel = generateLabel(parent, ClangNode::VARIABLE);
     string enumLabel = generateLabel(decl, ClangNode::ENUM);
 
     //Get the nodes by their label.
@@ -638,7 +638,7 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
     //Get qualified name.
     if (type == ClangNode::FUNCTION){
         label = decl->getAsFunction()->getQualifiedNameAsString();
-    } else if (type == ClangNode::OBJECT){
+    } else if (type == ClangNode::VARIABLE){
         const VarDecl* var = static_cast<const VarDecl*>(decl);
         label = var->getQualifiedNameAsString();
 

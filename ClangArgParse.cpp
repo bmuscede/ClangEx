@@ -319,8 +319,8 @@ ClangArgParse::ClangExclude ClangArgParse::generateExclusions(){
                 exVals.cClass = true;
             } else if (item.compare("cFunction") == 0){
                 exVals.cFunction = true;
-            } else if (item.compare("cObject") == 0) {
-                exVals.cObject = true;
+            } else if (item.compare("cVariable") == 0) {
+                exVals.cVariable = true;
             } else if (item.compare("cEnum") == 0) {
                 exVals.cEnum = true;
             } else {

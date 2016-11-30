@@ -7,12 +7,9 @@ $INHERIT	cArchitecturalNds	cRoot
 $INHERIT	cAsgNds			cRoot
 $INHERIT	cSubSystem		cArchitecturalNds
 $INHERIT	cFile			cArchitecturalNds
-$INHERIT	cExecutable		cFile
-$INHERIT	cObjectFile		cFile
-$INHERIT	cArchiveFile		cFile
 $INHERIT	cClass			cAsgNds
 $INHERIT	cFunction		cAsgNds
-$INHERIT	cObject			cAsgNds
+$INHERIT	cVariable		cAsgNds
 $INHERIT	cLang			cAsgNds
 $INHERIT	cEnum			cLang
 $INHERIT	cStruct			cLang
@@ -67,24 +64,6 @@ cFile {
 	labelcolor = (0.0 0.0 0.0)
 }
 
-cExecutable {
-	class_style = 4
-	color = (0.8 0.9 0.9)
-	labelcolor = (0.0 0.0 0.0)
-}
-
-cObjectFile {
-	class_style = 4
-	color = (0.6 0.8 0.6)
-	labelcolor = (0.0 0.0 0.0)
-}
-
-cArchiveFile {
-	class_style = 4
-	color = (0.5 0.5 0.1)
-	labelcolor = (0.0 0.0 0.0)
-}
-
 cFunction {
 	filename
 	isStatic
@@ -96,8 +75,9 @@ cFunction {
 	labelcolor = (0.0 0.0 0.0)
 }
 
-cObject {
+cVariable {
 	filename
+	scopeType
 }
 
 cClass {
@@ -108,9 +88,9 @@ cClass {
 }
 
 cEnum {
-        filename
-        color = (0.9 0.2 0.5)
-        labelcolor = (0.0 0.0 0.0)
+	filename
+	color = (0.9 0.2 0.5)
+	labelcolor = (0.0 0.0 0.0)
 }
 
 (reference) {

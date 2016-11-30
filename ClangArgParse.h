@@ -13,7 +13,7 @@ class ClangArgParse {
 public:
     typedef struct {
         bool cClass = false;
-        bool cObject = false;
+        bool cVariable = false;
         bool cSubSystem = false;
         bool cFunction = false;
         bool cEnum = false;
