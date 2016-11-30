@@ -76,7 +76,11 @@ $ cd ../../../..:
 
 Next, we need to build LLVM and Clang. Sit back and make a coffee during this process as this can take up to **several hours** depending on your computer. The following steps will build Clang to a directory called `Clang-Build` adjacent to the Clang install directory. To change this, simply replace the `Clang-Build` directory with any other directory and location you choose. 
 
-To build LLVM and Clang, run the following:
+There are two ways to build LLVM and Clang.
+
+**1)** Build using `make`:
+
+This is the standard way of building. To do this, run the following:
 ```
 $ mkdir Clang-Build
 $ cd Clang-Build
@@ -84,11 +88,16 @@ $ cmake -G "Unix Makefiles" ../llvm
 $ make
 $ make install 
 ```
+---
+**2)** Build using `ninja`:
 
-**(OPTIONAL)** If you want to try a faster compilation tool, replace `Unix Makefiles` in the command above with `Ninja`. You may need to install `Ninja` for this to work. Then, simply run:
+Ninja is a lightweight build tool that promises to be faster than `make` and other build tools. To do this, run the following:
 ```
+$ mkdir Clang-Build
+$ cd Clang-Build
+$ cmake -GNinja ../llvm
 $ ninja
-$ ninja install
+$ ninja install 
 ```
 
 That's it! With this, Clang and LLVM will be installed. To ensure proper installation, run the following to check:
