@@ -350,6 +350,14 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult result, const Var
     graph.addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
+
+    //Get the scope of the decl.
+    graph.addSingularAttribute(node->getID(),
+                                ClangNode::VAR_ATTRIBUTE.scopeName,
+                                ClangNode::VAR_ATTRIBUTE.getScope(decl));
+    graph.addSingularAttribute(node->getID(),
+                                ClangNode::VAR_ATTRIBUTE.staticName,
+                                ClangNode::VAR_ATTRIBUTE.getStatic(decl));
 }
 
 void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult result, const DeclaratorDecl *decl) {

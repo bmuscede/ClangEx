@@ -10,13 +10,14 @@ ClangNode::AttributeStruct ClangNode::FILE_ATTRIBUTE;
 ClangNode::BaseStruct ClangNode::BASE_ATTRIBUTE;
 ClangNode::FuncIsAStruct ClangNode::FUNC_IS_ATTRIBUTE;
 ClangNode::AccessStruct ClangNode::VIS_ATTRIBUTE;
+ClangNode::VarStruct ClangNode::VAR_ATTRIBUTE;
 
 string ClangNode::getTypeString(NodeType type) {
     //Generates switch statement.
     if (type == FILE){
         return "cFile";
     } else if (type == VARIABLE){
-        return "cObject";
+        return "cVariable";
     } else if (type == FUNCTION){
         return  "cFunction";
     } else if (type == SUBSYSTEM){

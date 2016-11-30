@@ -10,6 +10,7 @@
 #include <vector>
 #include <boost/filesystem/path.hpp>
 #include <clang/Basic/Specifiers.h>
+#include <clang/Sema/Scope.h>
 
 class ClangNode {
 private:
@@ -47,7 +48,32 @@ private:
             return "none";
         }
     } AccessStruct;
+    typedef struct {
+        const std::string scopeName = "scopeType";
+        const std::string staticName = "isStatic";
 
+        const std::string GLOBAL_KEY = "global";
+        const std::string LOCAL_KEY = "local";
+        const std::string PARAM_KEY = "parameter";
+
+        //NOTE: This returns static function vars as "local".
+        std::string getScope(const clang::VarDecl* decl){
+            //Checks first if local and param.
+            if (!decl->isLocalVarDeclOrParm())
+                return VAR_ATTRIBUTE.GLOBAL_KEY;
+
+            //Next, we check if it's a parameter.
+            if (decl->isLocalVarDeclOrParm() && !decl->isLocalVarDecl())
+                return VAR_ATTRIBUTE.PARAM_KEY;
+
+            //If we have gotten to this point, we assume it's local.
+            return VAR_ATTRIBUTE.LOCAL_KEY;
+        }
+
+        std::string getStatic(const clang::VarDecl* decl){
+            return std::to_string(decl->isStaticDataMember());
+        }
+    } VarStruct;
 public:
     enum NodeType {FILE, VARIABLE, FUNCTION, SUBSYSTEM, CLASS, UNION, STRUCT, ENUM};
     static std::string getTypeString(NodeType type);
@@ -73,7 +99,7 @@ public:
     static BaseStruct BASE_ATTRIBUTE;
     static FuncIsAStruct FUNC_IS_ATTRIBUTE;
     static AccessStruct VIS_ATTRIBUTE;
-
+    static VarStruct VAR_ATTRIBUTE;
 private:
     const std::string INSTANCE_FLAG = "$INSTANCE";
     const std::string NAME_FLAG = "label";

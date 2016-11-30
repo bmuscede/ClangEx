@@ -47,8 +47,8 @@ const string ClangArgParse::EXMETA_LONG = "exclude";
 const string ClangArgParse::EXMETA_SHORT = "r";
 const string ClangArgParse::EXMETA_HELP ="Allows users to exclude metamodel features from the tuple-attribute\n"
         "graph. Features that can be excluded are:\n\t- cSubSystem: Removes folders and directories.\n\t"
-        "- cClass: Removes classes.\n\t- cFunction: Removes functions.\n\t- cObject: Removes variables.\nChain"
-        " these features through commas. For instance cClass,cObject,cSubSystem";
+        "- cClass: Removes classes.\n\t- cFunction: Removes functions.\n\t- cVariable: Removes variables.\nChain"
+        " these features through commas. For instance cClass,cVariable,cSubSystem";
 const string ClangArgParse::CLANG_SYS_LIB = "include";
 const string ClangArgParse::INCLUDE_ERROR_MSG = "Error: Clang system libraries not found! Check if the " + CLANG_SYS_LIB +
                                              " directory exists and retry!";

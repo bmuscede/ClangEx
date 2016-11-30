@@ -78,6 +78,7 @@ cFunction {
 cVariable {
 	filename
 	scopeType
+	isStatic
 }
 
 cClass {
