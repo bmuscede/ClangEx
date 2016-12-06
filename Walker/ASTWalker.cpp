@@ -223,6 +223,20 @@ string ASTWalker::getClassNameFromQualifier(string qualifiedName){
     return quals.at(quals.size() - 2);
 }
 
+bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl){
+    //Gets where this item is located.
+    auto &SourceManager = result.Context->getSourceManager();
+    auto ExpansionLoc = SourceManager.getExpansionLoc(decl->getLocStart());
+
+    //Checks if we have an invalid location.
+    if (ExpansionLoc.isInvalid()) {
+        return false;
+    }
+
+    //Now, checks if we don't have a system header.
+    return SourceManager.isInSystemHeader(ExpansionLoc);
+}
+
 vector<pair<string, vector<string>>> ASTWalker::findAttributes(string callerID, string calleeID){
     vector<pair<string, vector<string>>> values;
 

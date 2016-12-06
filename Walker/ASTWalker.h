@@ -21,6 +21,8 @@ using namespace clang::ast_matchers;
 
 class ASTWalker : public MatchFinder::MatchCallback {
 public:
+    virtual ~ASTWalker();
+
     virtual void run(const MatchFinder::MatchResult &result) = 0;
     virtual void generateASTMatches(MatchFinder *finder) = 0;
 
@@ -35,7 +37,6 @@ protected:
     TAGraph graph;
 
     ASTWalker();
-    virtual ~ASTWalker();
 
     void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
     void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
@@ -46,6 +47,8 @@ protected:
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
 
     std::string getClassNameFromQualifier(std::string qualifiedName);
+
+    bool isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl);
 
 private:
     std::string curFileName;

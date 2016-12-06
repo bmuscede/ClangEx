@@ -16,6 +16,9 @@ public:
     virtual void run(const MatchFinder::MatchResult &result);
     virtual void generateASTMatches(MatchFinder *finder);
 
+private:
+    enum {FUNC_DEC = 0, FUNC_DEC_SYS};
+    const char* types[2] = {"func_dec", "func_dec_sys"};
 };
 
 
