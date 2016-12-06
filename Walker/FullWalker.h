@@ -1,9 +1,9 @@
 //
-// Created by bmuscede on 05/11/16.
+// Created by bmuscede on 06/12/16.
 //
 
-#ifndef CLANGEX_ASTWALKER_H
-#define CLANGEX_ASTWALKER_H
+#ifndef CLANGEX_FULLASTWALKER_H
+#define CLANGEX_FULLASTWALKER_H
 
 #include <vector>
 #include <tuple>
@@ -13,52 +13,24 @@
 #include "clang/Tooling/Tooling.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
-#include "Graph/TAGraph.h"
-#include "File/FileParse.h"
-#include "ClangArgParse.h"
+#include "ASTWalker.h"
 
-using namespace clang::ast_matchers;
-
-class ASTWalker : public MatchFinder::MatchCallback {
+class FullWalker : public ASTWalker {
 public:
-    ASTWalker(ClangArgParse::ClangExclude exclusions);
-    virtual ~ASTWalker();
+    FullWalker();
+    FullWalker(ClangArgParse::ClangExclude exclusions);
+    virtual ~FullWalker();
 
     virtual void run(const MatchFinder::MatchResult &result);
-    void buildGraph(std::string fileName);
-
-    void generateASTMatches(MatchFinder *finder);
-    void resolveExternalReferences();
-    void resolveFiles();
+    virtual void generateASTMatches(MatchFinder *finder);
 
 private:
-    std::string curFileName;
-    ClangArgParse::ClangExclude exclusions;
-
     enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR,
         VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, CLASS_DEC_VAR_TWO, CLASS_DEC_VAR_THREE, STRUCT_DEC, UNION_DEC, ENUM_DEC,
         ENUM_VAR, ENUM_CONST, ENUM_CONST_PARENT};
     const char* types[17] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
-                            "expr_var", "class_dec_func", "class_dec_var", "class_dec_var_two", "class_dec_var_three",
-                            "struct_dec", "union_dec", "enum_dec", "enum_var", "enum_const", "enum_const_parent"};
-
-    const char* assignmentOperators[17] = {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=",
-                                           "&=", "^=", "|=", "&", "|", "^", "~", "<<", ">>"};
-    const char* incDecOperators[2] = {"++", "--"};
-    const std::string CLASS_PREPEND = "class-";
-
-    TAGraph graph;
-    FileParse fileParser;
-    std::vector<std::pair<std::pair<std::string, std::string>, ClangEdge::EdgeType>> unresolvedRef;
-    std::vector<std::pair<std::pair<std::string, std::string>, std::pair<std::string, std::vector<std::string>>>*> unresolvedRefAttr;
-
-    void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
-    void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
-    std::vector<std::pair<std::string, std::vector<std::string>>> findAttributes(std::string callerID, std::string calleeID);
-
-    std::string generateID(std::string fileName, std::string signature, ClangNode::NodeType type);
-    std::string generateID(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl, ClangNode::NodeType type);
-    std::string generateFileName(const MatchFinder::MatchResult result, clang::SourceLocation loc);
+                             "expr_var", "class_dec_func", "class_dec_var", "class_dec_var_two", "class_dec_var_three",
+                             "struct_dec", "union_dec", "enum_dec", "enum_var", "enum_const", "enum_const_parent"};
 
     void addVariableDecl(const MatchFinder::MatchResult result, const clang::VarDecl *decl);
     void addFunctionDecl(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl);
@@ -79,13 +51,7 @@ private:
     void addEnumRef(const MatchFinder::MatchResult result, const clang::EnumDecl *decl, const clang::VarDecl *parent);
     void addEnumConstDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *decl);
     void addEnumConstRef(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *decl, const clang::FunctionDecl *func);
-
-    std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
-    std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::VarDecl *var);
-    void printFileName(std::string curFile);
-
-    std::string getClassNameFromQualifier(std::string qualifiedName);
 };
 
 
-#endif //CLANGEX_ASTWALKER_H
+#endif //CLANGEX_FULLASTWALKER_H

@@ -49,6 +49,11 @@ const string ClangArgParse::EXMETA_HELP ="Allows users to exclude metamodel feat
         "graph. Features that can be excluded are:\n\t- cSubSystem: Removes folders and directories.\n\t"
         "- cClass: Removes classes.\n\t- cFunction: Removes functions.\n\t- cVariable: Removes variables.\nChain"
         " these features through commas. For instance cClass,cVariable,cSubSystem";
+const string ClangArgParse::BLOB_LONG = "blob";
+const string ClangArgParse::BLOB_SHORT = "b";
+const string ClangArgParse::BLOB_HELP = "The blob method is a different way Clang analyzes projects. Header files\n"
+        "are also analyzed during a source file's compilation. This causes a slew of files and language features\n"
+        "to be added. This analysis is off by default.";
 const string ClangArgParse::CLANG_SYS_LIB = "include";
 const string ClangArgParse::INCLUDE_ERROR_MSG = "Error: Clang system libraries not found! Check if the " + CLANG_SYS_LIB +
                                              " directory exists and retry!";
@@ -68,8 +73,8 @@ ClangArgParse::ClangArgParse(){
     //Adds flags.
     addFlag(ClangArgParse::EXCLUDE_LONG, ClangArgParse::EXCLUDE_SHORT, ClangArgParse::EXCLUDE_HELP);
     addFlag(ClangArgParse::DB_LONG, ClangArgParse::DB_SHORT, ClangArgParse::DB_HELP);
+    addFlag(ClangArgParse::BLOB_LONG, ClangArgParse::BLOB_SHORT, ClangArgParse::BLOB_HELP);
     addFlag(ClangArgParse::HELP_LONG, ClangArgParse::HELP_SHORT, ClangArgParse::HELP_HELP);
-
 }
 
 ClangArgParse::~ClangArgParse(){

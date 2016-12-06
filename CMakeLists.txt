@@ -18,7 +18,9 @@ add_definitions(
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -std=c++11")
 
-set(SOURCE_FILES main.cpp ASTWalker.cpp ASTWalker.h Graph/TAGraph.cpp Graph/TAGraph.h Graph/ClangNode.cpp Graph/ClangNode.h Graph/ClangEdge.cpp Graph/ClangEdge.h File/FileParse.cpp File/FileParse.h ClangArgParse.cpp ClangArgParse.h)
+set(SOURCE_FILES main.cpp Walker/ASTWalker.cpp Walker/ASTWalker.h Graph/TAGraph.cpp Graph/TAGraph.h Graph/ClangNode.cpp
+        Graph/ClangNode.h Graph/ClangEdge.cpp Graph/ClangEdge.h File/FileParse.cpp File/FileParse.h ClangArgParse.cpp
+        ClangArgParse.h Walker/FullWalker.cpp Walker/FullWalker.h Walker/MinimalWalker.cpp Walker/MinimalWalker.h)
 add_executable(ClangEx ${SOURCE_FILES})
 
 target_link_libraries(ClangEx

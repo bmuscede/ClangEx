@@ -48,6 +48,9 @@ public:
     const static std::string OUT_LONG;
     const static std::string OUT_SHORT;
     const static std::string OUT_HELP;
+    const static std::string BLOB_LONG;
+    const static std::string BLOB_SHORT;
+    const static std::string BLOB_HELP;
 private:
     const bool DEFAULT_FLAG = false;
     const std::string ARG_LONG = "--";
@@ -75,7 +78,6 @@ private:
     const static std::string EXMETA_LONG;
     const static std::string EXMETA_SHORT;
     const static std::string EXMETA_HELP;
-
     const std::string cExtensions[4] = {".c", ".cc", ".cpp", ".cxx"};
 
     const static std::string CLANG_SYS_LIB;

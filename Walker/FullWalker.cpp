@@ -1,21 +1,9 @@
 //
-// Created by bmuscede on 05/11/16.
+// Created by bmuscede on 06/12/16.
 //
 
-//TODO:
-// - Create attribute structs in Node and Edge classes (Improve with functions in struct).
-// - Get unions and structs working
-// - Verify correctness of union, struct, and enums.
-
-#include <fstream>
 #include <iostream>
-#include <boost/filesystem.hpp>
-#include <clang/Lex/Lexer.h>
-#include <boost/tokenizer.hpp>
-#include "ASTWalker.h"
-#include "Graph/ClangNode.h"
-#include "Graph/ClangEdge.h"
-#include "ClangArgParse.h"
+#include "FullWalker.h"
 
 using namespace std;
 using namespace clang;
@@ -23,16 +11,18 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-ASTWalker::ASTWalker(ClangArgParse::ClangExclude exclusions){
-    this->exclusions = exclusions;
-
-    //Sets the current file name to blank.
-    curFileName = "";
+FullWalker::FullWalker() {
+    ClangArgParse::ClangExclude exclude;
+    this->exclusions = exclude;
 }
 
-ASTWalker::~ASTWalker() { }
+FullWalker::FullWalker(ClangArgParse::ClangExclude exclusions) {
+    this->exclusions = exclusions;
+}
 
-void ASTWalker::run(const MatchFinder::MatchResult &result) {
+FullWalker::~FullWalker() { }
+
+void FullWalker::run(const MatchFinder::MatchResult &result) {
     //Look for the AST matcher being triggered.
     if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
         //If a function has been found.
@@ -113,27 +103,7 @@ void ASTWalker::run(const MatchFinder::MatchResult &result) {
     }
 }
 
-void ASTWalker::buildGraph(string fileName) {
-    //First, runs the graph builder process.
-    string tupleAttribute = graph.generateTAFormat();
-
-    //Next, writes to disk.
-    ofstream taFile;
-    taFile.open(fileName.c_str());
-
-    //Check if the file is opened.
-    if (!taFile.is_open()){
-        cout << "The TA file could not be written to " << fileName << "!" << endl;
-        return;
-    }
-
-    taFile << tupleAttribute;
-    taFile.close();
-
-    cout << "TA file successfully written to " << fileName << "!" << endl;
-}
-
-void ASTWalker::generateASTMatches(MatchFinder *finder) {
+void FullWalker::generateASTMatches(MatchFinder *finder) {
     //Function methods.
     if (!exclusions.cFunction){
         //Finds function declarations for current C/C++ file.
@@ -182,158 +152,9 @@ void ASTWalker::generateASTMatches(MatchFinder *finder) {
         finder->addMatcher(enumConstantDecl(isExpansionInMainFile(),
                                             hasAncestor(functionDecl().bind(types[ENUM_CONST_PARENT]))).bind(types[ENUM_CONST]), this);
     }
-
 }
 
-void ASTWalker::resolveExternalReferences() {
-    int resolved = 0;
-    int unresolved = 0;
-
-    //Iterate through and resolve.
-    for (int i = 0; i < unresolvedRef.size(); i++){
-        pair<pair<string, string>, ClangEdge::EdgeType> entry = unresolvedRef.at(i);
-
-        //Find the two items.
-        vector<ClangNode*> srcs = graph.findNodeByName(entry.first.first);
-        vector<ClangNode*> dsts = graph.findNodeByName(entry.first.second);
-
-        //See if they could be resolved.
-        if (srcs.size() == 0 || dsts.size() == 0){
-            unresolved++;
-        } else {
-            ClangEdge* edge = new ClangEdge(srcs.at(0), dsts.at(0), entry.second);
-            graph.addEdge(edge);
-
-            //Now, find all associated attributes.
-            vector<pair<string, vector<string>>> attributes = findAttributes(entry.first.first, entry.first.second);
-            for (auto attribute : attributes){
-                for (auto attVal : attribute.second){
-                    graph.addAttribute(srcs.at(0)->getID(), dsts.at(0)->getID(), attribute.first, attVal);
-                }
-            }
-
-            resolved++;
-        }
-    }
-
-    //Afterwards, notify of success.
-    cout << "Overall, " << resolved << " references were resolved and " << unresolved
-         << " references could not be resolved." << endl;
-}
-
-void ASTWalker::resolveFiles(){
-    vector<ClangNode*> fileNodes = vector<ClangNode*>();
-    vector<ClangEdge*> fileEdges = vector<ClangEdge*>();
-
-    //Gets all the associated clang nodes.
-    fileParser.processPaths(fileNodes, fileEdges);
-
-    //Adds them to the graph.
-    for (ClangNode* file : fileNodes){
-        if (!(exclusions.cSubSystem && file->getType() == ClangNode::NodeType::SUBSYSTEM)){
-            graph.addNode(file);
-        }
-    }
-
-    //Adds the edges to the graph.
-    for (ClangEdge* edge : fileEdges){
-        if (!(exclusions.cSubSystem && edge->getType() == ClangEdge::EdgeType::CONTAINS)){
-            graph.addEdge(edge);
-        }
-    }
-
-    //Next, for each item in the graph, add it to a file.
-    graph.addNodesToFile();
-}
-
-void ASTWalker::addUnresolvedRef(string callerID, string calleeID, ClangEdge::EdgeType type) {
-    //Creates the entry for the vector.
-    pair<pair<string, string>, ClangEdge::EdgeType> entry = pair<pair<string, string>, ClangEdge::EdgeType>();
-    entry.first.first = callerID;
-    entry.first.second = calleeID;
-    entry.second = type;
-
-    //Finally, adds it to the unresolved vector.
-    unresolvedRef.push_back(entry);
-}
-
-void ASTWalker::addUnresolvedRefAttr(string callerID, string calleeID, string attrName, string attrValue) {
-    //Find if we already have a attr entry for this list.
-    for (auto current : unresolvedRefAttr){
-        if (current->first.first.compare(callerID) == 0 &&
-                current->first.second.compare(calleeID) == 0 &&
-                current->second.first.compare(attrName) == 0){
-
-            //We already have an entry.
-            current->second.second.push_back(attrValue);
-            return;
-        }
-    }
-
-    //Creates the entry for the vector.
-    pair<pair<string, string>, pair<string, vector<string>>> *entry = new pair<pair<string, string>, pair<string, vector<string>>>();
-
-    entry->first.first = callerID;
-    entry->first.second = calleeID;
-    entry->second.first = attrName;
-    entry->second.second.push_back(attrValue);
-
-    //Adds it to the vector.
-    unresolvedRefAttr.push_back(entry);
-}
-
-vector<pair<string, vector<string>>> ASTWalker::findAttributes(string callerID, string calleeID){
-    vector<pair<string, vector<string>>> values;
-
-    //Find all associated values.
-    for (auto entry : unresolvedRefAttr){
-        if (entry->first.first.compare(callerID) == 0 && entry->first.second.compare(calleeID) == 0){
-            //Adds the entry.
-            pair<string, vector<string>> value;
-            value.first = entry->second.first;
-            value.second = entry->second.second;
-
-            values.push_back(value);
-        }
-    }
-
-    return values;
-}
-
-string ASTWalker::generateID(string fileName, string signature, ClangNode::NodeType type) {
-    if (type == ClangNode::CLASS){
-        return fileName + "[" + CLASS_PREPEND + signature + "]";
-    }
-
-    return fileName + "[" + signature + "]";
-}
-
-string ASTWalker::generateID(const MatchFinder::MatchResult result, const DeclaratorDecl *decl, ClangNode::NodeType type){
-    //Gets the file name from the source manager.
-    string fileName = generateFileName(result, decl->getInnerLocStart());
-
-    //Gets the qualified name.
-    string name = decl->getNameAsString();
-
-    return generateID(fileName, name, type);
-}
-
-string ASTWalker::generateFileName(const MatchFinder::MatchResult result, SourceLocation loc){
-    //Gets the file name.
-    SourceManager& SrcMgr = result.Context->getSourceManager();
-    const FileEntry* Entry = SrcMgr.getFileEntryForID(SrcMgr.getFileID(loc));
-    string fileName(Entry->getName());
-
-    //Adds the file path.
-    fileParser.addPath(fileName);
-
-    //Print file name.
-    printFileName(fileName);
-
-    return fileName;
-}
-
-void ASTWalker::addVariableDecl(const MatchFinder::MatchResult result, const VarDecl *decl) {
+void FullWalker::addVariableDecl(const MatchFinder::MatchResult result, const VarDecl *decl) {
     string fileName = generateFileName(result, decl->getInnerLocStart());
 
     //Get the ID of the variable.
@@ -353,14 +174,14 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult result, const Var
 
     //Get the scope of the decl.
     graph.addSingularAttribute(node->getID(),
-                                ClangNode::VAR_ATTRIBUTE.scopeName,
-                                ClangNode::VAR_ATTRIBUTE.getScope(decl));
+                               ClangNode::VAR_ATTRIBUTE.scopeName,
+                               ClangNode::VAR_ATTRIBUTE.getScope(decl));
     graph.addSingularAttribute(node->getID(),
-                                ClangNode::VAR_ATTRIBUTE.staticName,
-                                ClangNode::VAR_ATTRIBUTE.getStatic(decl));
+                               ClangNode::VAR_ATTRIBUTE.staticName,
+                               ClangNode::VAR_ATTRIBUTE.getStatic(decl));
 }
 
-void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult result, const DeclaratorDecl *decl) {
+void FullWalker::addFunctionDecl(const MatchFinder::MatchResult result, const DeclaratorDecl *decl) {
     string fileName = generateFileName(result, decl->getInnerLocStart());
 
     //First, generate the ID of the function.
@@ -410,7 +231,7 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult result, const Dec
     }
 }
 
-void ASTWalker::addFunctionCall(const MatchFinder::MatchResult result,
+void FullWalker::addFunctionCall(const MatchFinder::MatchResult result,
                                 const CallExpr *expr, const DeclaratorDecl *decl) {
     //Generate the ID of the caller and callee.
     string callerName = generateLabel(decl, ClangNode::FUNCTION);
@@ -438,7 +259,7 @@ void ASTWalker::addFunctionCall(const MatchFinder::MatchResult result,
     //TODO: Function call attributes?
 }
 
-void ASTWalker::addVariableRef(const MatchFinder::MatchResult result,
+void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
                                const VarDecl *decl, const DeclaratorDecl *caller, const DeclRefExpr *expr) {
     //Start by generating the ID of the caller and callee.
     string callerName = generateLabel(caller, ClangNode::FUNCTION);
@@ -455,7 +276,7 @@ void ASTWalker::addVariableRef(const MatchFinder::MatchResult result,
 
         //Add attributes.
         addUnresolvedRefAttr(callerName, varName,
-                             ClangEdge::ACCESS_ATTRIBUTE.attrName, getVariableAccess(result, decl));
+                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, decl));
         return;
     }
 
@@ -465,10 +286,10 @@ void ASTWalker::addVariableRef(const MatchFinder::MatchResult result,
 
     //Process attributes.
     graph.addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(),
-                       ClangEdge::ACCESS_ATTRIBUTE.attrName, getVariableAccess(result, decl));
+                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, decl));
 }
 
-void ASTWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *classDec, string fileName) {
+void FullWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *classDec, string fileName) {
     //Get the name & ID of the class.
     string classID = generateID(fileName, classDec->getNameAsString(), ClangNode::CLASS);
     string className = generateLabel(classDec, ClangNode::CLASS);
@@ -498,7 +319,7 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRec
     }
 }
 
-void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
+void FullWalker::addClassRef(const MatchFinder::MatchResult result,
                             const CXXRecordDecl* classRec, const DeclaratorDecl* funcRec){
     //Generate the label of the class and the function.
     string className = generateLabel(classRec, ClangNode::CLASS);
@@ -507,7 +328,7 @@ void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
     addClassRef(className, funcName);
 }
 
-void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
+void FullWalker::addClassRef(const MatchFinder::MatchResult result,
                             const CXXRecordDecl* classRec, const VarDecl* varRec){
     //Generate the label of the class and the variable.
     string className = generateLabel(classRec, ClangNode::CLASS);
@@ -516,7 +337,7 @@ void ASTWalker::addClassRef(const MatchFinder::MatchResult result,
     addClassRef(className, objName);
 }
 
-void ASTWalker::addClassRef(string srcLabel, string dstLabel){
+void FullWalker::addClassRef(string srcLabel, string dstLabel){
     //Get the nodes by their label.
     vector<ClangNode*> classNode = graph.findNodeByName(srcLabel);
     vector<ClangNode*> innerNode = graph.findNodeByName(dstLabel);
@@ -540,7 +361,7 @@ void ASTWalker::addClassRef(string srcLabel, string dstLabel){
     //TODO: Any class reference attributes?
 }
 
-void ASTWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXRecordDecl* baseDec){
+void FullWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXRecordDecl* baseDec){
     string classLabel = generateLabel(classDec, ClangNode::CLASS);
     string baseLabel = generateLabel(baseDec, ClangNode::CLASS);
 
@@ -566,7 +387,7 @@ void ASTWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXR
     //TODO: Any inheritance attributes?
 }
 
-void ASTWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl){
+void FullWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl){
     //Get the type.
     ClangNode::NodeType type;
     if (decl->isUnion()){
@@ -578,7 +399,7 @@ void ASTWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang
     //TODO: Stuff.
 }
 
-void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *decl, const VarDecl *parent){
+void FullWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *decl, const VarDecl *parent){
     string fileName = generateFileName(result,
                                        (parent == NULL) ? decl->getInnerLocStart() : parent->getInnerLocStart());
 
@@ -603,7 +424,7 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
     addClassRef(getClassNameFromQualifier(qualName), generateLabel(decl, ClangNode::ENUM));
 }
 
-void ASTWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,
+void FullWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,
                            const VarDecl *parent) {
     //First, get the names for both the parent and the enum.
     string varLabel = generateLabel(parent, ClangNode::VARIABLE);
@@ -631,132 +452,11 @@ void ASTWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl
     //TODO: Any enum reference attributes?
 }
 
-void ASTWalker::addEnumConstDecl(const MatchFinder::MatchResult result, const EnumConstantDecl *decl) {
+void FullWalker::addEnumConstDecl(const MatchFinder::MatchResult result, const EnumConstantDecl *decl) {
     //TODO
 }
 
-void ASTWalker::addEnumConstRef(const MatchFinder::MatchResult result, const EnumConstantDecl *decl,
+void FullWalker::addEnumConstRef(const MatchFinder::MatchResult result, const EnumConstantDecl *decl,
                                 const FunctionDecl *func) {
     //TODO
-}
-
-string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
-    string label;
-
-    //Get qualified name.
-    if (type == ClangNode::FUNCTION){
-        label = decl->getAsFunction()->getQualifiedNameAsString();
-    } else if (type == ClangNode::VARIABLE){
-        const VarDecl* var = static_cast<const VarDecl*>(decl);
-        label = var->getQualifiedNameAsString();
-
-        //We need to get the parent function.
-        const DeclContext* parentContext = var->getParentFunctionOrMethod();
-
-        //If we have NULL, get the parent function.
-        if (parentContext != NULL){
-            string parentQualName = static_cast<const FunctionDecl*>(parentContext)->getQualifiedNameAsString();
-            label = parentQualName + "::" + label;
-        }
-    } else if (type == ClangNode::CLASS){
-        const CXXRecordDecl* record = static_cast<const CXXRecordDecl*>(decl);
-        label = record->getQualifiedNameAsString();
-    } else if (type == ClangNode::ENUM){
-        const EnumDecl* enumDec = static_cast<const EnumDecl*>(decl);
-        label = enumDec->getQualifiedNameAsString();
-    }
-
-    return label;
-}
-
-string ASTWalker::getVariableAccess(const MatchFinder::MatchResult result, const VarDecl *var) {
-    //Get the source range and manager.
-    SourceRange range = var->getSourceRange();
-    const SourceManager *SM = result.SourceManager;
-
-    //Use LLVM's lexer to get source text.
-    llvm::StringRef ref = Lexer::getSourceText(CharSourceRange::getCharRange(range), *SM, result.Context->getLangOpts());
-    if (ref.str().compare("") == 0) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
-
-    //Get associated strings.
-    string varStatement = ref.str();
-    string varName = var->getName();
-
-    //First, check if the name of the variable actually appears.
-    if (varStatement.find(varName) == std::string::npos) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
-
-    //Next, tokenize statement.
-    typedef boost::tokenizer<boost::char_separator<char>> tokenizer;
-    boost::char_separator<char> sep{" "};
-    tokenizer tok{varStatement, sep};
-    vector<string> statementTokens;
-    for (const auto &t : tok) {
-        statementTokens.push_back(t);
-    }
-
-    //Check if we have increment and decrement operators.
-    for (string token : statementTokens){
-        //We found our variable.
-        if (token.find(varName) != std::string::npos){
-            //Next, check for the increment and decrement operators.
-            for (string op : incDecOperators){
-                if (token.compare(op + varName) == 0) return ClangEdge::ACCESS_ATTRIBUTE.WRITE_FLAG;
-                if (token.compare(varName + op) == 0) return ClangEdge::ACCESS_ATTRIBUTE.WRITE_FLAG;
-            }
-        }
-    }
-
-    //Get the position of the variable name.
-    int pos = find(statementTokens.begin(), statementTokens.end(), varName) - statementTokens.begin();
-
-    //Search vector for C/C++ assignment operators.
-    int i = 0;
-    bool foundAOp = false;
-    for (string token : statementTokens) {
-        //Check for a particular assignment operator.
-        for (string op : assignmentOperators) {
-            if (token.compare(op) == 0) {
-                foundAOp = true;
-                break;
-            }
-        }
-
-        //See if we found the operator.
-        if (foundAOp) break;
-        i++;
-    }
-
-    //Now, we see what side of the operator our variable is on.
-    if (!foundAOp){
-        return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
-    } else if (pos <= i){
-        return ClangEdge::ACCESS_ATTRIBUTE.WRITE_FLAG;
-    }
-    return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
-}
-
-void ASTWalker::printFileName(std::string curFile){
-    if (curFile.compare(curFileName) != 0){
-        cout << "\tCurrently processing: " << curFile << endl;
-        curFileName = curFile;
-    }
-}
-
-string ASTWalker::getClassNameFromQualifier(string qualifiedName){
-    //TODO: Fix this. It may not be needed.
-    string cpyQual = qualifiedName;
-    string qualifier = "::";
-    vector<string> quals = vector<string>();
-
-    size_t pos = 0;
-    while ((pos = cpyQual.find(qualifier)) != std::string::npos) {
-        quals.push_back(cpyQual.substr(0, pos));
-        cpyQual.erase(0, pos + qualifier.length());
-    }
-    quals.push_back(cpyQual);
-
-    //Check if we have a class.
-    if (quals.size() == 1) return string();
-
-    return quals.at(quals.size() - 2);
 }

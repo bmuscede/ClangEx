@@ -7,8 +7,10 @@
 #include "clang/Tooling/Tooling.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
-#include "ASTWalker.h"
+#include "Walker/ASTWalker.h"
 #include "ClangArgParse.h"
+#include "Walker/FullWalker.h"
+#include "Walker/MinimalWalker.h"
 
 using namespace std;
 using namespace clang;
@@ -41,12 +43,18 @@ int main(int argc, const char **argv) {
     ClangTool tool(OptionsParser.getCompilations(),
                    OptionsParser.getSourcePathList());
 
+    //Gets whether blob was set.
+    ASTWalker* walker;
+    if (parser.getFlag(ClangArgParse::BLOB_LONG)){
+        walker = new MinimalWalker(exclude);
+    } else {
+        walker = new FullWalker(exclude);
+    }
     //Generates a matcher system.
-    ASTWalker walker = ASTWalker(exclude);
     MatchFinder finder;
 
     //Next, processes the matching conditions.
-    walker.generateASTMatches(&finder);
+    walker->generateASTMatches(&finder);
 
     //Runs the Clang tool.
     cout << "Compiling the source code..." << endl;
@@ -57,19 +65,21 @@ int main(int argc, const char **argv) {
 
     //Resolves references.
     cout << endl << "Resolving external references..." << endl;
-    walker.resolveExternalReferences();
+    walker->resolveExternalReferences();
 
     //Generates file paths.
-    walker.resolveFiles();
+    walker->resolveFiles();
 
     //Processes the TA file.
     vector<string> outputFiles = parser.getOption(ClangArgParse::OUT_LONG);
     cout << endl;
     if (outputFiles.size() == 0){
-        walker.buildGraph(DEFAULT_OUT);
+        walker->buildGraph(DEFAULT_OUT);
     } else {
         for (string file : outputFiles)
-            walker.buildGraph(file);
+            walker->buildGraph(file);
     }
+
+    delete walker;
     return code;
 }
