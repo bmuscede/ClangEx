@@ -70,8 +70,16 @@ private:
             return VAR_ATTRIBUTE.LOCAL_KEY;
         }
 
+        std::string getScope(const clang::FieldDecl* decl){
+            return "todo";
+        }
+
         std::string getStatic(const clang::VarDecl* decl){
             return std::to_string(decl->isStaticDataMember());
+        }
+
+        std::string getStatic(const clang::FieldDecl* decl){
+            return "todo";
         }
     } VarStruct;
 public:

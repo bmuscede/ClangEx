@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <iostream>
 #include <boost/tokenizer.hpp>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include "clang/ASTMatchers/ASTMatchers.h"
@@ -42,7 +43,7 @@ private:
             //Get associated strings.
             std::string varStatement = ref.str();
             std::string varName = var->getName();
-
+            std::cout << varStatement << std::endl;
             //First, check if the name of the variable actually appears.
             if (varStatement.find(varName) == std::string::npos) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
 
