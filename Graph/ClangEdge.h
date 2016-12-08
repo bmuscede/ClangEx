@@ -31,19 +31,22 @@ private:
                                                "&=", "^=", "|=", "&", "|", "^", "~", "<<", ">>"};
         const char* incDecOperators[2] = {"++", "--"};
 
-        std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::VarDecl *var){
-            //Get the source range and manager.
-            SourceRange range = var->getSourceRange();
-            const SourceManager *SM = result.SourceManager;
+        std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::Expr *expr,
+                                      const std::string varName){
+            //Generate the printing policy.
+            clang::LangOptions LangOpts;
+            clang::PrintingPolicy Policy(LangOpts);
 
-            //Use LLVM's lexer to get source text.
-            llvm::StringRef ref = Lexer::getSourceText(CharSourceRange::getCharRange(range), *SM, result.Context->getLangOpts());
-            if (ref.str().compare("") == 0) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
+            //Gets the string.
+            std::string TypeS;
+            llvm::raw_string_ostream s(TypeS);
+            expr->printPretty(s, NULL, Policy);
+
+            if (s.str().compare("") == 0) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
 
             //Get associated strings.
-            std::string varStatement = ref.str();
-            std::string varName = var->getName();
-            std::cout << varStatement << std::endl;
+            std::string varStatement = s.str();
+
             //First, check if the name of the variable actually appears.
             if (varStatement.find(varName) == std::string::npos) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
 

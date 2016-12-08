@@ -47,7 +47,7 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
     } else if (const VarDecl *callee = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_CALLEE])) {
         //If a variable reference has been found.
         auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[VAR_CALLER]);
-        auto *expr = result.Nodes.getNodeAs<clang::DeclRefExpr>(types[VAR_EXPR]);
+        auto *expr = result.Nodes.getNodeAs<clang::Expr>(types[VAR_EXPR]);
 
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, callee)) return;
@@ -56,12 +56,12 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
     } else if (const FieldDecl *callee = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_CALLEE])){
         //If a variable reference has been found.
         auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[VAR_CALLER]);
-        auto *expr = result.Nodes.getNodeAs<clang::DeclRefExpr>(types[VAR_EXPR]);
+        auto *expr = result.Nodes.getNodeAs<clang::Expr>(types[VAR_EXPR]);
 
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, callee)) return;
-        cout << "The left always gets triggered ;) LOL SAFE SPACES AMIRIGHT!?!?!?!?!?" << endl;
-        //addVariableCall(result, callee->getAsFunction(), caller, expr);
+
+        addVariableCall(result, callee, caller, expr);
     }
 }
 
@@ -82,11 +82,12 @@ void MinimalWalker::generateASTMatches(MatchFinder *finder){
         finder->addMatcher(fieldDecl().bind(types[FIELD_DEC]), this);
 
         //Finds variable uses amongst functions.
-        //TODO Check if field decl is needed too.
         finder->addMatcher(declRefExpr(hasDeclaration(varDecl().bind(types[VAR_CALLEE])),
-                           hasAncestor(functionDecl().bind(types[VAR_CALLER]))).bind(types[VAR_EXPR]), this);
+                           hasAncestor(functionDecl().bind(types[VAR_CALLER])),
+                           hasParent(expr().bind(types[VAR_EXPR]))), this);
         finder->addMatcher(declRefExpr(hasDeclaration(fieldDecl().bind(types[FIELD_CALLEE])),
-                                       hasAncestor(functionDecl().bind(types[VAR_CALLER]))).bind(types[VAR_EXPR]), this);
+                                       hasAncestor(functionDecl().bind(types[VAR_CALLER])),
+                                       hasParent(expr().bind(types[FIELD_EXPR]))), this);
 
     }
 }
@@ -215,11 +216,26 @@ void MinimalWalker::addFunctionCall(const MatchFinder::MatchResult results, cons
 }
 
 void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, const VarDecl *callee, const DeclaratorDecl *caller,
-                                    const DeclRefExpr* expr){
+                                    const Expr* expr){
     //Start by generating the ID of the caller and callee.
     string callerLabel = generateLabel(caller, ClangNode::FUNCTION);
     string calleeLabel = generateLabel(callee, ClangNode::VARIABLE);
 
+    addVariableCall(result, callee->getName(), callerLabel, calleeLabel, expr);
+
+}
+
+void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, const clang::FieldDecl *callee,
+                                    const clang::DeclaratorDecl *caller, const clang::Expr *expr) {
+    //Start by generating the ID of the caller and callee.
+    string callerLabel = generateLabel(caller, ClangNode::FUNCTION);
+    string calleeLabel = generateLabel(callee, ClangNode::VARIABLE);
+
+    addVariableCall(result, callee->getName(), callerLabel, calleeLabel, expr);
+}
+
+void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, string calleeName,
+                                    string callerLabel, string calleeLabel, const clang::Expr* expr){
     //Next, we find their IDs.
     vector<ClangNode*> callerNode = graph.findNodeByName(callerLabel);
     vector<ClangNode*> calleeNode = graph.findNodeByName(calleeLabel);
@@ -231,7 +247,7 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, const
 
         //Add attributes.
         addUnresolvedRefAttr(callerLabel, calleeLabel,
-                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, callee));
+                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, calleeName));
         return;
     }
 
@@ -241,5 +257,5 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, const
 
     //Process attributes.
     graph.addAttribute(callerNode.at(0)->getID(), calleeNode.at(0)->getID(),
-                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, callee));
+                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, calleeName));
 }

@@ -117,7 +117,7 @@ std::string ClangEdge::printSingleAttribute(string key, vector<string> value){
 }
 
 std::string ClangEdge::printSetAttribute(string key, vector<string> value){
-    string attribute = key + " ( ";
+    string attribute = key + " = ( ";
 
     //Prints the value.
     for (int i = 0; i < value.size(); i++){

@@ -37,7 +37,7 @@ void FullWalker::run(const MatchFinder::MatchResult &result) {
     } else if (const VarDecl *dec = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_CALL])){
         //If a variable reference has been found.
         auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER_VAR]);
-        auto *expr = result.Nodes.getNodeAs<clang::DeclRefExpr>(types[VAR_EXPR]);
+        auto *expr = result.Nodes.getNodeAs<clang::Expr>(types[VAR_EXPR]);
 
         addVariableRef(result, dec, caller, expr);
     } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_FUNC])){
@@ -120,7 +120,8 @@ void FullWalker::generateASTMatches(MatchFinder *finder) {
 
         //Finds variable uses from a function to a variable.
         finder->addMatcher(declRefExpr(hasDeclaration(varDecl(isExpansionInMainFile()).bind(types[VAR_CALL])),
-                                       hasAncestor(functionDecl().bind(types[CALLER_VAR]))).bind(types[VAR_EXPR]), this);
+                                       hasAncestor(functionDecl().bind(types[CALLER_VAR])),
+                                       hasParent(expr().bind(types[VAR_EXPR]))), this);
     }
 
     //Class methods.
@@ -260,7 +261,7 @@ void FullWalker::addFunctionCall(const MatchFinder::MatchResult result,
 }
 
 void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
-                               const VarDecl *decl, const DeclaratorDecl *caller, const DeclRefExpr *expr) {
+                               const VarDecl *decl, const DeclaratorDecl *caller, const Expr *expr) {
     //Start by generating the ID of the caller and callee.
     string callerName = generateLabel(caller, ClangNode::FUNCTION);
     string varName = generateLabel(decl, ClangNode::VARIABLE);
@@ -276,7 +277,7 @@ void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
 
         //Add attributes.
         addUnresolvedRefAttr(callerName, varName,
-                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, decl));
+                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, decl->getName()));
         return;
     }
 
@@ -286,7 +287,7 @@ void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
 
     //Process attributes.
     graph.addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(),
-                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, decl));
+                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, decl->getName()));
 }
 
 void FullWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *classDec, string fileName) {

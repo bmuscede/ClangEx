@@ -37,7 +37,7 @@ private:
     void addFunctionCall(const MatchFinder::MatchResult result,
                          const clang::CallExpr *expr, const clang::DeclaratorDecl* decl);
     void addVariableRef(const MatchFinder::MatchResult result,
-                        const clang::VarDecl *decl, const clang::DeclaratorDecl* caller, const clang::DeclRefExpr* expr);
+                        const clang::VarDecl *decl, const clang::DeclaratorDecl* caller, const clang::Expr* expr);
     void addClassDecl(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDec, std::string fileName);
     void addClassRef(const MatchFinder::MatchResult result,
                      const clang::CXXRecordDecl* classRec, const clang::DeclaratorDecl* funcRec);
