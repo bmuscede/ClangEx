@@ -62,6 +62,16 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
         if (isInSystemHeader(result, callee)) return;
 
         addVariableCall(result, callee, caller, expr);
+    } else if (const CXXRecordDecl *classRec = result.Nodes.getNodeAs<clang::CXXRecordDecl>(types[CLASS_DEC])){
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, callee)) return;
+
+        addClassDec(result, classRec);
+    } else if (const EnumDecl *dec = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])){
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, dec)) return;
+
+        addEnumDec(result, dec);
     }
 }
 
@@ -89,6 +99,19 @@ void MinimalWalker::generateASTMatches(MatchFinder *finder){
                                        hasAncestor(functionDecl().bind(types[VAR_CALLER])),
                                        hasParent(expr().bind(types[FIELD_EXPR]))), this);
 
+    }
+
+    //Class methods.
+    if (!exclusions.cClass){
+        //Finds class declarations.
+        finder->addMatcher(cxxRecordDecl(isClass()).bind(types[CLASS_DEC]), this);
+
+        //TODO: References not implemented.
+    }
+
+    //Enum methods.
+    if (!exclusions.cEnum){
+        finder->addMatcher(enumDecl().bind(types[ENUM_DEC]), this);
     }
 }
 
@@ -258,4 +281,77 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, strin
     //Process attributes.
     graph.addAttribute(callerNode.at(0)->getID(), calleeNode.at(0)->getID(),
                        ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, calleeName));
+}
+
+void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXXRecordDecl *classRec) {
+    //Generate the fields for the node.
+    string filename = generateFileName(result, classRec->getInnerLocStart());
+    string ID = generateID(filename, classRec->getNameAsString(), ClangNode::CLASS);
+    string className = generateLabel(classRec, ClangNode::CLASS);
+
+    //Creates a class entry.
+    ClangNode* node = new ClangNode(ID, className, ClangNode::CLASS);
+    graph.addNode(node);
+
+    //Process attributes.
+    graph.addSingularAttribute(node->getID(),
+                               ClangNode::FILE_ATTRIBUTE.attrName,
+                               ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+    graph.addSingularAttribute(node->getID(),
+                               ClangNode::BASE_ATTRIBUTE.attrName,
+                               std::to_string(classRec->getNumBases()));
+
+    //Get base classes.
+    if (classRec->getNumBases() > 0) {
+        for (auto base = classRec->bases_begin(); base != classRec->bases_end(); base++) {
+            if (base->getType().getTypePtr() == NULL) continue;
+            CXXRecordDecl *baseClass = base->getType().getTypePtr()->getAsCXXRecordDecl();
+            if (baseClass == NULL) continue;
+
+            //Add a linkage in our graph.
+            addClassInheritanceRef(classRec, baseClass);
+        }
+    }
+}
+
+void MinimalWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, const CXXRecordDecl *parentClass) {
+    string classLabel = generateLabel(childClass, ClangNode::CLASS);
+    string baseLabel = generateLabel(parentClass, ClangNode::CLASS);
+
+    //Get the nodes by their label.
+    vector<ClangNode*> classNode = graph.findNodeByName(classLabel);
+    vector<ClangNode*> baseNode = graph.findNodeByName(baseLabel);
+
+    //Check to see if we don't have these entries.
+    if (classNode.size() == 0 || baseNode.size() == 0){
+        addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
+
+        //Add attributes.
+        //TODO: Any inheritance attributes?
+
+        return;
+    }
+
+    //Add the edge.
+    ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
+    graph.addEdge(edge);
+
+    //Process  attributes.
+    //TODO: Any inheritance attributes?
+}
+
+void MinimalWalker::addEnumDec(const MatchFinder::MatchResult result, const EnumDecl *dec){
+    //Generate the fields for the node.
+    string filename = generateFileName(result, dec->getInnerLocStart());
+    string ID = generateID(filename,  dec->getNameAsString(), ClangNode::ENUM);
+    string className = generateLabel(dec, ClangNode::ENUM);
+
+    //Creates a class entry.
+    ClangNode* node = new ClangNode(ID, className, ClangNode::ENUM);
+    graph.addNode(node);
+
+    //Process attributes.
+    graph.addSingularAttribute(node->getID(),
+                               ClangNode::FILE_ATTRIBUTE.attrName,
+                               ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 }
