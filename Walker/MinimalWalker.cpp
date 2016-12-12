@@ -4,7 +4,6 @@
 
 #include <iostream>
 #include "MinimalWalker.h"
-#include "../ClangArgParse.h"
 
 using namespace std;
 
@@ -27,8 +26,9 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
 
         addFunctionDec(result, dec);
     } else if (const VarDecl *dec = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
-        //Get whether we have a system header.
+         //Get whether we have a system header.
         if (isInSystemHeader(result, dec)) return;
+        if (dec->getQualifiedNameAsString().compare("") == 0) return;
 
         addVariableDec(result, dec);
     } else if (const FieldDecl *dec = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_DEC])){
@@ -37,6 +37,7 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
 
         addVariableDec(result, dec);
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALLEE])){
+        if (expr->getCalleeDecl() == NULL || !(isa<const clang::FunctionDecl>(expr->getCalleeDecl()))) return;
         auto callee = expr->getCalleeDecl()->getAsFunction();
         auto caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_CALLER]);
 
@@ -64,7 +65,7 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
         addVariableCall(result, callee, caller, expr);
     } else if (const CXXRecordDecl *classRec = result.Nodes.getNodeAs<clang::CXXRecordDecl>(types[CLASS_DEC])){
         //Get whether this call expression is in the system header.
-        if (isInSystemHeader(result, callee)) return;
+        if (isInSystemHeader(result, classRec)) return;
 
         addClassDec(result, classRec);
     } else if (const EnumDecl *dec = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])){
@@ -120,6 +121,7 @@ void MinimalWalker::addFunctionDec(const MatchFinder::MatchResult results, const
     string ID = generateID(results, dec, ClangNode::FUNCTION);
     string label = generateLabel(dec, ClangNode::FUNCTION);
     string filename = generateFileName(results, dec->getInnerLocStart());
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::FUNCTION);
@@ -167,6 +169,7 @@ void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const
     string ID = generateID(results, dec, ClangNode::VARIABLE);
     string label = generateLabel(dec, ClangNode::VARIABLE);
     string filename = generateFileName(results, dec->getInnerLocStart());
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
     //Creates a variable entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
@@ -191,6 +194,7 @@ void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const
     string ID = generateID(results, dec, ClangNode::VARIABLE);
     string label = generateLabel(dec, ClangNode::VARIABLE);
     string filename = generateFileName(results, dec->getInnerLocStart());
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
     //Creates a variable entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
@@ -284,10 +288,26 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, strin
 }
 
 void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXXRecordDecl *classRec) {
+    //Get the definition.
+    auto def = classRec->getDefinition();
+    if (def == NULL) return;
+
+    //Check if we're dealing with a class.
+    if (!classRec->isClass()) return;
+
     //Generate the fields for the node.
     string filename = generateFileName(result, classRec->getInnerLocStart());
     string ID = generateID(filename, classRec->getNameAsString(), ClangNode::CLASS);
     string className = generateLabel(classRec, ClangNode::CLASS);
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
+
+    //Try to get the number of bases.
+    int numBases = 0;
+    try {
+        numBases = classRec->getNumBases();
+    } catch (...){
+        return;
+    }
 
     //Creates a class entry.
     ClangNode* node = new ClangNode(ID, className, ClangNode::CLASS);
@@ -299,7 +319,7 @@ void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXX
                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
     graph.addSingularAttribute(node->getID(),
                                ClangNode::BASE_ATTRIBUTE.attrName,
-                               std::to_string(classRec->getNumBases()));
+                               std::to_string(numBases));
 
     //Get base classes.
     if (classRec->getNumBases() > 0) {
@@ -344,10 +364,11 @@ void MinimalWalker::addEnumDec(const MatchFinder::MatchResult result, const Enum
     //Generate the fields for the node.
     string filename = generateFileName(result, dec->getInnerLocStart());
     string ID = generateID(filename,  dec->getNameAsString(), ClangNode::ENUM);
-    string className = generateLabel(dec, ClangNode::ENUM);
+    string enumName = generateLabel(dec, ClangNode::ENUM);
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
     //Creates a class entry.
-    ClangNode* node = new ClangNode(ID, className, ClangNode::ENUM);
+    ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM);
     graph.addNode(node);
 
     //Process attributes.

@@ -153,6 +153,7 @@ string ASTWalker::generateID(string fileName, string signature, ClangNode::NodeT
 string ASTWalker::generateID(const MatchFinder::MatchResult result, const DeclaratorDecl *decl, ClangNode::NodeType type){
     //Gets the file name from the source manager.
     string fileName = generateFileName(result, decl->getInnerLocStart());
+    if (fileName.compare("") == 0) return string();
 
     //Gets the qualified name.
     string name = decl->getNameAsString();
@@ -164,15 +165,22 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result, Source
     //Gets the file name.
     SourceManager& SrcMgr = result.Context->getSourceManager();
     const FileEntry* Entry = SrcMgr.getFileEntryForID(SrcMgr.getFileID(loc));
+
+    if (Entry == NULL) return string();
+
     string fileName(Entry->getName());
 
+    //Use boost to get the absolute path.
+    boost::filesystem::path fN = boost::filesystem::path(fileName);
+    string newPath = fN.normalize().string();
+
     //Adds the file path.
-    fileParser.addPath(fileName);
+    fileParser.addPath(newPath);
 
     //Print file name.
-    printFileName(fileName);
+    printFileName(newPath);
 
-    return fileName;
+    return newPath;
 }
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
@@ -224,17 +232,27 @@ string ASTWalker::getClassNameFromQualifier(string qualifiedName){
 }
 
 bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl){
-    //Gets where this item is located.
-    auto &SourceManager = result.Context->getSourceManager();
-    auto ExpansionLoc = SourceManager.getExpansionLoc(decl->getLocStart());
+    if (decl == NULL) return false;
+    bool isIn;
 
-    //Checks if we have an invalid location.
-    if (ExpansionLoc.isInvalid()) {
+    //Some system headers cause Clang to segfault.
+    try {
+        //Gets where this item is located.
+        auto &SourceManager = result.Context->getSourceManager();
+        auto ExpansionLoc = SourceManager.getExpansionLoc(decl->getLocStart());
+
+        //Checks if we have an invalid location.
+        if (ExpansionLoc.isInvalid()) {
+            return false;
+        }
+
+        //Now, checks if we don't have a system header.
+        isIn = SourceManager.isInSystemHeader(ExpansionLoc);
+    } catch ( ... ){
         return false;
     }
 
-    //Now, checks if we don't have a system header.
-    return SourceManager.isInSystemHeader(ExpansionLoc);
+    return isIn;
 }
 
 vector<pair<string, vector<string>>> ASTWalker::findAttributes(string callerID, string calleeID){
