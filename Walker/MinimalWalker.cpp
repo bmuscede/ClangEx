@@ -383,28 +383,20 @@ string MinimalWalker::generateFunctionFileName(const MatchFinder::MatchResult re
                                                const FunctionDecl *dec, string fileName){
     if (dec == NULL) return fileName;
 
-    const FunctionDecl *definition;
-    const FunctionDecl *declaration;
-
     //First, check whether we have a definition or not.
-    if (dec->isThisDeclarationADefinition()){
-        definition = dec;
-        declaration = dec;
-    } else {
-        declaration = dec;
-        definition = dec->getDefinition();
+    if (dec->isThisDeclarationADefinition()) {
+        return fileName;
     }
 
     //Check whether we don't have a definition.
-    if (definition == NULL) return fileName;
+    dec = dec->getDefinition();
+    if (dec == NULL) return fileName;
 
     //Get the file name of the two.
-    string decName = generateFileNameQuietly(result, declaration->getInnerLocStart());
-    string defName = generateFileNameQuietly(result, definition->getInnerLocStart());
+    string defName = generateFileNameQuietly(result, dec->getInnerLocStart());
 
     //Check if we have a null filename.
-    if (decName.compare("") == 0) return defName;
-    else if (defName.compare("") == 0) return decName;
+    if (defName.compare("") == 0) return fileName;
 
     //Return the name of the definition.
     return defName;
