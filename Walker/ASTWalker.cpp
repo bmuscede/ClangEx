@@ -143,6 +143,9 @@ void ASTWalker::addUnresolvedRefAttr(string callerID, string calleeID, string at
 }
 
 string ASTWalker::generateID(string fileName, string signature, ClangNode::NodeType type) {
+    //Check the signature for invalid characters.
+    replace(signature.begin(), signature.end(), '=', 'e');
+
     if (type == ClangNode::CLASS){
         return fileName + "[" + CLASS_PREPEND + signature + "]";
     }

@@ -120,8 +120,10 @@ void MinimalWalker::addFunctionDec(const MatchFinder::MatchResult results, const
     //Generate the fields for the node.
     string ID = generateID(results, dec, ClangNode::FUNCTION);
     string label = generateLabel(dec, ClangNode::FUNCTION);
-    string filename = generateFileName(results, dec->getInnerLocStart());
+    string filename = generateFunctionFileName(results, dec->getAsFunction(),
+                                               generateFileName(results, dec->getInnerLocStart()));
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
+
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::FUNCTION);
@@ -375,4 +377,35 @@ void MinimalWalker::addEnumDec(const MatchFinder::MatchResult result, const Enum
     graph.addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+}
+
+string MinimalWalker::generateFunctionFileName(const MatchFinder::MatchResult result,
+                                               const FunctionDecl *dec, string fileName){
+    if (dec == NULL) return fileName;
+
+    const FunctionDecl *definition;
+    const FunctionDecl *declaration;
+
+    //First, check whether we have a definition or not.
+    if (dec->isThisDeclarationADefinition()){
+        definition = dec;
+        declaration = dec;
+    } else {
+        declaration = dec;
+        definition = dec->getDefinition();
+    }
+
+    //Check whether we don't have a definition.
+    if (definition == NULL) return fileName;
+
+    //Get the file name of the two.
+    string decName = generateFileName(result, declaration->getInnerLocStart());
+    string defName = generateFileName(result, definition->getInnerLocStart());
+
+    //Check if we have a null filename.
+    if (decName.compare("") == 0) return defName;
+    else if (defName.compare("") == 0) return decName;
+
+    //Return the name of the definition.
+    return defName;
 }
