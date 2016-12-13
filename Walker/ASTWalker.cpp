@@ -166,6 +166,17 @@ string ASTWalker::generateID(const MatchFinder::MatchResult result, const Declar
 
 string ASTWalker::generateFileName(const MatchFinder::MatchResult result, SourceLocation loc){
     //Gets the file name.
+    string newPath = generateFileNameQuietly(result, loc);
+    if (newPath.compare("") == 0) return string();
+
+    //Print file name.
+    printFileName(newPath);
+
+    return newPath;
+}
+
+string ASTWalker::generateFileNameQuietly(const MatchFinder::MatchResult result, SourceLocation loc){
+    //Gets the file name.
     SourceManager& SrcMgr = result.Context->getSourceManager();
     const FileEntry* Entry = SrcMgr.getFileEntryForID(SrcMgr.getFileID(loc));
 
@@ -179,9 +190,6 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result, Source
 
     //Adds the file path.
     fileParser.addPath(newPath);
-
-    //Print file name.
-    printFileName(newPath);
 
     return newPath;
 }

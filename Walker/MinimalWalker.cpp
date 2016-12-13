@@ -399,8 +399,8 @@ string MinimalWalker::generateFunctionFileName(const MatchFinder::MatchResult re
     if (definition == NULL) return fileName;
 
     //Get the file name of the two.
-    string decName = generateFileName(result, declaration->getInnerLocStart());
-    string defName = generateFileName(result, definition->getInnerLocStart());
+    string decName = generateFileNameQuietly(result, declaration->getInnerLocStart());
+    string defName = generateFileNameQuietly(result, definition->getInnerLocStart());
 
     //Check if we have a null filename.
     if (decName.compare("") == 0) return defName;

@@ -44,6 +44,7 @@ protected:
     std::string generateID(std::string fileName, std::string signature, ClangNode::NodeType type);
     std::string generateID(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl, ClangNode::NodeType type);
     std::string generateFileName(const MatchFinder::MatchResult result, clang::SourceLocation loc);
+    std::string generateFileNameQuietly(const MatchFinder::MatchResult result, clang::SourceLocation loc);
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
 
     std::string getClassNameFromQualifier(std::string qualifiedName);
