@@ -231,6 +231,9 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
         label = replaceLabel(label, ANON, ANON_SYM);
     }
 
+    //Check for =.
+    replace(label.begin(), label.end(), '=', 'e');
+
     return label;
 }
 
