@@ -52,6 +52,13 @@ protected:
     bool isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl);
 
 private:
+    const std::string ANON_STRUCT = "(anonymous struct)";
+    const std::string ANON_STRUCT_SYM = "anon_struct";
+    const std::string UNION_STRUCT = "(union struct)";
+    const std::string UNION_STRUCT_SYM = "union_struct";
+    const std::string ANON = "(anonymous)";
+    const std::string ANON_SYM = "anon";
+
     std::string curFileName;
     FileParse fileParser;
     std::vector<std::pair<std::pair<std::string, std::string>, ClangEdge::EdgeType>> unresolvedRef;
@@ -60,6 +67,8 @@ private:
     std::vector<std::pair<std::string, std::vector<std::string>>> findAttributes(std::string callerID, std::string calleeID);
 
     void printFileName(std::string curFile);
+
+    std::string replaceLabel(std::string label, std::string init, std::string aft);
 };
 
 

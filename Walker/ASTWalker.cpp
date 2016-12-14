@@ -220,11 +220,21 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
         label = enumDec->getQualifiedNameAsString();
     }
 
+    //Check for valid anonymous items in the label.
+    if (label.find(ANON_STRUCT) != string::npos) {
+        label = replaceLabel(label, ANON_STRUCT, ANON_STRUCT_SYM);
+    }
+    if (label.find(UNION_STRUCT) != string::npos) {
+        label = replaceLabel(label, UNION_STRUCT, UNION_STRUCT_SYM);
+    }
+    if (label.find(ANON) != string::npos){
+        label = replaceLabel(label, ANON, ANON_SYM);
+    }
+
     return label;
 }
 
 string ASTWalker::getClassNameFromQualifier(string qualifiedName){
-    //TODO: Fix this. It may not be needed.
     string cpyQual = qualifiedName;
     string qualifier = "::";
     vector<string> quals = vector<string>();
@@ -289,4 +299,21 @@ void ASTWalker::printFileName(std::string curFile){
         cout << "\tCurrently processing: " << curFile << endl;
         curFileName = curFile;
     }
+}
+
+std::string ASTWalker::replaceLabel(std::string label, std::string init, std::string aft){
+    size_t index = 0;
+    while (true) {
+        //Locate the substring to replace.
+        index = label.find(init, index);
+        if (index == string::npos) break;
+
+        //Make the replacement.
+        label.replace(index, init.size(), aft);
+
+        //Advance index forward so the next iteration doesn't pick it up as well.
+        index += aft.size();
+    }
+
+    return label;
 }
