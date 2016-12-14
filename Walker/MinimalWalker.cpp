@@ -80,7 +80,7 @@ void MinimalWalker::generateASTMatches(MatchFinder *finder){
     //Function methods.
     if (!exclusions.cFunction){
         //Finds function declarations for current C/C++ file.
-        finder->addMatcher(functionDecl().bind(types[FUNC_DEC]), this);
+        finder->addMatcher(functionDecl(isDefinition()).bind(types[FUNC_DEC]), this);
 
         //Finds function calls from one function to another.
         finder->addMatcher(callExpr(hasAncestor(functionDecl().bind(types[FUNC_CALLER]))).bind(types[FUNC_CALLEE]), this);
@@ -120,8 +120,7 @@ void MinimalWalker::addFunctionDec(const MatchFinder::MatchResult results, const
     //Generate the fields for the node.
     string ID = generateID(results, dec, ClangNode::FUNCTION);
     string label = generateLabel(dec, ClangNode::FUNCTION);
-    string filename = generateFunctionFileName(results, dec->getAsFunction(),
-                                               generateFileName(results, dec->getInnerLocStart()));
+    string filename = generateFileName(results, dec->getInnerLocStart());
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
 
@@ -377,27 +376,4 @@ void MinimalWalker::addEnumDec(const MatchFinder::MatchResult result, const Enum
     graph.addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-}
-
-string MinimalWalker::generateFunctionFileName(const MatchFinder::MatchResult result,
-                                               const FunctionDecl *dec, string fileName){
-    if (dec == NULL) return fileName;
-
-    //First, check whether we have a definition or not.
-    if (dec->isThisDeclarationADefinition()) {
-        return fileName;
-    }
-
-    //Check whether we don't have a definition.
-    dec = dec->getDefinition();
-    if (dec == NULL) return fileName;
-
-    //Get the file name of the two.
-    string defName = generateFileNameQuietly(result, dec->getInnerLocStart());
-
-    //Check if we have a null filename.
-    if (defName.compare("") == 0) return fileName;
-
-    //Return the name of the definition.
-    return defName;
 }

@@ -35,9 +35,6 @@ private:
     void addClassDec(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classRec);
     void addClassInheritanceRef(const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
     void addEnumDec(const MatchFinder::MatchResult result, const clang::EnumDecl *dec);
-
-    std::string generateFunctionFileName(const MatchFinder::MatchResult result,
-                                         const clang::FunctionDecl *dec, std::string fileName);
 };
 
 

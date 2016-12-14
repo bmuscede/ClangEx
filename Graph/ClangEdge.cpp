@@ -113,7 +113,7 @@ string ClangEdge::generateAttribute() {
 }
 
 std::string ClangEdge::printSingleAttribute(string key, vector<string> value){
-    return key + " = \"" + value.at(0) + "\"";
+    return key + " = " + value.at(0);
 }
 
 std::string ClangEdge::printSetAttribute(string key, vector<string> value){
