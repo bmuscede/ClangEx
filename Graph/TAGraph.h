@@ -48,7 +48,7 @@ private:
             "alNds\n$INHERIT\tcFile\t\t\tcArchitecturalNds\n$INHERIT\tcClass\t\t\tcAsgNds\n$INHERIT\tcFunction\t\tcAsgNd"
             "s\n$INHERIT\tcVariable\t\tcAsgNds\n$INHERIT\tcLang\t\t\tcAsgNds\n$INHERIT\tcEnum\t\t\tcLang\n$INHERIT\tcStr"
             "uct\t\t\tcLang\n$INHERIT\tcUnion\t\t\tcLang\n\n//Relationships\ncontain\t\tcRoot\t\tcRoot\ncall\t\tcFunctio"
-            "n\tcFunction\nreference\tcAsgNds\t\tcAsgNds\ninherits\tcClass\t\tcClass\n\nSCHEME ATTRIBUTE :\n$ENTITY {\n\t"
+            "n\tcFunction\nreference\tcAsgNds\t\tcAsgNds\ninherit\t\tcClass\t\tcClass\n\nSCHEME ATTRIBUTE :\n$ENTITY {\n\t"
             "x\n\ty\n\twidth\n\theight\n\tlabel\n}\n\ncRoot {\n\telision = contain\n\tcolor = (0.0 0.0 0.0)\n\tfile\n\tl"
             "ine\n\tname\n}\n\ncAsgNds {\n\tbeg\n\tend\n\tfile\n\tline\n\tvalue\n\tcolor = (0.0 0.0 0.0)\n}\n\ncArchitec"
             "turalNds {\n\tclass_style = 4\n\tcolor = (0.0 0.0 1.0)\n\tcolor = (0.0 0.0 0.0)\n}\n\ncSubSystem {\n\tclass"
