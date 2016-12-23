@@ -59,6 +59,10 @@ const string ClangArgParse::INCLUDE_ERROR_MSG = "Error: Clang system libraries n
                                              " directory exists and retry!";
 const string ClangArgParse::INCLUDE_WARNING_MSG = "Warning: Clang system libraries are not being used. This may lead to "
                                              "unexpected compilation errors.";
+const string MERGE_LONG = "merge";
+const string MERGE_SHORT = "m";
+const string MERGE_HELP = "Merges an existing TA program model with current C/C++ being passed to the\n"
+        "Clang compiler. If no output file is specified, ClangEx will overwrite the current model.";
 
 ClangArgParse::ClangArgParse(){
     //Configures help message.
@@ -69,6 +73,7 @@ ClangArgParse::ClangArgParse(){
     addOption(ClangArgParse::EXTRA_LONG, ClangArgParse::EXTRA_SHORT, ClangArgParse::EXTRA_HELP);
     addOption(ClangArgParse::OUT_LONG, ClangArgParse::OUT_SHORT, ClangArgParse::OUT_HELP);
     addOption(ClangArgParse::EXMETA_LONG, ClangArgParse::EXMETA_SHORT, ClangArgParse::EXMETA_HELP);
+    addOption(ClangArgParse::MERGE_LONG, ClangArgParse::MERGE_SHORT, ClangArgParse::MERGE_HELP);
 
     //Adds flags.
     addFlag(ClangArgParse::EXCLUDE_LONG, ClangArgParse::EXCLUDE_SHORT, ClangArgParse::EXCLUDE_HELP);

@@ -166,18 +166,18 @@ void FullWalker::addVariableDecl(const MatchFinder::MatchResult result, const Va
 
     //Creates a variable entry.
     ClangNode* node = new ClangNode(ID, qualName, ClangNode::VARIABLE);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Process attributes.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
 
     //Get the scope of the decl.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::VAR_ATTRIBUTE.scopeName,
                                ClangNode::VAR_ATTRIBUTE.getScope(decl));
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::VAR_ATTRIBUTE.staticName,
                                ClangNode::VAR_ATTRIBUTE.getStatic(decl));
 }
@@ -193,10 +193,10 @@ void FullWalker::addFunctionDecl(const MatchFinder::MatchResult result, const De
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(ID, qualName, ClangNode::FUNCTION);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Process attributes.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
 
@@ -214,19 +214,19 @@ void FullWalker::addFunctionDecl(const MatchFinder::MatchResult result, const De
         AccessSpecifier spec = methDecl->getAccess();
 
         //Add these types of attributes.
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::FUNC_IS_ATTRIBUTE.staticName,
                                    std::to_string(isStatic));
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::FUNC_IS_ATTRIBUTE.constName,
                                    std::to_string(isConst));
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::FUNC_IS_ATTRIBUTE.volName,
                                    std::to_string(isVol));
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::FUNC_IS_ATTRIBUTE.varName,
                                    std::to_string(isVari));
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::VIS_ATTRIBUTE.attrName,
                                    ClangNode::VIS_ATTRIBUTE.processAccessSpec(spec));
     }
@@ -239,8 +239,8 @@ void FullWalker::addFunctionCall(const MatchFinder::MatchResult result,
     string calleeName = generateLabel(expr->getCalleeDecl()->getAsFunction(), ClangNode::FUNCTION);
 
     //Next, we find by ID.
-    vector<ClangNode*> caller = graph.findNodeByName(callerName);
-    vector<ClangNode*> callee = graph.findNodeByName(calleeName);
+    vector<ClangNode*> caller = graph->findNodeByName(callerName);
+    vector<ClangNode*> callee = graph->findNodeByName(calleeName);
 
     //Check if we have the correct size.
     if (caller.size() == 0 || callee.size() == 0){
@@ -254,7 +254,7 @@ void FullWalker::addFunctionCall(const MatchFinder::MatchResult result,
 
     //We finally add the edge.
     ClangEdge* edge = new ClangEdge(caller.at(0), callee.at(0), ClangEdge::CALLS);
-    graph.addEdge(edge);
+    graph->addEdge(edge);
 
     //Process attributes.
     //TODO: Function call attributes?
@@ -267,8 +267,8 @@ void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
     string varName = generateLabel(decl, ClangNode::VARIABLE);
 
     //Next, we find their IDs.
-    vector<ClangNode*> callerNode = graph.findNodeByName(callerName);
-    vector<ClangNode*> varNode = graph.findNodeByName(varName);
+    vector<ClangNode*> callerNode = graph->findNodeByName(callerName);
+    vector<ClangNode*> varNode = graph->findNodeByName(varName);
 
     //Check to see if we have these entries already done.
     if (callerNode.size() == 0 || varNode.size() == 0){
@@ -283,10 +283,10 @@ void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
 
     //Add the edge.
     ClangEdge* edge = new ClangEdge(callerNode.at(0), varNode.at(0), ClangEdge::REFERENCES);
-    graph.addEdge(edge);
+    graph->addEdge(edge);
 
     //Process attributes.
-    graph.addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(),
+    graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(),
                        ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, decl->getName()));
 }
 
@@ -297,13 +297,13 @@ void FullWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRe
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(classID, className, ClangNode::CLASS);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Process attributes.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::BASE_ATTRIBUTE.attrName,
                                std::to_string(classDec->getNumBases()));
 
@@ -340,8 +340,8 @@ void FullWalker::addClassRef(const MatchFinder::MatchResult result,
 
 void FullWalker::addClassRef(string srcLabel, string dstLabel){
     //Get the nodes by their label.
-    vector<ClangNode*> classNode = graph.findNodeByName(srcLabel);
-    vector<ClangNode*> innerNode = graph.findNodeByName(dstLabel);
+    vector<ClangNode*> classNode = graph->findNodeByName(srcLabel);
+    vector<ClangNode*> innerNode = graph->findNodeByName(dstLabel);
 
     //Check to see if we have these entries already done.
     if (classNode.size() == 0 || innerNode.size() == 0){
@@ -356,7 +356,7 @@ void FullWalker::addClassRef(string srcLabel, string dstLabel){
 
     //Add the edge.
     ClangEdge* edge = new ClangEdge(classNode.at(0), innerNode.at(0), ClangEdge::CONTAINS);
-    graph.addEdge(edge);
+    graph->addEdge(edge);
 
     //Process attributes.
     //TODO: Any class reference attributes?
@@ -367,8 +367,8 @@ void FullWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXX
     string baseLabel = generateLabel(baseDec, ClangNode::CLASS);
 
     //Get the nodes by their label.
-    vector<ClangNode*> classNode = graph.findNodeByName(classLabel);
-    vector<ClangNode*> baseNode = graph.findNodeByName(baseLabel);
+    vector<ClangNode*> classNode = graph->findNodeByName(classLabel);
+    vector<ClangNode*> baseNode = graph->findNodeByName(baseLabel);
 
     //Check to see if we don't have these entries.
     if (classNode.size() == 0 || baseNode.size() == 0){
@@ -382,7 +382,7 @@ void FullWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXX
 
     //Add the edge.
     ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
-    graph.addEdge(edge);
+    graph->addEdge(edge);
 
     //Process  attributes.
     //TODO: Any inheritance attributes?
@@ -412,10 +412,10 @@ void FullWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDe
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(ID, qualName, ClangNode::ENUM);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Process attributes.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
 
@@ -432,8 +432,8 @@ void FullWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDec
     string enumLabel = generateLabel(decl, ClangNode::ENUM);
 
     //Get the nodes by their label.
-    vector<ClangNode*> varNode = graph.findNodeByName(varLabel);
-    vector<ClangNode*> enumNode = graph.findNodeByName(enumLabel);
+    vector<ClangNode*> varNode = graph->findNodeByName(varLabel);
+    vector<ClangNode*> enumNode = graph->findNodeByName(enumLabel);
 
     //Check to see if we don't have these entries.
     if (varNode.size() == 0 || enumNode.size() == 0){
@@ -447,7 +447,7 @@ void FullWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDec
 
     //Add the edge.
     ClangEdge* edge = new ClangEdge(varNode.at(0), enumNode.at(0), ClangEdge::REFERENCES);
-    graph.addEdge(edge);
+    graph->addEdge(edge);
 
     //Process  attributes.
     //TODO: Any enum reference attributes?

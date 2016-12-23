@@ -11,6 +11,7 @@
 #include "ClangArgParse.h"
 #include "Walker/PartialWalker.h"
 #include "Walker/BlobWalker.h"
+#include "TupleAttribute/TAProcessor.h"
 
 using namespace std;
 using namespace clang;
@@ -20,6 +21,7 @@ using namespace llvm;
 using namespace boost::filesystem;
 
 static const string DEFAULT_OUT = "a.ta";
+static const string INSTANCE_FLAG = "$INSTANCE";
 
 static llvm::cl::OptionCategory ClangExCategory("ClangEx Options");
 
@@ -56,6 +58,25 @@ int main(int argc, const char **argv) {
     //Next, processes the matching conditions.
     walker->generateASTMatches(&finder);
 
+    //Gets whether whether we're dealing with a merge.
+    vector<string> mergeVec = parser.getOption(ClangArgParse::MERGE_LONG);
+    bool merge = false;
+    if (mergeVec.size() != 0){
+        //We're dealing with a merge.
+        merge = true;
+        string mergeFile = mergeVec.at(0);
+
+        //Loads the file.
+        TAProcessor processor = TAProcessor(INSTANCE_FLAG);
+        bool succ = processor.readTAFile(mergeFile);
+
+        if (!succ) return -1;
+
+        //Gets the graph.
+        TAGraph* graph = processor.writeTAGraph();
+        walker->setGraph(graph);
+    }
+
     //Runs the Clang tool.
     cout << "Compiling the source code..." << endl;
     int code = tool.run(newFrontendActionFactory(&finder).get());
@@ -74,7 +95,11 @@ int main(int argc, const char **argv) {
     vector<string> outputFiles = parser.getOption(ClangArgParse::OUT_LONG);
     cout << endl;
     if (outputFiles.size() == 0){
-        walker->buildGraph(DEFAULT_OUT);
+        if (merge){
+            walker->buildGraph(mergeVec.at(0));
+        } else {
+            walker->buildGraph(DEFAULT_OUT);
+        }
     } else {
         for (string file : outputFiles)
             walker->buildGraph(file);

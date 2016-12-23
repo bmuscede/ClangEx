@@ -190,7 +190,7 @@ string TAGraph::generateTAFormat() {
 
     //Generate the instances, relationships, and attributes.
     format += TA_SCHEMA;
-    format += generateInstances() + "\n";
+    format += generateInstances();
     format += generateRelationships() + "\n";
     format += generateAttributes() + "\n";
 

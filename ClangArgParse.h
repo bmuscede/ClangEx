@@ -51,6 +51,9 @@ public:
     const static std::string BLOB_LONG;
     const static std::string BLOB_SHORT;
     const static std::string BLOB_HELP;
+    const static std::string MERGE_LONG;
+    const static std::string MERGE_SHORT;
+    const static std::string MERGE_HELP;
 private:
     const bool DEFAULT_FLAG = false;
     const std::string ARG_LONG = "--";

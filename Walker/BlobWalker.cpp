@@ -126,10 +126,10 @@ void MinimalWalker::addFunctionDec(const MatchFinder::MatchResult results, const
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::FUNCTION);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Adds parameters.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 
@@ -147,19 +147,19 @@ void MinimalWalker::addFunctionDec(const MatchFinder::MatchResult results, const
         AccessSpecifier spec = methDecl->getAccess();
 
         //Add these types of attributes.
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::FUNC_IS_ATTRIBUTE.staticName,
                                    std::to_string(isStatic));
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::FUNC_IS_ATTRIBUTE.constName,
                                    std::to_string(isConst));
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::FUNC_IS_ATTRIBUTE.volName,
                                    std::to_string(isVol));
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::FUNC_IS_ATTRIBUTE.varName,
                                    std::to_string(isVari));
-        graph.addSingularAttribute(node->getID(),
+        graph->addSingularAttribute(node->getID(),
                                    ClangNode::VIS_ATTRIBUTE.attrName,
                                    ClangNode::VIS_ATTRIBUTE.processAccessSpec(spec));
     }
@@ -174,18 +174,18 @@ void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const
 
     //Creates a variable entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Process attributes.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 
     //Get the scope of the decl.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::VAR_ATTRIBUTE.scopeName,
                                ClangNode::VAR_ATTRIBUTE.getScope(dec));
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::VAR_ATTRIBUTE.staticName,
                                ClangNode::VAR_ATTRIBUTE.getStatic(dec));
 }
@@ -199,18 +199,18 @@ void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const
 
     //Creates a variable entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Process attributes.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 
     //Get the scope of the decl.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::VAR_ATTRIBUTE.scopeName,
                                ClangNode::VAR_ATTRIBUTE.getScope(dec));
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::VAR_ATTRIBUTE.staticName,
                                ClangNode::VAR_ATTRIBUTE.getStatic(dec));
 }
@@ -222,8 +222,8 @@ void MinimalWalker::addFunctionCall(const MatchFinder::MatchResult results, cons
     string calleeLabel = generateLabel(callee, ClangNode::FUNCTION);
 
     //Next, we find by ID.
-    vector<ClangNode*> callerNode = graph.findNodeByName(callerLabel);
-    vector<ClangNode*> calleeNode = graph.findNodeByName(calleeLabel);
+    vector<ClangNode*> callerNode = graph->findNodeByName(callerLabel);
+    vector<ClangNode*> calleeNode = graph->findNodeByName(calleeLabel);
 
     //Check if we have an already known reference.
     if (callerNode.size() == 0 || calleeNode.size() == 0){
@@ -237,7 +237,7 @@ void MinimalWalker::addFunctionCall(const MatchFinder::MatchResult results, cons
 
     //We finally add the edge.
     ClangEdge* edge = new ClangEdge(callerNode.at(0), calleeNode.at(0), ClangEdge::CALLS);
-    graph.addEdge(edge);
+    graph->addEdge(edge);
 
     //Process attributes.
     //TODO: Function call attributes?
@@ -265,8 +265,8 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, const
 void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, string calleeName,
                                     string callerLabel, string calleeLabel, const clang::Expr* expr){
     //Next, we find their IDs.
-    vector<ClangNode*> callerNode = graph.findNodeByName(callerLabel);
-    vector<ClangNode*> calleeNode = graph.findNodeByName(calleeLabel);
+    vector<ClangNode*> callerNode = graph->findNodeByName(callerLabel);
+    vector<ClangNode*> calleeNode = graph->findNodeByName(calleeLabel);
 
     //Check to see if we have these entries already done.
     if (callerNode.size() == 0 || calleeNode.size() == 0){
@@ -281,10 +281,10 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, strin
 
     //Add the edge.
     ClangEdge* edge = new ClangEdge(callerNode.at(0), calleeNode.at(0), ClangEdge::REFERENCES);
-    graph.addEdge(edge);
+    graph->addEdge(edge);
 
     //Process attributes.
-    graph.addAttribute(callerNode.at(0)->getID(), calleeNode.at(0)->getID(),
+    graph->addAttribute(callerNode.at(0)->getID(), calleeNode.at(0)->getID(),
                        ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, calleeName));
 }
 
@@ -312,13 +312,13 @@ void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXX
 
     //Creates a class entry.
     ClangNode* node = new ClangNode(ID, className, ClangNode::CLASS);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Process attributes.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::BASE_ATTRIBUTE.attrName,
                                std::to_string(numBases));
 
@@ -329,7 +329,7 @@ void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXX
             CXXRecordDecl *baseClass = base->getType().getTypePtr()->getAsCXXRecordDecl();
             if (baseClass == NULL) continue;
 
-            //Add a linkage in our graph.
+            //Add a linkage in our graph->
             addClassInheritanceRef(classRec, baseClass);
         }
     }
@@ -340,8 +340,8 @@ void MinimalWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, cons
     string baseLabel = generateLabel(parentClass, ClangNode::CLASS);
 
     //Get the nodes by their label.
-    vector<ClangNode*> classNode = graph.findNodeByName(classLabel);
-    vector<ClangNode*> baseNode = graph.findNodeByName(baseLabel);
+    vector<ClangNode*> classNode = graph->findNodeByName(classLabel);
+    vector<ClangNode*> baseNode = graph->findNodeByName(baseLabel);
 
     //Check to see if we don't have these entries.
     if (classNode.size() == 0 || baseNode.size() == 0){
@@ -355,7 +355,7 @@ void MinimalWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, cons
 
     //Add the edge.
     ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
-    graph.addEdge(edge);
+    graph->addEdge(edge);
 
     //Process  attributes.
     //TODO: Any inheritance attributes?
@@ -370,10 +370,10 @@ void MinimalWalker::addEnumDec(const MatchFinder::MatchResult result, const Enum
 
     //Creates a class entry.
     ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM);
-    graph.addNode(node);
+    graph->addNode(node);
 
     //Process attributes.
-    graph.addSingularAttribute(node->getID(),
+    graph->addSingularAttribute(node->getID(),
                                ClangNode::FILE_ATTRIBUTE.attrName,
                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 }

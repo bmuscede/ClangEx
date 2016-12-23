@@ -31,10 +31,12 @@ public:
     void resolveExternalReferences();
     void resolveFiles();
 
+    void setGraph(TAGraph* graph);
+
 protected:
     ClangArgParse::ClangExclude exclusions;
     const std::string CLASS_PREPEND = "class-";
-    TAGraph graph;
+    TAGraph* graph;
 
     ASTWalker();
 

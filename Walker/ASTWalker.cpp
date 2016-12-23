@@ -23,11 +23,13 @@ ASTWalker::ASTWalker(){
     curFileName = "";
 }
 
-ASTWalker::~ASTWalker() { }
+ASTWalker::~ASTWalker() {
+    delete graph;
+}
 
 void ASTWalker::buildGraph(string fileName) {
     //First, runs the graph builder process.
-    string tupleAttribute = graph.generateTAFormat();
+    string tupleAttribute = graph->generateTAFormat();
 
     //Next, writes to disk.
     ofstream taFile;
@@ -54,21 +56,21 @@ void ASTWalker::resolveExternalReferences() {
         pair<pair<string, string>, ClangEdge::EdgeType> entry = unresolvedRef.at(i);
 
         //Find the two items.
-        vector<ClangNode*> srcs = graph.findNodeByName(entry.first.first);
-        vector<ClangNode*> dsts = graph.findNodeByName(entry.first.second);
+        vector<ClangNode*> srcs = graph->findNodeByName(entry.first.first);
+        vector<ClangNode*> dsts = graph->findNodeByName(entry.first.second);
 
         //See if they could be resolved.
         if (srcs.size() == 0 || dsts.size() == 0){
             unresolved++;
         } else {
             ClangEdge* edge = new ClangEdge(srcs.at(0), dsts.at(0), entry.second);
-            graph.addEdge(edge);
+            graph->addEdge(edge);
 
             //Now, find all associated attributes.
             vector<pair<string, vector<string>>> attributes = findAttributes(entry.first.first, entry.first.second);
             for (auto attribute : attributes){
                 for (auto attVal : attribute.second){
-                    graph.addAttribute(srcs.at(0)->getID(), dsts.at(0)->getID(), attribute.first, attVal);
+                    graph->addAttribute(srcs.at(0)->getID(), dsts.at(0)->getID(), attribute.first, attVal);
                 }
             }
 
@@ -91,19 +93,27 @@ void ASTWalker::resolveFiles(){
     //Adds them to the graph.
     for (ClangNode* file : fileNodes){
         if (!(exclusions.cSubSystem && file->getType() == ClangNode::NodeType::SUBSYSTEM)){
-            graph.addNode(file);
+            graph->addNode(file);
         }
     }
 
     //Adds the edges to the graph.
     for (ClangEdge* edge : fileEdges){
         if (!(exclusions.cSubSystem && edge->getType() == ClangEdge::EdgeType::CONTAINS)){
-            graph.addEdge(edge);
+            graph->addEdge(edge);
         }
     }
 
     //Next, for each item in the graph, add it to a file.
-    graph.addNodesToFile();
+    graph->addNodesToFile();
+}
+
+void ASTWalker::setGraph(TAGraph* graph){
+    //Deletes the current graph.
+    delete this->graph;
+
+    //Sets the new graph.
+    this->graph = graph;
 }
 
 void ASTWalker::addUnresolvedRef(string callerID, string calleeID, ClangEdge::EdgeType type) {
