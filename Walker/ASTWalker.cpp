@@ -21,6 +21,9 @@ using namespace llvm;
 ASTWalker::ASTWalker(){
     //Sets the current file name to blank.
     curFileName = "";
+
+    //Creates the graph system.
+    graph = new TAGraph();
 }
 
 ASTWalker::~ASTWalker() {
