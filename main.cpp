@@ -9,8 +9,8 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "Walker/ASTWalker.h"
 #include "ClangArgParse.h"
-#include "Walker/FullWalker.h"
-#include "Walker/MinimalWalker.h"
+#include "Walker/PartialWalker.h"
+#include "Walker/BlobWalker.h"
 
 using namespace std;
 using namespace clang;

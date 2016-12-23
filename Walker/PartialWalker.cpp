@@ -3,7 +3,7 @@
 //
 
 #include <iostream>
-#include "FullWalker.h"
+#include "PartialWalker.h"
 
 using namespace std;
 using namespace clang;

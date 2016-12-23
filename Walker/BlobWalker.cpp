@@ -3,7 +3,7 @@
 //
 
 #include <iostream>
-#include "MinimalWalker.h"
+#include "BlobWalker.h"
 
 using namespace std;
 
