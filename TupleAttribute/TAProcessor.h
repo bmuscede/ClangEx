@@ -20,12 +20,22 @@ public:
     TAGraph* writeTAGraph();
 
 private:
+    const std::string COMMENT_PREFIX = "//";
+    const std::string COMMENT_PREFIX_2 = "/*";
+
     const std::string RELATION_FLAG = "FACT TUPLE";
     const std::string ATTRIBUTE_FLAG = "FACT ATTRIBUTE";
+    const std::string SCHEME_FLAG = "SCHEME TUPLE";
+
     std::string entityString;
 
-    std::pair<std::string, std::set<std::string>> relations;
-    //std::pair<std::string,
+    std::vector<std::pair<std::string, std::set<std::pair<std::string, std::string>>>> relations;
+    std::vector<std::pair<std::string, std::vector<std::pair<std::string, std::string>>>> attributes;
+
+    bool readGeneric(std::ifstream modelStream, std::string fileName);
+    bool readScheme(std::ifstream modelStream, int* lineNum);
+    bool readRelations(std::ifstream modelStream, int* lineNum);
+    bool readAttributes(std::ifstream modelStream, int* lineNum);
 };
 
 
