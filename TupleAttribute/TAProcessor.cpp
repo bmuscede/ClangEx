@@ -33,7 +33,6 @@ TAProcessor::TAProcessor(string entityRelName){
 
 TAProcessor::~TAProcessor(){ }
 
-//TODO
 bool TAProcessor::readTAFile(string fileName){
     //Starts by creating the file stream.
     ifstream modelStream(fileName);
@@ -241,7 +240,6 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     return true;
 }
 
-//TODO
 bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
     string line;
     bool blockComment = false;

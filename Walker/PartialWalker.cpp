@@ -245,7 +245,7 @@ void FullWalker::addFunctionCall(const MatchFinder::MatchResult result,
     //Check if we have the correct size.
     if (caller.size() == 0 || callee.size() == 0){
         //Add to unresolved reference list.
-        addUnresolvedRef(callerName, calleeName, ClangEdge::CALLS);
+        graph->addUnresolvedRef(callerName, calleeName, ClangEdge::CALLS);
 
         //Add the attributes.
         //TODO: Function call attributes?
@@ -273,10 +273,10 @@ void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
     //Check to see if we have these entries already done.
     if (callerNode.size() == 0 || varNode.size() == 0){
         //Add to unresolved reference list.
-        addUnresolvedRef(callerName, varName, ClangEdge::REFERENCES);
+        graph->addUnresolvedRef(callerName, varName, ClangEdge::REFERENCES);
 
         //Add attributes.
-        addUnresolvedRefAttr(callerName, varName,
+        graph->addUnresolvedRefAttr(callerName, varName,
                              ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, decl->getName()));
         return;
     }
@@ -346,7 +346,7 @@ void FullWalker::addClassRef(string srcLabel, string dstLabel){
     //Check to see if we have these entries already done.
     if (classNode.size() == 0 || innerNode.size() == 0){
         //Add to unresolved reference list.
-        addUnresolvedRef(srcLabel, dstLabel, ClangEdge::CONTAINS);
+        graph->addUnresolvedRef(srcLabel, dstLabel, ClangEdge::CONTAINS);
 
         //Add attributes.
         //TODO: Any class reference attributes?
@@ -372,7 +372,7 @@ void FullWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXX
 
     //Check to see if we don't have these entries.
     if (classNode.size() == 0 || baseNode.size() == 0){
-        addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
+        graph->addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
 
         //Add attributes.
         //TODO: Any inheritance attributes?
@@ -437,7 +437,7 @@ void FullWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDec
 
     //Check to see if we don't have these entries.
     if (varNode.size() == 0 || enumNode.size() == 0){
-        addUnresolvedRef(varLabel, enumLabel, ClangEdge::REFERENCES);
+        graph->addUnresolvedRef(varLabel, enumLabel, ClangEdge::REFERENCES);
 
         //Add attributes.
         //TODO: Any enum reference attributes?

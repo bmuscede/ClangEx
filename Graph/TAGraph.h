@@ -37,11 +37,18 @@ public:
 
     bool isPartOfClass(ClangNode* node);
 
+    void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
+    void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
+    void resolveExternalReferences(bool silent);
+
     static const std::string FILE_ATTRIBUTE;
 
 private:
     std::vector<ClangNode*> nodeList;
     std::vector<ClangEdge*> edgeList;
+
+    std::vector<std::pair<std::pair<std::string, std::string>, ClangEdge::EdgeType>> unresolvedRef;
+    std::vector<std::pair<std::pair<std::string, std::string>, std::pair<std::string, std::vector<std::string>>>*> unresolvedRefAttr;
 
     std::string const TA_SCHEMA = "//Generated TA File\n//Author: Jingwei Wu & Bryan J Muscedere\n\nSCHEME TUPLE :\n//No"
             "des\n$INHERIT\tcArchitecturalNds\tcRoot\n$INHERIT\tcAsgNds\t\t\tcRoot\n$INHERIT\tcSubSystem\t\tcArchitectur"
@@ -62,6 +69,7 @@ private:
     std::string generateInstances();
     std::string generateRelationships();
     std::string generateAttributes();
+    std::vector<std::pair<std::string, std::vector<std::string>>> findAttributes(std::string callerID, std::string calleeID);
 };
 
 

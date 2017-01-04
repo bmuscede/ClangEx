@@ -230,6 +230,98 @@ bool TAGraph::isPartOfClass(ClangNode* node){
     return false;
 }
 
+void TAGraph::addUnresolvedRef(string callerID, string calleeID, ClangEdge::EdgeType type) {
+    //Creates the entry for the vector.
+    pair<pair<string, string>, ClangEdge::EdgeType> entry = pair<pair<string, string>, ClangEdge::EdgeType>();
+    entry.first.first = callerID;
+    entry.first.second = calleeID;
+    entry.second = type;
+
+    //Finally, adds it to the unresolved vector.
+    unresolvedRef.push_back(entry);
+}
+
+void TAGraph::addUnresolvedRefAttr(string callerID, string calleeID, string attrName, string attrValue) {
+    //Find if we already have a attr entry for this list.
+    for (auto current : unresolvedRefAttr){
+        if (current->first.first.compare(callerID) == 0 &&
+            current->first.second.compare(calleeID) == 0 &&
+            current->second.first.compare(attrName) == 0){
+
+            //We already have an entry.
+            current->second.second.push_back(attrValue);
+            return;
+        }
+    }
+
+    //Creates the entry for the vector.
+    pair<pair<string, string>, pair<string, vector<string>>> *entry = new pair<pair<string, string>, pair<string, vector<string>>>();
+
+    entry->first.first = callerID;
+    entry->first.second = calleeID;
+    entry->second.first = attrName;
+    entry->second.second.push_back(attrValue);
+
+    //Adds it to the vector.
+    unresolvedRefAttr.push_back(entry);
+}
+
+vector<pair<string, vector<string>>> TAGraph::findAttributes(string callerID, string calleeID){
+    vector<pair<string, vector<string>>> values;
+
+    //Find all associated values.
+    for (auto entry : unresolvedRefAttr){
+        if (entry->first.first.compare(callerID) == 0 && entry->first.second.compare(calleeID) == 0){
+            //Adds the entry.
+            pair<string, vector<string>> value;
+            value.first = entry->second.first;
+            value.second = entry->second.second;
+
+            values.push_back(value);
+        }
+    }
+
+    return values;
+}
+
+void TAGraph::resolveExternalReferences(bool silent) {
+    int resolved = 0;
+    int unresolved = 0;
+
+    //Iterate through and resolve.
+    for (int i = 0; i < unresolvedRef.size(); i++){
+        pair<pair<string, string>, ClangEdge::EdgeType> entry = unresolvedRef.at(i);
+
+        //Find the two items.
+        vector<ClangNode*> srcs = findNodeByName(entry.first.first);
+        vector<ClangNode*> dsts = findNodeByName(entry.first.second);
+
+        //See if they could be resolved.
+        if (srcs.size() == 0 || dsts.size() == 0){
+            unresolved++;
+        } else {
+            ClangEdge* edge = new ClangEdge(srcs.at(0), dsts.at(0), entry.second);
+            addEdge(edge);
+
+            //Now, find all associated attributes.
+            vector<pair<string, vector<string>>> attributes = findAttributes(entry.first.first, entry.first.second);
+            for (auto attribute : attributes){
+                for (auto attVal : attribute.second){
+                    addAttribute(srcs.at(0)->getID(), dsts.at(0)->getID(), attribute.first, attVal);
+                }
+            }
+
+            resolved++;
+        }
+    }
+
+    //Afterwards, notify of success.
+    if (!silent){
+        cout << "Overall, " << resolved << " references were resolved and " << unresolved
+             << " references could not be resolved." << endl;
+    }
+}
+
 string TAGraph::generateInstances() {
     string instances = "FACT TUPLE : \n";
 

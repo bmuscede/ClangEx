@@ -228,7 +228,7 @@ void MinimalWalker::addFunctionCall(const MatchFinder::MatchResult results, cons
     //Check if we have an already known reference.
     if (callerNode.size() == 0 || calleeNode.size() == 0){
         //Add to unresolved reference list.
-        addUnresolvedRef(callerLabel, calleeLabel, ClangEdge::CALLS);
+        graph->addUnresolvedRef(callerLabel, calleeLabel, ClangEdge::CALLS);
 
         //Add the attributes.
         //TODO: Function call attributes?
@@ -271,10 +271,10 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, strin
     //Check to see if we have these entries already done.
     if (callerNode.size() == 0 || calleeNode.size() == 0){
         //Add to unresolved reference list.
-        addUnresolvedRef(callerLabel, calleeLabel, ClangEdge::REFERENCES);
+        graph->addUnresolvedRef(callerLabel, calleeLabel, ClangEdge::REFERENCES);
 
         //Add attributes.
-        addUnresolvedRefAttr(callerLabel, calleeLabel,
+        graph->addUnresolvedRefAttr(callerLabel, calleeLabel,
                              ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, calleeName));
         return;
     }
@@ -345,7 +345,7 @@ void MinimalWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, cons
 
     //Check to see if we don't have these entries.
     if (classNode.size() == 0 || baseNode.size() == 0){
-        addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
+        graph->addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
 
         //Add attributes.
         //TODO: Any inheritance attributes?
