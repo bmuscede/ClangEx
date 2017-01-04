@@ -24,6 +24,22 @@ string ClangEdge::getTypeString(EdgeType type) {
     return "cRef";
 }
 
+ClangEdge::EdgeType ClangEdge::getTypeEdge(string name){
+    //Goes through and checks for type.
+    if (){
+        return CONTAINS;
+    } else if (name.compare("call") == 0){
+        return CALLS;
+    } else if (name.compare("reference") == 0){
+        return REFERENCES;
+    } else if (name.compare("inherit") == 0){
+        return INHERITS;
+    }
+
+    //Default if the type isn't defined.
+    return REFERENCES;
+}
+
 ClangEdge::ClangEdge(ClangNode *src, ClangNode *dst, EdgeType type) {
     this->src = src;
     this->dst = dst;

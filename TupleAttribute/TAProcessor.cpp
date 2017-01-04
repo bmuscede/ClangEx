@@ -65,8 +65,13 @@ TAGraph* TAProcessor::writeTAGraph(){
     TAGraph* graph = new TAGraph();
 
     //We now iterate through the facts first.
-    for (auto entry : relations) writeRelations(graph, entry);
-    for (auto entry : attributes) writeAttributes(graph, entry);
+    bool succ = writeRelations(graph);
+    if (!succ){
+        cerr << "Error converting TA file into TA graph!" << endl;
+        cerr << "Check the format of your graph. Are you missing a " << entityString << " flag?" << endl;
+        return NULL;
+    }
+    writeAttributes(graph);
 
     return graph;
 }
@@ -319,13 +324,59 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
     return true;
 }
 
-//TODO
-void TAProcessor::writeRelations(TAGraph* graph, pair<string, set<pair<string, string>>> relation){
+bool TAProcessor::writeRelations(TAGraph* graph){
+    //First, finds the instance relation.
+    int pos = findRelEntry(entityString);
+    if (pos == -1){
+        cerr << "TA file does not have a relation called " << entityString << "!" << endl;
+        cerr << "Cannot continue..." << endl;
+        return false;
+    }
 
+    //Gets the entity relation.
+    auto entity = attributes.at(pos).second;
+    for (auto entry : entity){
+        //Gets the name.
+        string ID = entry.first;
+
+        //Gets the ClangNode enum.
+        ClangNode::NodeType type = ClangNode::getTypeNode(entry.second);
+
+        //Creates a new node.
+        ClangNode* node = new ClangNode(ID, ID, type);
+        graph->addNode(node);
+    }
+
+    //Next, processes the other relationships.
+    int i = 0;
+    for (auto rels : relations){
+        if (i == pos) continue;
+
+        string relName = rels.first;
+        ClangEdge::EdgeType type = ClangEdge::getTypeEdge(relName);
+
+        std::set<pair<string, string>>::iterator it;
+        for (it = rels.second.begin(); it != rels.second.end(); it++) {
+            auto nodes = *it;
+
+            //Gets the nodes.
+            ClangNode* src = graph->findNodeByID(nodes.first);
+            ClangNode* dst = graph->findNodeByID(nodes.second);
+
+            if (src == NULL || dst == NULL){
+                graph->addUnresolvedRef(nodes.first, nodes.second, type);
+                continue;
+            }
+
+            //Creates a new edge.
+            ClangEdge* edge = new ClangEdge(src, dst, type);
+        }
+    }
+
+    return true;
 }
 
-//TODO
-void TAProcessor::writeAttributes(TAGraph* graph, pair<string, vector<pair<string, string>>> attr){
+bool TAProcessor::writeAttributes(TAGraph* graph){
 
 }
 

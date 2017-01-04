@@ -104,6 +104,7 @@ private:
 public:
     enum EdgeType {CALLS, REFERENCES, CONTAINS, INHERITS};
     static std::string getTypeString(EdgeType type);
+    static ClangEdge::EdgeType getTypeEdge(std::string name);
 
     ClangEdge(ClangNode* src, ClangNode* dst, EdgeType type);
     ~ClangEdge();

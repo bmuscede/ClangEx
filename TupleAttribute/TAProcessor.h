@@ -38,8 +38,8 @@ private:
     bool readRelations(std::ifstream& modelStream, int* lineNum);
     bool readAttributes(std::ifstream& modelStream, int* lineNum);
 
-    void writeRelations(TAGraph* graph, std::pair<std::string, std::set<std::pair<std::string, std::string>>> relation);
-    void writeAttributes(TAGraph* graph, std::pair<std::string, std::vector<std::pair<std::string, std::string>>> attr);
+    bool writeRelations(TAGraph* graph);
+    bool writeAttributes(TAGraph* graph);
 
     std::vector<std::string> prepareLine(std::string line);
     int checkForComment(std::vector<std::string> line, bool &blockComment);

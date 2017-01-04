@@ -36,6 +36,30 @@ string ClangNode::getTypeString(NodeType type) {
     return "cRoot";
 }
 
+ClangNode::NodeType ClangNode::getTypeNode(string name){
+    //Generates switch statement.
+    if (name.compare("cFile") == 0){
+        return FILE;
+    } else if (name.compare("cVariable") == 0){
+        return VARIABLE;
+    } else if (name.compare("cFunction") == 0){
+        return  FUNCTION;
+    } else if (name.compare("cSubSystem") == 0){
+        return SUBSYSTEM;
+    } else if (name.compare("cClass") == 0){
+        return CLASS;
+    } else if (name.compare("cUnion") == 0){
+        return UNION;
+    } else if (name.compare("cStruct") == 0){
+        return STRUCT;
+    } else if (name.compare("cEnum") == 0){
+        return ENUM;
+    }
+
+    //Default value if there is no node type specified.
+    return SUBSYSTEM;
+}
+
 ClangNode::ClangNode(string ID, string name, NodeType type) {
     //Set the ID and type.
     this->ID = ID;
@@ -72,8 +96,6 @@ bool ClangNode::addAttribute(string key, string value) {
 }
 
 bool ClangNode::clearAttributes(string key){
-    if (key.compare(NAME_FLAG) == 0) return false;
-
     //Check if we already have an empty set of attributes.
     if (nodeAttributes[key].size() == 0) return false;
 
