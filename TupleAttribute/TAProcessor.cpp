@@ -40,7 +40,8 @@ bool TAProcessor::readTAFile(string fileName){
 
     //Check if the file opens.
     if (!modelStream.is_open()){
-        cerr << "The TA file " << fileName << " does not exist!";
+        cerr << "The TA file " << fileName << " does not exist!" << endl;
+        cerr << "Exiting program..." << endl;
         return false;
     }
 
@@ -158,6 +159,7 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     auto pos = modelStream.tellg();
     while(getline(modelStream, line)){
         (*lineNum)++;
+        if (line.compare("") == 0 || line.find_first_not_of(' ') != std::string::npos) continue;
 
         //Tokenize.
         vector<string> entry = prepareLine(line);
@@ -249,6 +251,7 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
     auto pos = modelStream.tellg();
     while(getline(modelStream, line)){
         (*lineNum)++;
+        if (line.compare("") == 0 || line.find_first_not_of(' ') != std::string::npos) continue;
 
         //Prepare the line.
         vector<string> entry = prepareAttributeLine(line);

@@ -66,6 +66,8 @@ int main(int argc, const char **argv) {
         merge = true;
         string mergeFile = mergeVec.at(0);
 
+        cout << "Reading TA file " << mergeFile << "..." << endl << endl;
+
         //Loads the file.
         TAProcessor processor = TAProcessor(INSTANCE_FLAG);
         bool succ = processor.readTAFile(mergeFile);
