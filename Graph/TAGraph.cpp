@@ -149,7 +149,7 @@ bool TAGraph::addSingularAttribute(string ID, string key, string value){
     return node->addAttribute(key, value);
 }
 
-bool TAGraph::addSinuglarAttribute(string IDSrc, string IDDst, string key, string value){
+bool TAGraph::addSingularAttribute(string IDSrc, string IDDst, string key, string value){
     //Get the ClangEdge.
     ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst);
     if (edge == NULL) return false;
@@ -320,6 +320,14 @@ void TAGraph::resolveExternalReferences(bool silent) {
         cout << "Overall, " << resolved << " references were resolved and " << unresolved
              << " references could not be resolved." << endl;
     }
+}
+
+vector<ClangNode*> TAGraph::getNodes(){
+    return nodeList;
+}
+
+vector<ClangEdge*> TAGraph::getEdges(){
+    return edgeList;
 }
 
 string TAGraph::generateInstances() {

@@ -16,7 +16,7 @@ public:
     bool readTAFile(std::string fileName);
     bool writeTAFile(std::string fileName);
 
-    bool readTAGraph(TAGraph graph);
+    bool readTAGraph(TAGraph* graph);
     TAGraph* writeTAGraph();
 
 private:
@@ -31,7 +31,9 @@ private:
     std::string entityString;
 
     std::vector<std::pair<std::string, std::set<std::pair<std::string, std::string>>>> relations;
-    std::vector<std::pair<std::string, std::vector<std::pair<std::string, std::string>>>> attributes;
+    std::vector<std::pair<std::string, std::vector<std::pair<std::string, std::vector<std::string>>>>> attributes;
+    std::vector<std::pair<std::pair<std::string, std::string>,
+            std::vector<std::pair<std::string, std::vector<std::string>>>>> relAttributes;
 
     bool readGeneric(std::ifstream& modelStream, std::string fileName);
     bool readScheme(std::ifstream& modelStream, int* lineNum);
@@ -45,10 +47,17 @@ private:
     int checkForComment(std::vector<std::string> line, bool &blockComment);
     int checkForBlockEnd(std::vector<std::string> line, bool &blockComment);
     int findRelEntry(std::string name);
+    void createRelEntry(std::string name);
     std::vector<std::string> prepareAttributeLine(std::string line);
     std::vector<std::string> prepareAttributes(std::string attrList, bool &success);
     int findAttrEntry(std::string attrName);
+    int findAttrEntry(std::string src, std::string dst);
+    void createAttrEntry(std::string attrName);
+    void createAttrEntry(std::string src, std::string dst);
     void getAttribute(std::string curAttr, std::string &key, std::string &value);
+
+    void processNodes(std::vector<ClangNode*> nodes);
+    void processEdges(std::vector<ClangEdge*> edges);
 };
 
 

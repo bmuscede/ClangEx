@@ -51,11 +51,23 @@ bool TAProcessor::readTAFile(string fileName){
     return success;
 }
 
+//TODO FINISH
 bool TAProcessor::writeTAFile(string fileName){
+    //Open up a file pointer.
+
     return true;
 }
 
-bool TAProcessor::readTAGraph(TAGraph graph){
+bool TAProcessor::readTAGraph(TAGraph* graph){
+    if (graph == NULL){
+        cerr << "Invalid TA graph object supplied." << endl;
+        cerr << "Please supply an initialized TA graph object!" << endl;
+        return false;
+    }
+
+    //We simply read through the nodes and edges.
+    processNodes(graph->getNodes());
+    processEdges(graph->getEdges());
 
     return true;
 }
@@ -66,12 +78,9 @@ TAGraph* TAProcessor::writeTAGraph(){
 
     //We now iterate through the facts first.
     bool succ = writeRelations(graph);
-    if (!succ){
-        cerr << "Error converting TA file into TA graph!" << endl;
-        cerr << "Check the format of your graph. Are you missing a " << entityString << " flag?" << endl;
-        return NULL;
-    }
-    writeAttributes(graph);
+    if (!succ) return NULL;
+    succ = writeAttributes(graph);
+    if (!succ) return NULL;
 
     return graph;
 }
@@ -154,6 +163,7 @@ bool TAProcessor::readScheme(ifstream& modelStream, int* lineNum){
     return true;
 }
 
+//TODO REMOVE COMMENT PROCESSING
 bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     string line;
     bool blockComment = false;
@@ -208,30 +218,18 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
         //Finds if a pair exists.
         int pos = findRelEntry(relName);
         if (pos == -1) {
-            //Creates a new pair.
-            pair<string, set<pair<string, string>>> relEntry = pair<string, set<pair<string, string>>>();
-            relEntry.first = relName;
-
-            //Next, creates the set.
-            set<pair<string, string>> setEntry = set<pair<string, string>>();
-
-            //Finally, creates the pair with the to and from.
-            pair<string, string> edge = pair<string, string>();
-            edge.first = toName;
-            edge.second = fromName;
-
-            //Inserts the pair in the set
-            setEntry.insert(edge);
-            relEntry.second = setEntry;
-        } else {
-            //Creates a to from pair.
-            pair<string, string> edge = pair<string, string>();
-            edge.first = toName;
-            edge.second = fromName;
-
-            //Inserts it.
-            relations.at(pos).second.insert(edge);
+            createRelEntry(relName);
+            pos = (int) relations.size() - 1;
         }
+
+        //Creates a to from pair.
+        pair<string, string> edge = pair<string, string>();
+        edge.first = toName;
+        edge.second = fromName;
+
+        //Inserts it.
+        relations.at(pos).second.insert(edge);
+
     }
 
     //Check if the block comment system in still in place.
@@ -245,6 +243,9 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     return true;
 }
 
+//TODO PROCESS RELATION ATTRIBUTES TOO.
+//TODO PROCESS LIST ATTRIBUTES.
+//TODO REMOVE COMMENT PROCESSING.
 bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
     string line;
     bool blockComment = false;
@@ -297,12 +298,8 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
 
         //Next, we process the attributes.
         int pos = findAttrEntry(attrName);
-        if (pos == -1){
-            //Createa a new entry.
-            pair<string, vector<pair<string, string>>> attr = pair<string, vector<pair<string, string>>>();
-            attr.first = attrName;
-            this->attributes.push_back(attr);
-
+        if (pos == -1) {
+            createAttrEntry(attrName);
             pos = (int) attributes.size() - 1;
         }
 
@@ -313,9 +310,9 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
             getAttribute(curAttribute, key, value);
 
             //Adds the key/value pair in.
-            pair<string, string> kV = pair<string, string>();
+            pair<string, vector<string>> kV = pair<string, vector<string>>();
             kV.first = key;
-            kV.second = value;
+            kV.second.push_back(value);
 
             this->attributes.at(pos).second.push_back(kV);
         }
@@ -334,7 +331,7 @@ bool TAProcessor::writeRelations(TAGraph* graph){
     }
 
     //Gets the entity relation.
-    auto entity = attributes.at(pos).second;
+    auto entity = relations.at(pos).second;
     for (auto entry : entity){
         //Gets the name.
         string ID = entry.first;
@@ -377,7 +374,50 @@ bool TAProcessor::writeRelations(TAGraph* graph){
 }
 
 bool TAProcessor::writeAttributes(TAGraph* graph){
+    //We simply go through and process them.
+    for (auto attr : attributes){
+        string itemID = attr.first;
 
+        //Next, we go through all the KVs.
+        for (auto kv : attr.second){
+            string key = kv.first;
+            vector<string> values = kv.second;
+
+            //Now, updates the attributes.
+            for (auto value : values) {
+                bool succ = graph->addAttribute(itemID, key, value);
+                if (!succ) {
+                    cerr << "TA file does not have a node called " << itemID << "!" << endl;
+                    cerr << "This item needs to be specified before giving it attributes." << endl;
+                    return false;
+                }
+            }
+        }
+    }
+
+    //Next, we deal with relation attributes.
+    for (auto attr : relAttributes){
+        string srcID = attr.first.first;
+        string dstID = attr.first.second;
+
+        //Next, we go through all the KVs.
+        for (auto kv : attr.second){
+            string key = kv.first;
+            vector<string> values = kv.second;
+
+            //Now, updates the attributes.
+            for (auto value : values) {
+                bool succ = graph->addAttribute(srcID, dstID, key, value);
+                if (!succ) {
+                    cerr << "TA file does not have an edge called (" << srcID << ", " << dstID << ")!" << endl;
+                    cerr << "This item needs to be specified before giving it attributes." << endl;
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 vector<string> TAProcessor::prepareLine(string line){
@@ -388,7 +428,6 @@ vector<string> TAProcessor::prepareLine(string line){
     //Trim the strings.
     vector<string> modified;
     for (string curr : stringList){
-        //TODO: Check!
         trim(curr);
         modified.push_back(curr);
     }
@@ -441,6 +480,13 @@ int TAProcessor::findRelEntry(string name){
     return -1;
 }
 
+void TAProcessor::createRelEntry(string name){
+    pair<string, set<pair<string, string>>> entry = pair<string, set<pair<string, string>>>();
+    entry.first = name;
+
+    relations.push_back(entry);
+}
+
 vector<string> TAProcessor::prepareAttributeLine(string line){
     //Gets the position of the first space.
     auto pos = line.find(' ');
@@ -455,7 +501,6 @@ vector<string> TAProcessor::prepareAttributeLine(string line){
     //Trims it.
     vector<string> modified;
     for (string curr : att){
-        //TODO: Check!
         trim(curr);
         modified.push_back(curr);
     }
@@ -529,7 +574,7 @@ vector<string> TAProcessor::prepareAttributes(string attrList, bool &success){
 int TAProcessor::findAttrEntry(string attrName){
     int i = 0;
 
-    //Goes through the relation vector.
+    //Goes through the attribute vector.
     for (auto attr : attributes){
         if (attr.first.compare(attrName) == 0) return i;
 
@@ -537,6 +582,38 @@ int TAProcessor::findAttrEntry(string attrName){
     }
 
     return -1;
+}
+
+int TAProcessor::findAttrEntry(string src, string dst){
+    int i = 0;
+
+    //Goes through the attribute vector
+    for (auto attr : relAttributes){
+        if (attr.first.first.compare(src) == 0 &&
+                attr.first.second.compare(dst) ==0) return i;
+
+        i++;
+    }
+
+    return -1;
+}
+
+void TAProcessor::createAttrEntry(string attrName){
+    //Create the pair object.
+    pair<string, vector<pair<string, vector<string>>>> entry = pair<string, vector<pair<string, vector<string>>>>();
+    entry.first = attrName;
+
+    attributes.push_back(entry);
+}
+
+void TAProcessor::createAttrEntry(string src, string dst){
+    //Create the pair object.
+    pair<pair<string, string>, vector<pair<string, vector<string>>>> entry =
+        pair<pair<string, string>, vector<pair<string, vector<string>>>>();
+    entry.first.first = src;
+    entry.first.second = dst;
+
+    relAttributes.push_back(entry);
 }
 
 void TAProcessor::getAttribute(string curAttr, string &key, string &value){
@@ -554,4 +631,102 @@ void TAProcessor::getAttribute(string curAttr, string &key, string &value){
     //Finally, sets the KV.
     key = correct.at(0);
     value = correct.at(1);
+}
+
+void TAProcessor::processNodes(vector<ClangNode*> nodes){
+    //Sees if we have an entry for the current relation.
+    int pos = findRelEntry(entityString);
+    if (pos == -1) {
+        createRelEntry(entityString);
+        pos = (int) relations.size() - 1;
+    }
+
+    //Iterate through the nodes.
+    for (ClangNode* curNode : nodes){
+        //Adds in the node information.
+        pair<string, string> relPair = pair<string, string>();
+        relPair.first = curNode->getID();
+        relPair.second = ClangNode::getTypeString(curNode->getType());
+        relations.at(pos).second.insert(relPair);
+
+        //Adds in the attributes.
+        auto curAttr = curNode->getAttributes();
+        if (curAttr.size() < 1) continue;
+
+        //Adds in the attribute entry.
+        int attrPos = findAttrEntry(curNode->getID());
+        if (attrPos == -1) {
+            createAttrEntry(curNode->getID());
+            attrPos = (int) attributes.size() - 1;
+        }
+
+        //Iterates through them.
+        typedef map<string, vector<string>>::iterator itType;
+        for(itType it = curAttr.begin(); it != curAttr.end(); it++) {
+            pair<string, vector<string>> kVs = pair<string, vector<string>>();
+            kVs.first = it->first;
+
+            //Iterates through all the values.
+            for (string curVal : it->second){
+                //Creates the entry.
+                kVs.second.push_back(curVal);
+            }
+
+            //Adds the pair to the attribute list.
+            attributes.at(attrPos).second.push_back(kVs);
+        }
+    }
+}
+
+void TAProcessor::processEdges(vector<ClangEdge*> edges){
+    //Iterate over the edges.
+    for (auto curEdge : edges){
+        string typeName = ClangEdge::getTypeString(curEdge->getType());
+
+        //Sees if we have an entry for the current type.
+        int pos = findRelEntry(typeName);
+        if (pos == -1) {
+            createRelEntry(typeName);
+            pos = (int) relations.size() - 1;
+        }
+
+        //Now, we simply add it.
+        string srcID = curEdge->getSrc()->getID();
+        string dstID = curEdge->getDst()->getID();
+
+        pair<string, string> relPair = pair<string, string>();
+        relPair.first = srcID;
+        relPair.second = dstID;
+
+        //Add it to the relation list.
+        relations.at(pos).second.insert(relPair);
+
+
+        //Now we deal with any edge attributes;
+        auto edgeAttr = curEdge->getAttributes();
+        if (edgeAttr.size() < 1) continue;
+
+        //Adds in an attribute entry.
+        int attrPos = findAttrEntry(srcID, dstID);
+        if (attrPos == -1) {
+            createAttrEntry(srcID, dstID);
+            attrPos = (int) relAttributes.size() - 1;
+        }
+
+        //Iterates through the attributes.
+        typedef map<string, vector<string>>::iterator itType;
+        for(itType it = edgeAttr.begin(); it != edgeAttr.end(); it++) {
+            pair<string, vector<string>> kVs = pair<string, vector<string>>();
+            kVs.first = it->first;
+
+            //Iterates through all the values.
+            for (string curVal : it->second){
+                //Creates the entry.
+                kVs.second.push_back(curVal);
+            }
+
+            //Adds the pair to the attribute list.
+            relAttributes.at(attrPos).second.push_back(kVs);
+        }
+    }
 }

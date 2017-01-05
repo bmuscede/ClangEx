@@ -151,6 +151,10 @@ string ClangNode::generateAttribute() {
     return att;
 }
 
+map<string, vector<std::string>> ClangNode::getAttributes(){
+    return nodeAttributes;
+};
+
 string ClangNode::printSingleAttribute(string key, vector<string> value){
     return key + " = " + value.at(0);
 }

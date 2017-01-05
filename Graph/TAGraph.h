@@ -28,7 +28,7 @@ public:
     bool edgeExists(std::string IDOne, std::string IDTwo);
 
     bool addSingularAttribute(std::string ID, std::string key, std::string value);
-    bool addSinuglarAttribute(std::string IDSrc, std::string IDDst, std::string key, std::string value);
+    bool addSingularAttribute(std::string IDSrc, std::string IDDst, std::string key, std::string value);
     bool addAttribute(std::string ID, std::string key, std::string value);
     bool addAttribute(std::string IDSrc, std::string IDDst, std::string key, std::string value);
 
@@ -40,6 +40,9 @@ public:
     void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
     void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
     void resolveExternalReferences(bool silent);
+
+    std::vector<ClangNode*> getNodes();
+    std::vector<ClangEdge*> getEdges();
 
     static const std::string FILE_ATTRIBUTE;
 

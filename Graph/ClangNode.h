@@ -103,12 +103,15 @@ public:
     std::string generateInstance();
     std::string generateAttribute();
 
+    std::map<std::string, std::vector<std::string>> getAttributes();
+
     /** ATTRIBUTE VARS */
     static AttributeStruct FILE_ATTRIBUTE;
     static BaseStruct BASE_ATTRIBUTE;
     static FuncIsAStruct FUNC_IS_ATTRIBUTE;
     static AccessStruct VIS_ATTRIBUTE;
     static VarStruct VAR_ATTRIBUTE;
+
 private:
     const std::string INSTANCE_FLAG = "$INSTANCE";
     const std::string NAME_FLAG = "label";

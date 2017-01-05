@@ -26,7 +26,7 @@ string ClangEdge::getTypeString(EdgeType type) {
 
 ClangEdge::EdgeType ClangEdge::getTypeEdge(string name){
     //Goes through and checks for type.
-    if (){
+    if (name.compare("contains") == 0){
         return CONTAINS;
     } else if (name.compare("call") == 0){
         return CALLS;
@@ -126,6 +126,10 @@ string ClangEdge::generateAttribute() {
     attributeList += " }";
 
     return attributeList;
+}
+
+map<string, vector<string>> ClangEdge::getAttributes(){
+    return edgeAttributes;
 }
 
 std::string ClangEdge::printSingleAttribute(string key, vector<string> value){

@@ -122,6 +122,8 @@ public:
     std::string generateRelationship();
     std::string generateAttribute();
 
+    std::map<std::string, std::vector<std::string>> getAttributes();
+
     /** ATTRIBUTE VARS */
     static AccessStruct ACCESS_ATTRIBUTE;
 
