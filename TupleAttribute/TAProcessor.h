@@ -20,13 +20,14 @@ public:
     TAGraph* writeTAGraph();
 
 private:
-    const std::string COMMENT_PREFIX = "//";
-    const std::string COMMENT_BLOCK_START = "/*";
-    const std::string COMMENT_BLOCK_END = "*/";
+    const char COMMENT_CHAR = '/';
+    const char COMMENT_BLOCK_CHAR = '*';
 
     const std::string RELATION_FLAG = "FACT TUPLE";
     const std::string ATTRIBUTE_FLAG = "FACT ATTRIBUTE";
     const std::string SCHEME_FLAG = "SCHEME TUPLE";
+
+    const std::string SCHEMA_HEADER = "//TAProcessor TA File Created by ClangEx";
 
     std::string entityString;
 
@@ -43,18 +44,23 @@ private:
     bool writeRelations(TAGraph* graph);
     bool writeAttributes(TAGraph* graph);
 
-    std::vector<std::string> prepareLine(std::string line);
-    int checkForComment(std::vector<std::string> line, bool &blockComment);
-    int checkForBlockEnd(std::vector<std::string> line, bool &blockComment);
+    std::string generateTAString();
+    std::string generateRelationString();
+    std::string generateAttributeString();
+    std::string generateAttributeStringFromKVs(std::vector<std::pair<std::string, std::vector<std::string>>> attr);
+
+    std::vector<std::pair<std::string, std::vector<std::string>>> generateAttributes(int lineNum,
+                                                                                     bool& succ,
+                                                                                     std::vector<std::string> line);
+    std::vector<std::string> prepareLine(std::string line, bool &blockComment);
+    std::string removeStandardComment(std::string line);
+    std::string removeBlockComment(std::string line, bool &blockComment);
     int findRelEntry(std::string name);
     void createRelEntry(std::string name);
-    std::vector<std::string> prepareAttributeLine(std::string line);
-    std::vector<std::string> prepareAttributes(std::string attrList, bool &success);
     int findAttrEntry(std::string attrName);
     int findAttrEntry(std::string src, std::string dst);
     void createAttrEntry(std::string attrName);
     void createAttrEntry(std::string src, std::string dst);
-    void getAttribute(std::string curAttr, std::string &key, std::string &value);
 
     void processNodes(std::vector<ClangNode*> nodes);
     void processEdges(std::vector<ClangEdge*> edges);

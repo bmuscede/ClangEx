@@ -51,10 +51,22 @@ bool TAProcessor::readTAFile(string fileName){
     return success;
 }
 
-//TODO FINISH
 bool TAProcessor::writeTAFile(string fileName){
     //Open up a file pointer.
+    ofstream taFile;
+    taFile.open(fileName.c_str());
 
+    //Check if it opened.
+    if (!taFile.is_open()){
+        cerr << "The output TA file could not be written to the file called " << fileName << "!" << endl;
+        return false;
+    }
+
+    //Generates the TA file.
+    taFile << generateTAString();
+    taFile.close();
+
+    cout << "TA file successfully written to " << fileName << "!" << endl;
     return true;
 }
 
@@ -163,7 +175,6 @@ bool TAProcessor::readScheme(ifstream& modelStream, int* lineNum){
     return true;
 }
 
-//TODO REMOVE COMMENT PROCESSING
 bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     string line;
     bool blockComment = false;
@@ -173,42 +184,18 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     auto pos = modelStream.tellg();
     while(getline(modelStream, line)){
         (*lineNum)++;
-        if (line.compare("") == 0 || line.find_first_not_of(' ') != std::string::npos) continue;
 
         //Tokenize.
-        vector<string> entry = prepareLine(line);
-
-        //Check whether we've reached the end of the block comment.
-        if (blockComment) {
-            int blockEnd = checkForBlockEnd(entry, blockComment);
-            if (blockComment) continue;
-
-            //Trim the entry vector to start at block end.
-            entry.erase(entry.begin(), entry.begin() + blockEnd);
-            if (entry.size() == 0) continue;
-        }
-
-        //Check the comment content.
-        int commentNum = checkForComment(entry, blockComment);
-
-        //First, check if we have a block comment.
-        if (blockComment && commentNum == 0){
-            continue;
-        } else if (blockComment && commentNum == 3) {
-            continue;
-        } else if (blockComment){
-            cerr << "Invalid input on line " << *lineNum << "." << endl;
-            cerr << "Line should contain a single tuple in RSF format." << endl;
-            return false;
-        }
+        vector<string> entry = prepareLine(line, blockComment);
+        if (line.compare("") == 0 || line.find_first_not_of(' ') != std::string::npos) continue;
+        if (blockComment && entry.size() == 0) continue;
 
         //Check whether the entry is valid.
-        if ((entry.size() < 3 && commentNum < 3) ||
-                (entry.size() > 3 && commentNum > 3)) {
+        if (entry.size() < 3) {
             cerr << "Invalid input on line " << *lineNum << "." << endl;
             cerr << "Line should contain a single tuple in RSF format." << endl;
             return false;
-        } else if (commentNum == 0) continue;
+        }
 
         //Next, gets the relation name.
         auto relName = entry.at(0);
@@ -232,20 +219,9 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
 
     }
 
-    //Check if the block comment system in still in place.
-    if (blockComment){
-        cerr << "No closing symbol found for block comment in TA file!" << endl;
-        cerr << "Locate the start of your block comment and close it." << endl;
-
-        return false;
-    }
-
     return true;
 }
 
-//TODO PROCESS RELATION ATTRIBUTES TOO.
-//TODO PROCESS LIST ATTRIBUTES.
-//TODO REMOVE COMMENT PROCESSING.
 bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
     string line;
     bool blockComment = false;
@@ -253,68 +229,68 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
 
     //Start iterating through
     auto pos = modelStream.tellg();
-    while(getline(modelStream, line)){
+    while(getline(modelStream, line)) {
         (*lineNum)++;
-        if (line.compare("") == 0 || line.find_first_not_of(' ') != std::string::npos) continue;
 
         //Prepare the line.
-        vector<string> entry = prepareAttributeLine(line);
+        vector<string> entry = prepareLine(line, blockComment);
+        if (line.compare("") == 0 || line.find_first_not_of(' ') != std::string::npos) continue;
+        if (blockComment && line.size() == 0) continue;
 
-        //Check for comments.
-        int commentNum = checkForComment(entry, blockComment);
+        //Checks for what type of system we're dealing with.
+        bool succ = true;
+        if (entry.at(0).compare("(") == 0 || entry.at(0).find("(") == 0) {
+            //Relation attribute.
+            if (entry.at(0).compare("(") == 0){
+                entry.erase(entry.begin());
+            } else {
+                entry.at(0).erase(0, 1);
+            }
 
-        //Check comment validity.
-        if (blockComment && commentNum == 0){
-            continue;
-        } else if (blockComment){
-            cerr << "Invalid input on line " << *lineNum << "." << endl;
-            cerr << "Attributes are invalidly formatted." << endl;
-            return false;
-        }
-        if (commentNum == 0) continue;
-        else if (commentNum == 1) {
-            cerr << "Invalid input on line " << *lineNum << "." << endl;
-            cerr << "Attributes are invalidly formatted." << endl;
-            return false;
-        }
+            //Check for valid entry.
+            if (entry.size() < 2 || entry.at(1).compare(")") == 0){
+                cerr << "Invalid input on line " << *lineNum << "." << endl;
+                cerr << "Attribute line is too short to be valid!" << endl;
+                return false;
+            }
 
-        if (entry.size() != 1){
-            cerr << "Invalid input on line " << *lineNum << "." << endl;
-            cerr << "Attribute line is missing attributes or is invalidly formatted!" << endl;
-            return false;
-        }
+            //Gets the IDs.
+            string srcID = entry.at(0);
+            if (entry.at(1).back() == ')'){
+                entry.at(1).erase(entry.at(1).size() - 1, 1);
+            } else {
+                entry.erase(entry.begin() + 2);
+            }
+            string dstID = entry.at(1);
 
-        //Next, prepares the attribute list.
-        string attrName = entry.at(0);
-        bool success = true;
-        vector<string> attributes = prepareAttributes(entry.at(1), success);
+            //Generates the attribute list.
+            auto attrs = generateAttributes(*lineNum, succ, entry);
+            if (!succ) return false;
 
-        //Check whether it succeeded.
-        if (!success){
-            cerr << "Invalid entry on line " << *lineNum << "." << endl;
-            cerr << "Attribute line is missing attributes or is invalidly formatted!" << endl;
-            return false;
-        }
+            //Next, we insert
+            int pos = findAttrEntry(srcID, dstID);
+            if (pos == -1) {
+                createAttrEntry(srcID, dstID);
+                pos = (int) attributes.size() - 1;
+            }
+            this->attributes.at(pos).second = attrs;
+        } else {
+            //Regular attribute.
+            //Gets the name and trims down the vector.
+            string attrName = entry.at(0);
+            entry.erase(entry.begin());
 
-        //Next, we process the attributes.
-        int pos = findAttrEntry(attrName);
-        if (pos == -1) {
-            createAttrEntry(attrName);
-            pos = (int) attributes.size() - 1;
-        }
+            //Generates the attribute list.
+            auto attrs = generateAttributes(*lineNum, succ, entry);
+            if (!succ) return false;
 
-        //Now, we add the attributes in.
-        for (string curAttribute : attributes){
-            string key;
-            string value;
-            getAttribute(curAttribute, key, value);
-
-            //Adds the key/value pair in.
-            pair<string, vector<string>> kV = pair<string, vector<string>>();
-            kV.first = key;
-            kV.second.push_back(value);
-
-            this->attributes.at(pos).second.push_back(kV);
+            //Next, we insert
+            int pos = findAttrEntry(attrName);
+            if (pos == -1) {
+                createAttrEntry(attrName);
+                pos = (int) attributes.size() - 1;
+            }
+            this->attributes.at(pos).second = attrs;
         }
     }
 
@@ -420,7 +396,184 @@ bool TAProcessor::writeAttributes(TAGraph* graph){
     return true;
 }
 
-vector<string> TAProcessor::prepareLine(string line){
+string TAProcessor::generateTAString(){
+    string taString = "";
+
+    //Gets the time.
+    time_t now = time(0);
+    string curTime = string(ctime(&now));
+
+    //Start by generating the header.
+    taString += SCHEMA_HEADER + "\n";
+    taString += "//Generated on: " + curTime + "\n";
+
+    //Next, gets the relations.
+    taString += generateRelationString();
+    taString += generateAttributeString();
+
+    return taString;
+}
+
+string TAProcessor::generateRelationString(){
+    string relString = "";
+    relString += RELATION_FLAG + "\n";
+
+    //Iterate through the relations.
+    for (auto curr : relations){
+        string relName = curr.first;
+
+        //Iterate through the entries.
+        for (auto currRel : curr.second){
+            relString += relName + " " + currRel.first + " " + currRel.second + "\n";
+        }
+    }
+
+    relString + "\n";
+    return relString;
+}
+
+string TAProcessor::generateAttributeString(){
+    string attrString = "";
+    attrString += ATTRIBUTE_FLAG + "\n";
+
+    //Iterate through the entity attributes first.
+    for (auto curr : attributes){
+        string attributeID = curr.first;
+        attrString += attributeID + generateAttributeStringFromKVs(curr.second) + "\n";
+    }
+
+    //Next, deals with the relation attribute list.
+    for (auto curr : relAttributes){
+        attrString += "(" + curr.first.first + " " +
+                curr.first.second + ")" + generateAttributeStringFromKVs(curr.second) + "\n";
+    }
+
+    return attrString;
+}
+
+string TAProcessor::generateAttributeStringFromKVs(vector<pair<string, vector<string>>> attr){
+    string attrString = " { ";
+
+    //Iterate through the pairs.
+    for (auto currAttr : attr){
+        //Check what type of string we need to generate.
+        if (currAttr.second.size() == 1){
+            attrString += currAttr.first + " = " + currAttr.second.at(0) + " ";
+        } else {
+            attrString += currAttr.first + " = (";
+            for (auto value : currAttr.second)
+                attrString += " " + value;
+
+            attrString += " ) ";
+        }
+    }
+    attrString += " }";
+
+    return attrString;
+}
+
+vector<pair<string, vector<string>>> TAProcessor::generateAttributes(int lineNum, bool& succ,
+                                                                     std::vector<std::string> line){
+    if (line.size() < 3){
+        succ = false;
+        return vector<pair<string, vector<string>>>();
+    }
+
+    //Start by expecting the { symbol.
+    if (line.at(0).compare("{") == 0){
+        line.erase(line.begin());
+    } else if (line.at(0).find("{") == 0){
+        line.at(0).erase(0, 1);
+    } else {
+        succ = false;
+        return vector<pair<string, vector<string>>>();
+    }
+
+    //Now, we iterate until we hit the end.
+    int i = 0;
+    bool end = false;
+    string current = line.at(i);
+    vector<pair<string, vector<string>>> attrList = vector<pair<string, vector<string>>>();
+    do {
+        //Adds in the first part of the entry.
+        pair<string, vector<string>> currentEntry = pair<string, vector<string>>();
+        currentEntry.first = current;
+
+        //Checks for validity.
+        if (i + 2 >= current.size() || line.at(++i).compare("=") != 0){
+            succ = false;
+            return vector<pair<string, vector<string>>>();
+        }
+
+        //Gets the next KV pair.
+        string next = line.at(++i);
+        if (next.compare("(") == 0 || next.find("(") == 0) {
+            //First, remove the ( symbol.
+            if (next.find("(") == 0) {
+                next.erase(0, 1);
+            } else {
+                if (i + 1 == line.size()){
+                    succ = false;
+                    return vector<pair<string, vector<string>>>();
+                }
+                next = line.at(++i);
+            }
+
+            //We now iterate through the attribute list.
+            bool endList = false;
+            do {
+                //Check if we hit the end.
+                if (next.find(")") == next.size() - 1){
+                    next.erase(next.size() - 1, 1);
+                    endList = true;
+                } else if (next.compare(")") == 0) {
+                    break;
+                }
+
+                //Next, process the item.
+                currentEntry.second.push_back(next);
+
+                //Finally check if we've hit the conditions.
+                if (endList){
+                    break;
+                } else if (i + 1 == line.size()){
+                    succ = false;
+                    return vector<pair<string, vector<string>>>();
+                } else {
+                    next = line.at(++i);
+                }
+            } while (true);
+        } else {
+            //Check if we have a "} symbol at the end.
+            if (next.find("}") == next.size() - 1){
+                end = true;
+                next.erase(next.size() - 1, 1);
+            }
+
+            //Add it to the current entry.
+            currentEntry.second.push_back(next);
+        }
+
+        //Increments the current string.
+        if (i + 1 == line.size() && end == false){
+            succ = false;
+            return vector<pair<string, vector<string>>>();
+        } else if (!end){
+            current = line.at(++i);
+        }
+
+        //Adds the entry in.
+        attrList.push_back(currentEntry);
+    } while (current.compare("}") != 0 && end == false);
+
+    return attrList;
+}
+
+vector<string> TAProcessor::prepareLine(string line, bool& blockComment){
+    //Perform comment processing.
+    line = removeStandardComment(line);
+    line = removeBlockComment(line, blockComment);
+
     //Split into a vector.
     vector<string> stringList;
     boost::split(stringList, line, boost::is_any_of(" "));
@@ -435,36 +588,53 @@ vector<string> TAProcessor::prepareLine(string line){
     return modified;
 }
 
-//TODO: This does a far too simple check for comments.
-int TAProcessor::checkForComment(vector<string> line, bool &blockComment){
-    int i = 0;
+string TAProcessor::removeStandardComment(string line){
+    //Iterate through the string two characters at a time.
+    for (int i = 0; i + 1 < line.size(); i++){
+        //Get the next two characters.
+        char first = line.at(i);
+        char second = line.at(i + 1);
 
-    //Goes through the line.
-    for (string curr : line){
-        if (curr.find(COMMENT_PREFIX) == 0) return i;
-        if (curr.find(COMMENT_BLOCK_START) == 0){
-            blockComment = true;
-            return i;
+        //Erase the characters.
+        if (first == COMMENT_CHAR && second == COMMENT_CHAR){
+            //We want to purge the line of all subsequent characters.
+            line.erase(i, string::npos);
+            break;
         }
-
-        i++;
     }
 
-    return -1;
+    return line;
 }
 
-int TAProcessor::checkForBlockEnd(vector<string> line, bool &blockComment){
-    int i = 0;
+string TAProcessor::removeBlockComment(string line, bool& blockComment){
+    string newLine = "";
 
-    //Goes through the line.
-    for (string curr : line){
-        if (curr.find(COMMENT_BLOCK_END) == 0){
+    //Iterate through the string two characters at a time.
+    for (int i = 0; i + 1 < line.size(); i++){
+        //Get the next two characters.
+        char first = line.at(i);
+        char second = line.at(i + 1);
+
+        //Check if we have a block comment ending to look for.
+        if (blockComment == true && (first == COMMENT_BLOCK_CHAR && second == COMMENT_CHAR)){
+            //Set block comment to false.
             blockComment = false;
-            return i;
+
+            //Now, we move the pointer ahead by 1.
+            i++;
+        } else if (blockComment == false && (first == COMMENT_CHAR && second == COMMENT_BLOCK_CHAR)){
+            //Set block comment to true.
+            blockComment = true;
+
+            //Now, we move the pointer ahead by 1.
+            i++;
+        } else if (blockComment == false) {
+            //Adds the character.
+            newLine += first;
         }
     }
 
-    return -1;
+    return newLine;
 }
 
 int TAProcessor::findRelEntry(string name){
@@ -485,90 +655,6 @@ void TAProcessor::createRelEntry(string name){
     entry.first = name;
 
     relations.push_back(entry);
-}
-
-vector<string> TAProcessor::prepareAttributeLine(string line){
-    //Gets the position of the first space.
-    auto pos = line.find(' ');
-
-    //Vectorizes the attribute line.
-    vector<string> att;
-    att.push_back(line.substr(0, pos));
-
-    if (pos != string::npos)
-        att.push_back(line.substr(pos + 1, line.length() - pos));
-
-    //Trims it.
-    vector<string> modified;
-    for (string curr : att){
-        trim(curr);
-        modified.push_back(curr);
-    }
-
-    return modified;
-}
-
-//TODO This does not handle block comments.
-vector<string> TAProcessor::prepareAttributes(string attrList, bool &success){
-    //First, checks for the opening bracket.
-    if (attrList.find("{") == 0){
-        success = false;
-        return vector<string>();
-    }
-
-    //Removes the first bracket.
-    attrList.substr(1, attrList.size() - 1);
-    ltrim(attrList);
-
-    vector<string> finalVec;
-
-    //Splits by a space.
-    vector<string> stringList;
-    boost::split(stringList, attrList, boost::is_any_of(" "));
-
-    //Now builds the next string.
-    bool key = false;
-    bool eq = false;
-    bool end = false;
-    string build = "";
-    for (int i = 0; i < stringList.size(); i++){
-        string current = stringList.at(i);
-
-        //Check for end.
-        if (current.find("}") == 0){
-            end = true;
-            if (current.find("//") == 1){
-                success = true;
-                break;
-            }
-        } else if (end){
-            success = false;
-            return vector<string>();
-        }
-
-        //Check for comment.
-        if (current.find(COMMENT_PREFIX) == 0) {
-            success = false;
-            return vector<string>();
-        }
-
-        //Check where we're at.
-        if (!key){
-            build = current + " ";
-            key = true;
-        } else if (key && !eq){
-            build += current + " ";
-            eq = true;
-        } else if (key && eq){
-            build += current;
-            key = false;
-            eq = false;
-
-            finalVec.push_back(build);
-        }
-    }
-
-    return finalVec;
 }
 
 int TAProcessor::findAttrEntry(string attrName){
@@ -614,23 +700,6 @@ void TAProcessor::createAttrEntry(string src, string dst){
     entry.first.second = dst;
 
     relAttributes.push_back(entry);
-}
-
-void TAProcessor::getAttribute(string curAttr, string &key, string &value){
-    //Split the line based on the equals.
-    vector<string> stringList;
-    boost::split(stringList, curAttr, boost::is_any_of("="));
-
-    //Next, trims the two sides.
-    vector<string> correct;
-    for (string curr : stringList){
-        trim(curr);
-        correct.push_back(curr);
-    }
-
-    //Finally, sets the KV.
-    key = correct.at(0);
-    value = correct.at(1);
 }
 
 void TAProcessor::processNodes(vector<ClangNode*> nodes){
