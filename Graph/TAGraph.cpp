@@ -70,16 +70,18 @@ vector<ClangNode*> TAGraph::findNodeByName(string name) {
     return nodes;
 }
 
-ClangEdge* TAGraph::findEdgeByIDs(string IDOne, string IDTwo) {
+ClangEdge* TAGraph::findEdgeByIDs(string IDOne, string IDTwo, ClangEdge::EdgeType type) {
     //Iterate through the edge list.
     for (int i = 0; i < edgeList.size(); i++){
         //Get the nodes.
         ClangNode* src = edgeList.at(i)->getSrc();
         ClangNode* dst = edgeList.at(i)->getDst();
+        ClangEdge::EdgeType curType = edgeList.at(i)->getType();
 
         //Check if we found it.
         if (IDOne.compare(src->getID()) == 0 &&
-            IDTwo.compare(dst->getID()) == 0){
+            IDTwo.compare(dst->getID()) == 0 &&
+            curType == type){
             return edgeList.at(i);
         }
     }
@@ -149,9 +151,9 @@ bool TAGraph::addSingularAttribute(string ID, string key, string value){
     return node->addAttribute(key, value);
 }
 
-bool TAGraph::addSingularAttribute(string IDSrc, string IDDst, string key, string value){
+bool TAGraph::addSingularAttribute(string IDSrc, string IDDst, ClangEdge::EdgeType type, string key, string value){
     //Get the ClangEdge.
-    ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst);
+    ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst, type);
     if (edge == NULL) return false;
 
     //Clears the vector and adds the attribute.
@@ -172,9 +174,10 @@ bool TAGraph::addAttribute(string ID, string key, string value){
     return node->addAttribute(key, value);
 }
 
-bool TAGraph::addAttribute(string IDSrc, string IDDst, string key, string value){
+//TODO: FIX THIS!
+bool TAGraph::addAttribute(string IDSrc, string IDDst, ClangEdge::EdgeType type, string key, string value){
     //Get the edge.
-    ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst);
+    ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst, type);
     if (edge == NULL) return false;
 
     //Check if the attribute exists.
@@ -307,7 +310,7 @@ void TAGraph::resolveExternalReferences(bool silent) {
             vector<pair<string, vector<string>>> attributes = findAttributes(entry.first.first, entry.first.second);
             for (auto attribute : attributes){
                 for (auto attVal : attribute.second){
-                    addAttribute(srcs.at(0)->getID(), dsts.at(0)->getID(), attribute.first, attVal);
+                    addAttribute(srcs.at(0)->getID(), dsts.at(0)->getID(), entry.second, attribute.first, attVal);
                 }
             }
 

@@ -183,15 +183,26 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     //Start iterating through
     auto pos = modelStream.tellg();
     while(getline(modelStream, line)){
+        if (!line.compare(0, SCHEME_FLAG.size(), SCHEME_FLAG) ||
+            !line.compare(0, ATTRIBUTE_FLAG.size(), ATTRIBUTE_FLAG)) {
+            //Breaks out of the loop.
+            break;
+        } else if (!line.compare(0, RELATION_FLAG.size(), RELATION_FLAG)) {
+            //Invalid input.
+            cerr << "Invalid input on line " << *lineNum << "." << endl;
+            cerr << "Unexpected flag." << endl;
+
+            return false;
+        }
+
         (*lineNum)++;
 
         //Tokenize.
         vector<string> entry = prepareLine(line, blockComment);
-        if (line.compare("") == 0 || line.find_first_not_of(' ') != std::string::npos) continue;
-        if (blockComment && entry.size() == 0) continue;
+        if ((blockComment && entry.size() == 0) || entry.size() == 0) continue;
 
         //Check whether the entry is valid.
-        if (entry.size() < 3) {
+        if (entry.size() != 3) {
             cerr << "Invalid input on line " << *lineNum << "." << endl;
             cerr << "Line should contain a single tuple in RSF format." << endl;
             return false;
@@ -219,6 +230,9 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
 
     }
 
+    //Seeks backward.
+    modelStream.seekg(pos);
+
     return true;
 }
 
@@ -234,8 +248,7 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
 
         //Prepare the line.
         vector<string> entry = prepareLine(line, blockComment);
-        if (line.compare("") == 0 || line.find_first_not_of(' ') != std::string::npos) continue;
-        if (blockComment && line.size() == 0) continue;
+        if ((blockComment && entry.size() == 0) || entry.size() == 0) continue;
 
         //Checks for what type of system we're dealing with.
         bool succ = true;
@@ -248,32 +261,40 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
             }
 
             //Check for valid entry.
-            if (entry.size() < 2 || entry.at(1).compare(")") == 0){
+            if (entry.size() < 3 || entry.at(1).compare(")") == 0 || entry.at(2).compare(")") == 0){
                 cerr << "Invalid input on line " << *lineNum << "." << endl;
                 cerr << "Attribute line is too short to be valid!" << endl;
                 return false;
             }
 
+            //Gets the relation name.
+            string relName = entry.at(0);
+            entry.erase(entry.begin());
+
             //Gets the IDs.
             string srcID = entry.at(0);
-            if (entry.at(1).back() == ')'){
-                entry.at(1).erase(entry.at(1).size() - 1, 1);
+            entry.erase(entry.begin());
+            string dstID = entry.at(0);
+            if (dstID.back() == ')'){
+                dstID.erase(dstID.size() - 1, 1);
+                entry.erase(entry.begin());
             } else {
-                entry.erase(entry.begin() + 2);
+                entry.erase(entry.begin());
+                entry.erase(entry.begin());
             }
-            string dstID = entry.at(1);
+
 
             //Generates the attribute list.
             auto attrs = generateAttributes(*lineNum, succ, entry);
             if (!succ) return false;
 
             //Next, we insert
-            int pos = findAttrEntry(srcID, dstID);
+            int pos = findAttrEntry(relName, srcID, dstID);
             if (pos == -1) {
-                createAttrEntry(srcID, dstID);
-                pos = (int) attributes.size() - 1;
+                createAttrEntry(relName, srcID, dstID);
+                pos = (int) relAttributes.size() - 1;
             }
-            this->attributes.at(pos).second = attrs;
+            this->relAttributes.at(pos).second = attrs;
         } else {
             //Regular attribute.
             //Gets the name and trims down the vector.
@@ -373,8 +394,16 @@ bool TAProcessor::writeAttributes(TAGraph* graph){
 
     //Next, we deal with relation attributes.
     for (auto attr : relAttributes){
-        string srcID = attr.first.first;
-        string dstID = attr.first.second;
+        vector<string> items = attr.first;
+        if (items.size() != 3) {
+            cerr << "The TA structure in memory is malformed." << endl;
+            cerr << "Please check the relation attributes in the TA file!" << endl;
+            return false;
+        }
+
+        ClangEdge::EdgeType relName = ClangEdge::getTypeEdge(items.at(0));
+        string srcID = items.at(1);
+        string dstID = items.at(2);
 
         //Next, we go through all the KVs.
         for (auto kv : attr.second){
@@ -383,7 +412,7 @@ bool TAProcessor::writeAttributes(TAGraph* graph){
 
             //Now, updates the attributes.
             for (auto value : values) {
-                bool succ = graph->addAttribute(srcID, dstID, key, value);
+                bool succ = graph->addAttribute(srcID, dstID, relName, key, value);
                 if (!succ) {
                     cerr << "TA file does not have an edge called (" << srcID << ", " << dstID << ")!" << endl;
                     cerr << "This item needs to be specified before giving it attributes." << endl;
@@ -408,7 +437,7 @@ string TAProcessor::generateTAString(){
     taString += "//Generated on: " + curTime + "\n";
 
     //Next, gets the relations.
-    taString += generateRelationString();
+    taString += generateRelationString() + "\n";
     taString += generateAttributeString();
 
     return taString;
@@ -444,8 +473,13 @@ string TAProcessor::generateAttributeString(){
 
     //Next, deals with the relation attribute list.
     for (auto curr : relAttributes){
-        attrString += "(" + curr.first.first + " " +
-                curr.first.second + ")" + generateAttributeStringFromKVs(curr.second) + "\n";
+        vector<string> items = curr.first;
+        auto kVs = curr.second;
+
+        if (items.size() != 3) return "";
+
+        attrString += "(" + items.at(0) + " " + items.at(1) + " " +
+                items.at(2) + ")" + generateAttributeStringFromKVs(kVs) + "\n";
     }
 
     return attrString;
@@ -467,7 +501,7 @@ string TAProcessor::generateAttributeStringFromKVs(vector<pair<string, vector<st
             attrString += " ) ";
         }
     }
-    attrString += " }";
+    attrString += "}";
 
     return attrString;
 }
@@ -500,7 +534,7 @@ vector<pair<string, vector<string>>> TAProcessor::generateAttributes(int lineNum
         currentEntry.first = current;
 
         //Checks for validity.
-        if (i + 2 >= current.size() || line.at(++i).compare("=") != 0){
+        if (i + 2 >= line.size() || line.at(++i).compare("=") != 0){
             succ = false;
             return vector<pair<string, vector<string>>>();
         }
@@ -509,25 +543,25 @@ vector<pair<string, vector<string>>> TAProcessor::generateAttributes(int lineNum
         string next = line.at(++i);
         if (next.compare("(") == 0 || next.find("(") == 0) {
             //First, remove the ( symbol.
-            if (next.find("(") == 0) {
-                next.erase(0, 1);
-            } else {
+            if (next.compare("(") == 0){
                 if (i + 1 == line.size()){
                     succ = false;
                     return vector<pair<string, vector<string>>>();
                 }
                 next = line.at(++i);
+            } else if (next.find("(") == 0){
+                next.erase(0, 1);
             }
 
             //We now iterate through the attribute list.
             bool endList = false;
             do {
                 //Check if we hit the end.
-                if (next.find(")") == next.size() - 1){
+                if (next.compare(")") == 0) {
+                    break;
+                } else if (next.find(")") == next.size() - 1) {
                     next.erase(next.size() - 1, 1);
                     endList = true;
-                } else if (next.compare(")") == 0) {
-                    break;
                 }
 
                 //Next, process the item.
@@ -585,6 +619,11 @@ vector<string> TAProcessor::prepareLine(string line, bool& blockComment){
         modified.push_back(curr);
     }
 
+    //Sanity check for the modified system.
+    if (modified.size() == 1 && modified.at(0).compare("") == 0){
+        modified.erase(modified.begin());
+    }
+
     return modified;
 }
 
@@ -631,6 +670,8 @@ string TAProcessor::removeBlockComment(string line, bool& blockComment){
         } else if (blockComment == false) {
             //Adds the character.
             newLine += first;
+            if (i + 2 == line.size())
+                newLine += second;
         }
     }
 
@@ -670,13 +711,17 @@ int TAProcessor::findAttrEntry(string attrName){
     return -1;
 }
 
-int TAProcessor::findAttrEntry(string src, string dst){
+int TAProcessor::findAttrEntry(string relName, string src, string dst){
     int i = 0;
 
     //Goes through the attribute vector
     for (auto attr : relAttributes){
-        if (attr.first.first.compare(src) == 0 &&
-                attr.first.second.compare(dst) ==0) return i;
+        //Abort!
+        if (attr.first.size() != 3) return -1;
+
+        if (attr.first.at(0).compare(relName) == 0 &&
+                attr.first.at(1).compare(src) == 0 &&
+                attr.first.at(2).compare(dst) ==0) return i;
 
         i++;
     }
@@ -692,12 +737,13 @@ void TAProcessor::createAttrEntry(string attrName){
     attributes.push_back(entry);
 }
 
-void TAProcessor::createAttrEntry(string src, string dst){
+void TAProcessor::createAttrEntry(string relName, string src, string dst){
     //Create the pair object.
-    pair<pair<string, string>, vector<pair<string, vector<string>>>> entry =
-        pair<pair<string, string>, vector<pair<string, vector<string>>>>();
-    entry.first.first = src;
-    entry.first.second = dst;
+    pair<vector<string>, vector<pair<string, vector<string>>>> entry =
+        pair<vector<string>, vector<pair<string, vector<string>>>>();
+    entry.first.push_back(relName);
+    entry.first.push_back(src);
+    entry.first.push_back(dst);
 
     relAttributes.push_back(entry);
 }
@@ -762,6 +808,7 @@ void TAProcessor::processEdges(vector<ClangEdge*> edges){
         //Now, we simply add it.
         string srcID = curEdge->getSrc()->getID();
         string dstID = curEdge->getDst()->getID();
+        string relName = ClangEdge::getTypeString(curEdge->getType());
 
         pair<string, string> relPair = pair<string, string>();
         relPair.first = srcID;
@@ -776,9 +823,9 @@ void TAProcessor::processEdges(vector<ClangEdge*> edges){
         if (edgeAttr.size() < 1) continue;
 
         //Adds in an attribute entry.
-        int attrPos = findAttrEntry(srcID, dstID);
+        int attrPos = findAttrEntry(relName, srcID, dstID);
         if (attrPos == -1) {
-            createAttrEntry(srcID, dstID);
+            createAttrEntry(relName, srcID, dstID);
             attrPos = (int) relAttributes.size() - 1;
         }
 

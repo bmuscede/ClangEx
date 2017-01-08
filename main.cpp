@@ -73,7 +73,7 @@ int main(int argc, const char **argv) {
         bool succ = processor.readTAFile(mergeFile);
 
         if (!succ) return -1;
-
+        
         //Gets the graph.
         TAGraph* graph = processor.writeTAGraph();
         walker->setGraph(graph);

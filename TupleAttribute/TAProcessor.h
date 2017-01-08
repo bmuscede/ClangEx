@@ -23,9 +23,9 @@ private:
     const char COMMENT_CHAR = '/';
     const char COMMENT_BLOCK_CHAR = '*';
 
-    const std::string RELATION_FLAG = "FACT TUPLE";
-    const std::string ATTRIBUTE_FLAG = "FACT ATTRIBUTE";
-    const std::string SCHEME_FLAG = "SCHEME TUPLE";
+    const std::string RELATION_FLAG = "FACT TUPLE :";
+    const std::string ATTRIBUTE_FLAG = "FACT ATTRIBUTE :";
+    const std::string SCHEME_FLAG = "SCHEME TUPLE :";
 
     const std::string SCHEMA_HEADER = "//TAProcessor TA File Created by ClangEx";
 
@@ -33,7 +33,7 @@ private:
 
     std::vector<std::pair<std::string, std::set<std::pair<std::string, std::string>>>> relations;
     std::vector<std::pair<std::string, std::vector<std::pair<std::string, std::vector<std::string>>>>> attributes;
-    std::vector<std::pair<std::pair<std::string, std::string>,
+    std::vector<std::pair<std::vector<std::string>,
             std::vector<std::pair<std::string, std::vector<std::string>>>>> relAttributes;
 
     bool readGeneric(std::ifstream& modelStream, std::string fileName);
@@ -58,9 +58,9 @@ private:
     int findRelEntry(std::string name);
     void createRelEntry(std::string name);
     int findAttrEntry(std::string attrName);
-    int findAttrEntry(std::string src, std::string dst);
+    int findAttrEntry(std::string relName, std::string src, std::string dst);
     void createAttrEntry(std::string attrName);
-    void createAttrEntry(std::string src, std::string dst);
+    void createAttrEntry(std::string relName, std::string src, std::string dst);
 
     void processNodes(std::vector<ClangNode*> nodes);
     void processEdges(std::vector<ClangEdge*> edges);

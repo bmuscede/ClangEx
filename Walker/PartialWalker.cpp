@@ -286,7 +286,7 @@ void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
     graph->addEdge(edge);
 
     //Process attributes.
-    graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(),
+    graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(), ClangEdge::REFERENCES,
                        ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, decl->getName()));
 }
 

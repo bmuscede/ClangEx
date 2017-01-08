@@ -284,7 +284,7 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, strin
     graph->addEdge(edge);
 
     //Process attributes.
-    graph->addAttribute(callerNode.at(0)->getID(), calleeNode.at(0)->getID(),
+    graph->addAttribute(callerNode.at(0)->getID(), calleeNode.at(0)->getID(), ClangEdge::REFERENCES,
                        ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, calleeName));
 }
 
