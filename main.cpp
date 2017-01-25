@@ -45,22 +45,10 @@ int main(int argc, const char **argv) {
     ClangTool tool(OptionsParser.getCompilations(),
                    OptionsParser.getSourcePathList());
 
-    //Gets whether blob was set.
-    ASTWalker* walker;
-    if (parser.getFlag(ClangArgParse::BLOB_LONG)){
-        walker = new MinimalWalker(exclude);
-    } else {
-        walker = new FullWalker(exclude);
-    }
-    //Generates a matcher system.
-    MatchFinder finder;
-
-    //Next, processes the matching conditions.
-    walker->generateASTMatches(&finder);
-
     //Gets whether whether we're dealing with a merge.
     vector<string> mergeVec = parser.getOption(ClangArgParse::MERGE_LONG);
     bool merge = false;
+    TAGraph* mergeGraph = NULL;
     if (mergeVec.size() != 0){
         //We're dealing with a merge.
         merge = true;
@@ -76,8 +64,27 @@ int main(int argc, const char **argv) {
         
         //Gets the graph.
         TAGraph* graph = processor.writeTAGraph();
-        walker->setGraph(graph);
+        if (graph == NULL) return - 1;
     }
+
+    //Gets whether blob was set.
+    ASTWalker* walker;
+    if (parser.getFlag(ClangArgParse::BLOB_LONG)){
+        if (merge)
+            walker = new MinimalWalker(exclude, mergeGraph);
+        else
+            walker = new MinimalWalker(exclude);
+    } else {
+        if (merge)
+            walker = new FullWalker(exclude, mergeGraph);
+        else
+            walker = new FullWalker(exclude);
+    }
+    //Generates a matcher system.
+    MatchFinder finder;
+
+    //Next, processes the matching conditions.
+    walker->generateASTMatches(&finder);
 
     //Runs the Clang tool.
     cout << "Compiling the source code..." << endl;

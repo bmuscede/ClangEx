@@ -39,7 +39,7 @@ public:
 
     void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
     void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
-    void resolveExternalReferences(bool silent);
+    void resolveExternalReferences(bool silent = false);
 
     std::vector<ClangNode*> getNodes();
     std::vector<ClangEdge*> getEdges();

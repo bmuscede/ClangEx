@@ -9,8 +9,7 @@
 
 class MinimalWalker : public ASTWalker {
 public:
-    MinimalWalker();
-    MinimalWalker(ClangArgParse::ClangExclude exclusions);
+    MinimalWalker(ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(), TAGraph* graph = new TAGraph());
     virtual ~MinimalWalker();
 
     virtual void run(const MatchFinder::MatchResult &result);

@@ -5,20 +5,11 @@
 #ifndef CLANGEX_FULLASTWALKER_H
 #define CLANGEX_FULLASTWALKER_H
 
-#include <vector>
-#include <tuple>
-#include <string>
-#include "clang/Frontend/FrontendActions.h"
-#include "clang/Tooling/CommonOptionsParser.h"
-#include "clang/Tooling/Tooling.h"
-#include "clang/ASTMatchers/ASTMatchers.h"
-#include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "ASTWalker.h"
 
 class FullWalker : public ASTWalker {
 public:
-    FullWalker();
-    FullWalker(ClangArgParse::ClangExclude exclusions);
+    FullWalker(ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(), TAGraph* graph = new TAGraph());
     virtual ~FullWalker();
 
     virtual void run(const MatchFinder::MatchResult &result);

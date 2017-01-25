@@ -18,14 +18,6 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-ASTWalker::ASTWalker(){
-    //Sets the current file name to blank.
-    curFileName = "";
-
-    //Creates the graph system.
-    graph = new TAGraph();
-}
-
 ASTWalker::~ASTWalker() {
     delete graph;
 }
@@ -62,65 +54,37 @@ void ASTWalker::resolveFiles(){
     fileParser.processPaths(fileNodes, fileEdges);
 
     //Adds them to the graph.
-    for (ClangNode* file : fileNodes){
-        if (!(exclusions.cSubSystem && file->getType() == ClangNode::NodeType::SUBSYSTEM)){
-            graph->addNode(file);
+    if (!exclusions.cSubSystem) {
+        for (ClangNode *file : fileNodes) {
+            if (file->getType() != ClangNode::NodeType::SUBSYSTEM) {
+                graph->addNode(file);
+            }
+        }
+
+        //Adds the edges to the graph.
+        for (ClangEdge *edge : fileEdges) {
+            if (edge->getType() != ClangEdge::EdgeType::CONTAINS) {
+                graph->addEdge(edge);
+            }
         }
     }
-
-    //Adds the edges to the graph.
-    for (ClangEdge* edge : fileEdges){
-        if (!(exclusions.cSubSystem && edge->getType() == ClangEdge::EdgeType::CONTAINS)){
-            graph->addEdge(edge);
-        }
-    }
-
     //Next, for each item in the graph, add it to a file.
     graph->addNodesToFile();
 }
 
-void ASTWalker::setGraph(TAGraph* graph){
-    //Deletes the current graph.
-    delete this->graph;
+ASTWalker::ASTWalker(ClangArgParse::ClangExclude ex, TAGraph* existing = new TAGraph()){
+    //Sets the current file name to blank.
+    curFileName = "";
 
-    //Sets the new graph.
-    this->graph = graph;
+    //Creates the graph system.
+    graph = existing;
+
+    //Sets up the exclusions.
+    exclusions = ex;
 }
 
-string ASTWalker::generateID(string fileName, string signature, ClangNode::NodeType type) {
-    //Check the signature for invalid characters.
-    replace(signature.begin(), signature.end(), '=', 'e');
-
-    if (type == ClangNode::CLASS){
-        return fileName + "[" + CLASS_PREPEND + signature + "]";
-    }
-
-    return fileName + "[" + signature + "]";
-}
-
-string ASTWalker::generateID(const MatchFinder::MatchResult result, const DeclaratorDecl *decl, ClangNode::NodeType type){
-    //Gets the file name from the source manager.
-    string fileName = generateFileName(result, decl->getInnerLocStart());
-    if (fileName.compare("") == 0) return string();
-
-    //Gets the qualified name.
-    string name = decl->getNameAsString();
-
-    return generateID(fileName, name, type);
-}
-
-string ASTWalker::generateFileName(const MatchFinder::MatchResult result, SourceLocation loc){
-    //Gets the file name.
-    string newPath = generateFileNameQuietly(result, loc);
-    if (newPath.compare("") == 0) return string();
-
-    //Print file name.
-    printFileName(newPath);
-
-    return newPath;
-}
-
-string ASTWalker::generateFileNameQuietly(const MatchFinder::MatchResult result, SourceLocation loc){
+string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
+                                   SourceLocation loc, bool suppressFileOutput){
     //Gets the file name.
     SourceManager& SrcMgr = result.Context->getSourceManager();
     const FileEntry* Entry = SrcMgr.getFileEntryForID(SrcMgr.getFileID(loc));
@@ -136,53 +100,66 @@ string ASTWalker::generateFileNameQuietly(const MatchFinder::MatchResult result,
     //Adds the file path.
     fileParser.addPath(newPath);
 
+    //Checks if we have a output suppression in place.
+    if (!suppressFileOutput && newPath.compare("") != 0) printFileName(newPath);
     return newPath;
+}
+
+//TODO: This currently doesn't deal with classes.
+//TODO: This also is problematic. Find a unique way to resolve!
+string ASTWalker::generateID(string fileName, string qualifiedName){
+    return fileName + "[" + qualifiedName + "]";
 }
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
     string label;
 
-    //Get qualified name.
-    if (type == ClangNode::FUNCTION){
-        label = decl->getAsFunction()->getQualifiedNameAsString();
-    } else if (type == ClangNode::VARIABLE){
-        const VarDecl* var = static_cast<const VarDecl*>(decl);
-        label = var->getQualifiedNameAsString();
-
-        //We need to get the parent function.
-        const DeclContext* parentContext = var->getParentFunctionOrMethod();
-
-        //If we have NULL, get the parent function.
-        if (parentContext != NULL){
-            string parentQualName = static_cast<const FunctionDecl*>(parentContext)->getQualifiedNameAsString();
-            label = parentQualName + "::" + label;
+    //Determines how we populate the string.
+    switch (type) {
+        case ClangNode::FUNCTION: {
+            label = decl->getAsFunction()->getQualifiedNameAsString();
+            break;
         }
-    } else if (type == ClangNode::CLASS){
-        const CXXRecordDecl* record = static_cast<const CXXRecordDecl*>(decl);
-        label = record->getQualifiedNameAsString();
-    } else if (type == ClangNode::ENUM){
-        const EnumDecl* enumDec = static_cast<const EnumDecl*>(decl);
-        label = enumDec->getQualifiedNameAsString();
+        case ClangNode::VARIABLE: {
+
+            const VarDecl *var = static_cast<const VarDecl *>(decl);
+            label = var->getQualifiedNameAsString();
+
+            //We need to get the parent function.
+            const DeclContext *parentContext = var->getParentFunctionOrMethod();
+
+            //If we have NULL, get the parent function.
+            if (parentContext != NULL) {
+                string parentQualName = static_cast<const FunctionDecl *>(parentContext)->getQualifiedNameAsString();
+                label = parentQualName + "::" + label;
+            }
+            break;
+        }
+        case ClangNode::CLASS: {
+            label = static_cast<const CXXRecordDecl *>(decl)->getQualifiedNameAsString();
+            break;
+        }
+        case ClangNode::ENUM: {
+            label = static_cast<const EnumDecl *>(decl)->getQualifiedNameAsString();
+            break;
+        }
+        default: {
+            label = "";
+        }
     }
 
-    //Check for valid anonymous items in the label.
-    if (label.find(ANON_STRUCT) != string::npos) {
-        label = replaceLabel(label, ANON_STRUCT, ANON_STRUCT_SYM);
-    }
-    if (label.find(UNION_STRUCT) != string::npos) {
-        label = replaceLabel(label, UNION_STRUCT, UNION_STRUCT_SYM);
-    }
-    if (label.find(ANON) != string::npos){
-        label = replaceLabel(label, ANON, ANON_SYM);
-    }
+    //Check if we need to remove a symbol.
+    for (int i = 0; i < ANON_LIST->size(); i++){
+        string item = ANON_LIST[i];
+        if (label.find(item) != string::npos)
+            label = replaceLabel(label, item, ANON_REPLACE[i]);
 
-    //Check for =.
+    }
     replace(label.begin(), label.end(), '=', 'e');
-
     return label;
 }
 
-string ASTWalker::getClassNameFromQualifier(string qualifiedName){
+string ASTWalker::generateClassName(string qualifiedName){
     string cpyQual = qualifiedName;
     string qualifier = "::";
     vector<string> quals = vector<string>();
@@ -223,6 +200,14 @@ bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const c
 
     return isIn;
 }
+
+/********************************************************************************************************************/
+// START AST TO GRAPH PARAMETERS
+/********************************************************************************************************************/
+
+/********************************************************************************************************************/
+// END AST TO GRAPH PARAMETERS
+/********************************************************************************************************************/
 
 void ASTWalker::printFileName(std::string curFile){
     if (curFile.compare(curFileName) != 0){

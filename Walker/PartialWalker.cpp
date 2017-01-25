@@ -11,14 +11,7 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-FullWalker::FullWalker() {
-    ClangArgParse::ClangExclude exclude;
-    this->exclusions = exclude;
-}
-
-FullWalker::FullWalker(ClangArgParse::ClangExclude exclusions) {
-    this->exclusions = exclusions;
-}
+FullWalker::FullWalker(ClangArgParse::ClangExclude exclusions, TAGraph* graph) : ASTWalker(exclusions, graph){ }
 
 FullWalker::~FullWalker() { }
 
@@ -159,7 +152,7 @@ void FullWalker::addVariableDecl(const MatchFinder::MatchResult result, const Va
     string fileName = generateFileName(result, decl->getInnerLocStart());
 
     //Get the ID of the variable.
-    string ID = generateID(fileName, decl->getNameAsString(), ClangNode::VARIABLE);
+    string ID = generateID(fileName, decl->getQualifiedNameAsString());
 
     //Next, gets the qualified name.
     string qualName = generateLabel(decl, ClangNode::VARIABLE);
@@ -186,7 +179,7 @@ void FullWalker::addFunctionDecl(const MatchFinder::MatchResult result, const De
     string fileName = generateFileName(result, decl->getInnerLocStart());
 
     //First, generate the ID of the function.
-    string ID = generateID(result, decl, ClangNode::FUNCTION);
+    string ID = generateID(fileName, decl->getQualifiedNameAsString());
 
     //Gets the qualified name.
     string qualName = generateLabel(decl, ClangNode::FUNCTION);
@@ -277,7 +270,7 @@ void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
 
         //Add attributes.
         graph->addUnresolvedRefAttr(callerName, varName,
-                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, decl->getName()));
+                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, decl->getName()));
         return;
     }
 
@@ -287,12 +280,12 @@ void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
 
     //Process attributes.
     graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(), ClangEdge::REFERENCES,
-                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, decl->getName()));
+                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, decl->getName()));
 }
 
 void FullWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *classDec, string fileName) {
     //Get the name & ID of the class.
-    string classID = generateID(fileName, classDec->getNameAsString(), ClangNode::CLASS);
+    string classID = generateID(fileName, classDec->getQualifiedNameAsString());
     string className = generateLabel(classDec, ClangNode::CLASS);
 
     //Creates a new function entry.
@@ -405,7 +398,7 @@ void FullWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDe
                                        (parent == NULL) ? decl->getInnerLocStart() : parent->getInnerLocStart());
 
     //First, generate the ID of the function.
-    string ID = generateID(fileName, decl->getNameAsString(), ClangNode::ENUM);
+    string ID = generateID(fileName, decl->getQualifiedNameAsString());
 
     //Gets the qualified name.
     string qualName = generateLabel(decl, ClangNode::ENUM);
@@ -420,9 +413,9 @@ void FullWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDe
                                ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
 
     //Add the class reference.
-    string classLabel = getClassNameFromQualifier(qualName);
+    string classLabel = generateClassName(qualName);
     if (classLabel.compare(string()) == 0) return;
-    addClassRef(getClassNameFromQualifier(qualName), generateLabel(decl, ClangNode::ENUM));
+    addClassRef(generateClassName(qualName), generateLabel(decl, ClangNode::ENUM));
 }
 
 void FullWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,

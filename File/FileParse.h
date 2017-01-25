@@ -16,7 +16,7 @@ public:
     ~FileParse();
 
     void addPath(std::string path);
-    std::vector<ClangNode*> processPaths(std::vector<ClangNode*>& nodes, std::vector<ClangEdge*>& edges);
+    void processPaths(std::vector<ClangNode*>& nodes, std::vector<ClangEdge*>& edges);
 
 private:
     std::vector<std::string> paths;

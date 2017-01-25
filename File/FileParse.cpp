@@ -21,14 +21,12 @@ void FileParse::addPath(string path) {
     paths.push_back(path);
 }
 
-vector<ClangNode*> FileParse::processPaths(vector<ClangNode*>& nodes, vector<ClangEdge*>& edges) {
+void FileParse::processPaths(vector<ClangNode*>& nodes, vector<ClangEdge*>& edges) {
     //Iterate through all the paths.
     for (int i = 0; i < paths.size(); i++){
         vector<ClangNode*> curr = processPath(paths.at(i), nodes, edges);
         nodes.insert(nodes.end(), curr.begin(), curr.end());
     }
-
-    return nodes;
 }
 
 vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<ClangEdge*>& curContains) {

@@ -7,14 +7,7 @@
 
 using namespace std;
 
-MinimalWalker::MinimalWalker(){
-    ClangArgParse::ClangExclude exclude;
-    this->exclusions = exclude;
-}
-
-MinimalWalker::MinimalWalker(ClangArgParse::ClangExclude exclusions){
-    this->exclusions = exclusions;
-}
+MinimalWalker::MinimalWalker(ClangArgParse::ClangExclude exclusions, TAGraph* graph) : ASTWalker(exclusions, graph){ }
 
 MinimalWalker::~MinimalWalker(){ }
 
@@ -118,9 +111,9 @@ void MinimalWalker::generateASTMatches(MatchFinder *finder){
 
 void MinimalWalker::addFunctionDec(const MatchFinder::MatchResult results, const DeclaratorDecl *dec){
     //Generate the fields for the node.
-    string ID = generateID(results, dec, ClangNode::FUNCTION);
     string label = generateLabel(dec, ClangNode::FUNCTION);
     string filename = generateFileName(results, dec->getInnerLocStart());
+    string ID = generateID(filename, dec->getQualifiedNameAsString());
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
 
@@ -167,9 +160,9 @@ void MinimalWalker::addFunctionDec(const MatchFinder::MatchResult results, const
 
 void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const VarDecl *dec){
     //Generate the fields for the node.
-    string ID = generateID(results, dec, ClangNode::VARIABLE);
     string label = generateLabel(dec, ClangNode::VARIABLE);
     string filename = generateFileName(results, dec->getInnerLocStart());
+    string ID = generateID(filename, dec->getQualifiedNameAsString());
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
     //Creates a variable entry.
@@ -192,9 +185,9 @@ void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const
 
 void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const FieldDecl *dec){
     //Generate the fields for the node.
-    string ID = generateID(results, dec, ClangNode::VARIABLE);
     string label = generateLabel(dec, ClangNode::VARIABLE);
     string filename = generateFileName(results, dec->getInnerLocStart());
+    string ID = generateID(filename, dec->getQualifiedNameAsString());
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
     //Creates a variable entry.
@@ -275,7 +268,7 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, strin
 
         //Add attributes.
         graph->addUnresolvedRefAttr(callerLabel, calleeLabel,
-                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, calleeName));
+                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, calleeName));
         return;
     }
 
@@ -285,7 +278,7 @@ void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, strin
 
     //Process attributes.
     graph->addAttribute(callerNode.at(0)->getID(), calleeNode.at(0)->getID(), ClangEdge::REFERENCES,
-                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(result, expr, calleeName));
+                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, calleeName));
 }
 
 void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXXRecordDecl *classRec) {
@@ -298,7 +291,7 @@ void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXX
 
     //Generate the fields for the node.
     string filename = generateFileName(result, classRec->getInnerLocStart());
-    string ID = generateID(filename, classRec->getNameAsString(), ClangNode::CLASS);
+    string ID = generateID(filename, classRec->getQualifiedNameAsString());
     string className = generateLabel(classRec, ClangNode::CLASS);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
@@ -364,7 +357,7 @@ void MinimalWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, cons
 void MinimalWalker::addEnumDec(const MatchFinder::MatchResult result, const EnumDecl *dec){
     //Generate the fields for the node.
     string filename = generateFileName(result, dec->getInnerLocStart());
-    string ID = generateID(filename,  dec->getNameAsString(), ClangNode::ENUM);
+    string ID = generateID(filename, dec->getQualifiedNameAsString());
     string enumName = generateLabel(dec, ClangNode::ENUM);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 

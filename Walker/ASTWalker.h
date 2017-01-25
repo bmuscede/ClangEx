@@ -31,45 +31,27 @@ public:
     void resolveExternalReferences();
     void resolveFiles();
 
-    void setGraph(TAGraph* graph);
-
 protected:
     ClangArgParse::ClangExclude exclusions;
-    const std::string CLASS_PREPEND = "class-";
     TAGraph* graph;
 
-    ASTWalker();
+    ASTWalker(ClangArgParse::ClangExclude ex, TAGraph* existing);
 
-    void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
-    void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
-
-    std::string generateID(std::string fileName, std::string signature, ClangNode::NodeType type);
-    std::string generateID(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl, ClangNode::NodeType type);
-    std::string generateFileName(const MatchFinder::MatchResult result, clang::SourceLocation loc);
-    std::string generateFileNameQuietly(const MatchFinder::MatchResult result, clang::SourceLocation loc);
+    std::string generateFileName(const MatchFinder::MatchResult result,
+                                 clang::SourceLocation loc, bool suppressOutput = false);
+    std::string generateID(std::string fileName, std::string qualifiedName);
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
-
-    std::string getClassNameFromQualifier(std::string qualifiedName);
+    std::string generateClassName(std::string qualifiedName);
 
     bool isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl);
 
 private:
-    const std::string ANON_STRUCT = "(anonymous struct)";
-    const std::string ANON_STRUCT_SYM = "anon_struct";
-    const std::string UNION_STRUCT = "(union struct)";
-    const std::string UNION_STRUCT_SYM = "union_struct";
-    const std::string ANON = "(anonymous)";
-    const std::string ANON_SYM = "anon";
-
+    const std::string ANON_LIST[3] = {"(anonymous struct)", "(union struct)", "(anonymous)"};
+    const std::string ANON_REPLACE[3] = {"anon_struct", "union_struct", "anon"};
     std::string curFileName;
     FileParse fileParser;
-    std::vector<std::pair<std::pair<std::string, std::string>, ClangEdge::EdgeType>> unresolvedRef;
-    std::vector<std::pair<std::pair<std::string, std::string>, std::pair<std::string, std::vector<std::string>>>*> unresolvedRefAttr;
-
-    std::vector<std::pair<std::string, std::vector<std::string>>> findAttributes(std::string callerID, std::string calleeID);
 
     void printFileName(std::string curFile);
-
     std::string replaceLabel(std::string label, std::string init, std::string aft);
 };
 

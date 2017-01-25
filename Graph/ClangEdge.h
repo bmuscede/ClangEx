@@ -10,7 +10,6 @@
 #include <map>
 #include <iostream>
 #include <boost/tokenizer.hpp>
-#include <clang/ASTMatchers/ASTMatchFinder.h>
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Lex/Lexer.h"
 #include "ClangNode.h"
@@ -31,7 +30,7 @@ private:
                                                "&=", "^=", "|=", "&", "|", "^", "~", "<<", ">>"};
         const char* incDecOperators[2] = {"++", "--"};
 
-        std::string getVariableAccess(const MatchFinder::MatchResult result, const clang::Expr *expr,
+        std::string getVariableAccess(const clang::Expr *expr,
                                       const std::string varName){
             //Generate the printing policy.
             clang::LangOptions LangOpts;
