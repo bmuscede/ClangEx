@@ -7,28 +7,30 @@
 
 using namespace std;
 
-MinimalWalker::MinimalWalker(ClangArgParse::ClangExclude exclusions, TAGraph* graph) : ASTWalker(exclusions, graph){ }
+MinimalWalker::MinimalWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
+        ASTWalker(exclusions, md5, graph){ }
 
 MinimalWalker::~MinimalWalker(){ }
 
 void MinimalWalker::run(const MatchFinder::MatchResult &result){
     //Check if the current result fits any of our match criteria.
-    if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
+    if (const DeclaratorDecl *functionDecl = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
         //Get whether we have a system header.
-        if (isInSystemHeader(result, dec)) return;
+        if (isInSystemHeader(result, functionDecl)) return;
 
-        addFunctionDec(result, dec);
-    } else if (const VarDecl *dec = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
+        addFunctionDecl(result, functionDecl);
+    } else if (const VarDecl *variableDecl = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
          //Get whether we have a system header.
-        if (isInSystemHeader(result, dec)) return;
-        if (dec->getQualifiedNameAsString().compare("") == 0) return;
+        if (isInSystemHeader(result, variableDecl)) return;
+        if (variableDecl->getQualifiedNameAsString().compare("") == 0) return;
 
-        addVariableDec(result, dec);
-    } else if (const FieldDecl *dec = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_DEC])){
+        addVariableDecl(result, variableDecl);
+    } else if (const FieldDecl *fieldDecl = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_DEC])){
         //Get whether we have a system header.
-        if (isInSystemHeader(result, dec)) return;
+        if (isInSystemHeader(result, fieldDecl)) return;
+        if (fieldDecl->getQualifiedNameAsString().compare("") == 0) return;
 
-        addVariableDec(result, dec);
+        addVariableDecl(result, NULL, fieldDecl);
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALLEE])){
         if (expr->getCalleeDecl() == NULL || !(isa<const clang::FunctionDecl>(expr->getCalleeDecl()))) return;
         auto callee = expr->getCalleeDecl()->getAsFunction();
@@ -107,105 +109,6 @@ void MinimalWalker::generateASTMatches(MatchFinder *finder){
     if (!exclusions.cEnum){
         finder->addMatcher(enumDecl().bind(types[ENUM_DEC]), this);
     }
-}
-
-void MinimalWalker::addFunctionDec(const MatchFinder::MatchResult results, const DeclaratorDecl *dec){
-    //Generate the fields for the node.
-    string label = generateLabel(dec, ClangNode::FUNCTION);
-    string filename = generateFileName(results, dec->getInnerLocStart());
-    string ID = generateID(filename, dec->getQualifiedNameAsString());
-    if (ID.compare("") == 0 || filename.compare("") == 0) return;
-
-
-    //Creates a new function entry.
-    ClangNode* node = new ClangNode(ID, label, ClangNode::FUNCTION);
-    graph->addNode(node);
-
-    //Adds parameters.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-
-
-    //Check if we have a CXXMethodDecl.
-    if (isa<CXXMethodDecl>(dec->getAsFunction())){
-        //Perform a static cast.
-        const CXXMethodDecl* methDecl = static_cast<const CXXMethodDecl*>(dec->getAsFunction());
-
-        //Process method decls.
-        bool isStatic = methDecl->isStatic();
-        bool isConst = methDecl ->isConst();
-        bool isVol = methDecl->isVolatile();
-        bool isVari = methDecl->isVariadic();
-        AccessSpecifier spec = methDecl->getAccess();
-
-        //Add these types of attributes.
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::FUNC_IS_ATTRIBUTE.staticName,
-                                   std::to_string(isStatic));
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::FUNC_IS_ATTRIBUTE.constName,
-                                   std::to_string(isConst));
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::FUNC_IS_ATTRIBUTE.volName,
-                                   std::to_string(isVol));
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::FUNC_IS_ATTRIBUTE.varName,
-                                   std::to_string(isVari));
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::VIS_ATTRIBUTE.attrName,
-                                   ClangNode::VIS_ATTRIBUTE.processAccessSpec(spec));
-    }
-}
-
-void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const VarDecl *dec){
-    //Generate the fields for the node.
-    string label = generateLabel(dec, ClangNode::VARIABLE);
-    string filename = generateFileName(results, dec->getInnerLocStart());
-    string ID = generateID(filename, dec->getQualifiedNameAsString());
-    if (ID.compare("") == 0 || filename.compare("") == 0) return;
-
-    //Creates a variable entry.
-    ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
-    graph->addNode(node);
-
-    //Process attributes.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-
-    //Get the scope of the decl.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::VAR_ATTRIBUTE.scopeName,
-                               ClangNode::VAR_ATTRIBUTE.getScope(dec));
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::VAR_ATTRIBUTE.staticName,
-                               ClangNode::VAR_ATTRIBUTE.getStatic(dec));
-}
-
-void MinimalWalker::addVariableDec(const MatchFinder::MatchResult results, const FieldDecl *dec){
-    //Generate the fields for the node.
-    string label = generateLabel(dec, ClangNode::VARIABLE);
-    string filename = generateFileName(results, dec->getInnerLocStart());
-    string ID = generateID(filename, dec->getQualifiedNameAsString());
-    if (ID.compare("") == 0 || filename.compare("") == 0) return;
-
-    //Creates a variable entry.
-    ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
-    graph->addNode(node);
-
-    //Process attributes.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-
-    //Get the scope of the decl.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::VAR_ATTRIBUTE.scopeName,
-                               ClangNode::VAR_ATTRIBUTE.getScope(dec));
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::VAR_ATTRIBUTE.staticName,
-                               ClangNode::VAR_ATTRIBUTE.getStatic(dec));
 }
 
 void MinimalWalker::addFunctionCall(const MatchFinder::MatchResult results, const DeclaratorDecl* caller,

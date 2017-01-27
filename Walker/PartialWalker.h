@@ -9,7 +9,8 @@
 
 class FullWalker : public ASTWalker {
 public:
-    FullWalker(ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(), TAGraph* graph = new TAGraph());
+    FullWalker(bool md5, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
+               TAGraph* graph = new TAGraph());
     virtual ~FullWalker();
 
     virtual void run(const MatchFinder::MatchResult &result);
@@ -23,8 +24,6 @@ private:
                              "expr_var", "class_dec_func", "class_dec_var", "class_dec_var_two", "class_dec_var_three",
                              "struct_dec", "union_dec", "enum_dec", "enum_var", "enum_const", "enum_const_parent"};
 
-    void addVariableDecl(const MatchFinder::MatchResult result, const clang::VarDecl *decl);
-    void addFunctionDecl(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl);
     void addFunctionCall(const MatchFinder::MatchResult result,
                          const clang::CallExpr *expr, const clang::DeclaratorDecl* decl);
     void addVariableRef(const MatchFinder::MatchResult result,

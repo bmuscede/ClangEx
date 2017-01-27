@@ -15,7 +15,7 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "../Graph/TAGraph.h"
 #include "../File/FileParse.h"
-#include "../ClangArgParse.h"
+#include "../File/ClangArgParse.h"
 
 using namespace clang::ast_matchers;
 
@@ -35,7 +35,7 @@ protected:
     ClangArgParse::ClangExclude exclusions;
     TAGraph* graph;
 
-    ASTWalker(ClangArgParse::ClangExclude ex, TAGraph* existing);
+    ASTWalker(ClangArgParse::ClangExclude ex, bool md5, TAGraph* existing);
 
     std::string generateFileName(const MatchFinder::MatchResult result,
                                  clang::SourceLocation loc, bool suppressOutput = false);
@@ -45,14 +45,27 @@ protected:
 
     bool isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl);
 
+/********************************************************************************************************************/
+
+    void addFunctionDecl(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec);
+    void addVariableDecl(const MatchFinder::MatchResult results, const clang::VarDecl *varDec = NULL,
+                         const clang::FieldDecl *fieldDec = NULL);
+
+/********************************************************************************************************************/
+
 private:
-    const std::string ANON_LIST[3] = {"(anonymous struct)", "(union struct)", "(anonymous)"};
-    const std::string ANON_REPLACE[3] = {"anon_struct", "union_struct", "anon"};
+    const static int ANON_SIZE = 3;
+    const std::string ANON_LIST[ANON_SIZE] = {"(anonymous struct)", "(union struct)", "(anonymous)"};
+    const std::string ANON_REPLACE[ANON_SIZE] = {"anon_struct", "union_struct", "anon"};
+    const static int MD5_LENGTH = 33;
+
     std::string curFileName;
     FileParse fileParser;
+    bool md5Flag;
 
     void printFileName(std::string curFile);
     std::string replaceLabel(std::string label, std::string init, std::string aft);
+    std::string generateMD5(std::string text);
 };
 
 

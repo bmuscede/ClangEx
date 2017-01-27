@@ -11,7 +11,8 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-FullWalker::FullWalker(ClangArgParse::ClangExclude exclusions, TAGraph* graph) : ASTWalker(exclusions, graph){ }
+FullWalker::FullWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
+        ASTWalker(exclusions, md5, graph){ }
 
 FullWalker::~FullWalker() { }
 
@@ -145,83 +146,6 @@ void FullWalker::generateASTMatches(MatchFinder *finder) {
         //Finds enum constants and their usage.
         finder->addMatcher(enumConstantDecl(isExpansionInMainFile(),
                                             hasAncestor(functionDecl().bind(types[ENUM_CONST_PARENT]))).bind(types[ENUM_CONST]), this);
-    }
-}
-
-void FullWalker::addVariableDecl(const MatchFinder::MatchResult result, const VarDecl *decl) {
-    string fileName = generateFileName(result, decl->getInnerLocStart());
-
-    //Get the ID of the variable.
-    string ID = generateID(fileName, decl->getQualifiedNameAsString());
-
-    //Next, gets the qualified name.
-    string qualName = generateLabel(decl, ClangNode::VARIABLE);
-
-    //Creates a variable entry.
-    ClangNode* node = new ClangNode(ID, qualName, ClangNode::VARIABLE);
-    graph->addNode(node);
-
-    //Process attributes.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
-
-    //Get the scope of the decl.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::VAR_ATTRIBUTE.scopeName,
-                               ClangNode::VAR_ATTRIBUTE.getScope(decl));
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::VAR_ATTRIBUTE.staticName,
-                               ClangNode::VAR_ATTRIBUTE.getStatic(decl));
-}
-
-void FullWalker::addFunctionDecl(const MatchFinder::MatchResult result, const DeclaratorDecl *decl) {
-    string fileName = generateFileName(result, decl->getInnerLocStart());
-
-    //First, generate the ID of the function.
-    string ID = generateID(fileName, decl->getQualifiedNameAsString());
-
-    //Gets the qualified name.
-    string qualName = generateLabel(decl, ClangNode::FUNCTION);
-
-    //Creates a new function entry.
-    ClangNode* node = new ClangNode(ID, qualName, ClangNode::FUNCTION);
-    graph->addNode(node);
-
-    //Process attributes.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
-
-
-    //Check if we have a CXXMethodDecl.
-    if (isa<CXXMethodDecl>(decl->getAsFunction())){
-        //Perform a static cast.
-        const CXXMethodDecl* methDecl = static_cast<const CXXMethodDecl*>(decl->getAsFunction());
-
-        //Process method decls.
-        bool isStatic = methDecl->isStatic();
-        bool isConst = methDecl ->isConst();
-        bool isVol = methDecl->isVolatile();
-        bool isVari = methDecl->isVariadic();
-        AccessSpecifier spec = methDecl->getAccess();
-
-        //Add these types of attributes.
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::FUNC_IS_ATTRIBUTE.staticName,
-                                   std::to_string(isStatic));
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::FUNC_IS_ATTRIBUTE.constName,
-                                   std::to_string(isConst));
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::FUNC_IS_ATTRIBUTE.volName,
-                                   std::to_string(isVol));
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::FUNC_IS_ATTRIBUTE.varName,
-                                   std::to_string(isVari));
-        graph->addSingularAttribute(node->getID(),
-                                   ClangNode::VIS_ATTRIBUTE.attrName,
-                                   ClangNode::VIS_ATTRIBUTE.processAccessSpec(spec));
     }
 }
 

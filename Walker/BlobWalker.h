@@ -9,7 +9,8 @@
 
 class MinimalWalker : public ASTWalker {
 public:
-    MinimalWalker(ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(), TAGraph* graph = new TAGraph());
+    MinimalWalker(bool md5, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
+                  TAGraph* graph = new TAGraph());
     virtual ~MinimalWalker();
 
     virtual void run(const MatchFinder::MatchResult &result);
@@ -21,9 +22,6 @@ private:
     const char* types[12] = {"func_dec", "var_dec", "field_dec", "caller", "callee", "v_caller", "v_callee", "v_expr",
                             "field_callee", "field_expr", "class_dec", "enum_dec"};
 
-    void addFunctionDec(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec);
-    void addVariableDec(const MatchFinder::MatchResult results, const clang::VarDecl *dec);
-    void addVariableDec(const MatchFinder::MatchResult results, const clang::FieldDecl *dec);
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *caller, const clang::FunctionDecl *callee);
     void addVariableCall(const MatchFinder::MatchResult result, const clang::VarDecl *callee, const clang::DeclaratorDecl *caller,
                         const clang::Expr* expr);

@@ -8,7 +8,7 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "Walker/ASTWalker.h"
-#include "ClangArgParse.h"
+#include "File/ClangArgParse.h"
 #include "Walker/PartialWalker.h"
 #include "Walker/BlobWalker.h"
 #include "TupleAttribute/TAProcessor.h"
@@ -60,25 +60,28 @@ int main(int argc, const char **argv) {
         TAProcessor processor = TAProcessor(INSTANCE_FLAG);
         bool succ = processor.readTAFile(mergeFile);
 
-        if (!succ) return -1;
+        if (!succ) return 1;
         
         //Gets the graph.
         TAGraph* graph = processor.writeTAGraph();
-        if (graph == NULL) return - 1;
+        if (graph == NULL) return 1;
     }
+
+    //Check how we're dealing with IDs.
+    bool useMD5 = parser.getFlag(ClangArgParse::MDFIVE_LONG);
 
     //Gets whether blob was set.
     ASTWalker* walker;
     if (parser.getFlag(ClangArgParse::BLOB_LONG)){
         if (merge)
-            walker = new MinimalWalker(exclude, mergeGraph);
+            walker = new MinimalWalker(useMD5, exclude, mergeGraph);
         else
-            walker = new MinimalWalker(exclude);
+            walker = new MinimalWalker(useMD5, exclude);
     } else {
         if (merge)
-            walker = new FullWalker(exclude, mergeGraph);
+            walker = new FullWalker(useMD5, exclude, mergeGraph);
         else
-            walker = new FullWalker(exclude);
+            walker = new FullWalker(useMD5, exclude);
     }
     //Generates a matcher system.
     MatchFinder finder;

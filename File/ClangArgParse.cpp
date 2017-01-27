@@ -63,6 +63,10 @@ const string ClangArgParse::MERGE_LONG = "merge";
 const string ClangArgParse::MERGE_SHORT = "m";
 const string ClangArgParse::MERGE_HELP = "Merges an existing TA program model with current C/C++ being passed to the\n"
         "Clang compiler. If no output file is specified, ClangEx will overwrite the current model.";
+const string ClangArgParse::MDFIVE_LONG = "md5Gen";
+const string ClangArgParse::MDFIVE_SHORT = "md";
+const string ClangArgParse::MDFIVE_HELP = "ClangEx will generate entity IDs by hashing them into an MD5 hash. This"
+        "produces shorter IDs at the trade off of potential collisions.";
 
 ClangArgParse::ClangArgParse(){
     //Configures help message.
@@ -80,6 +84,7 @@ ClangArgParse::ClangArgParse(){
     addFlag(ClangArgParse::DB_LONG, ClangArgParse::DB_SHORT, ClangArgParse::DB_HELP);
     addFlag(ClangArgParse::BLOB_LONG, ClangArgParse::BLOB_SHORT, ClangArgParse::BLOB_HELP);
     addFlag(ClangArgParse::HELP_LONG, ClangArgParse::HELP_SHORT, ClangArgParse::HELP_HELP);
+    addFlag(ClangArgParse::MDFIVE_LONG, ClangArgParse::MDFIVE_SHORT, ClangArgParse::MDFIVE_HELP);
 }
 
 ClangArgParse::~ClangArgParse(){

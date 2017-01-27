@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iostream>
 #include <boost/filesystem.hpp>
+#include <openssl/md5.h>
 #include "ASTWalker.h"
 
 using namespace std;
@@ -72,7 +73,7 @@ void ASTWalker::resolveFiles(){
     graph->addNodesToFile();
 }
 
-ASTWalker::ASTWalker(ClangArgParse::ClangExclude ex, TAGraph* existing = new TAGraph()){
+ASTWalker::ASTWalker(ClangArgParse::ClangExclude ex, bool md5, TAGraph* existing = new TAGraph()){
     //Sets the current file name to blank.
     curFileName = "";
 
@@ -81,6 +82,9 @@ ASTWalker::ASTWalker(ClangArgParse::ClangExclude ex, TAGraph* existing = new TAG
 
     //Sets up the exclusions.
     exclusions = ex;
+
+    //Sets the MD5 name generate flag.
+    md5Flag = md5;
 }
 
 string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
@@ -106,9 +110,15 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
 }
 
 //TODO: This currently doesn't deal with classes.
-//TODO: This also is problematic. Find a unique way to resolve!
 string ASTWalker::generateID(string fileName, string qualifiedName){
-    return fileName + "[" + qualifiedName + "]";
+    string genID = fileName + "[" + qualifiedName + "]";
+
+    //Check what flag we're operating on.
+    if (md5Flag){
+        genID = generateMD5(genID);
+    }
+
+    return genID;
 }
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
@@ -149,7 +159,7 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
     }
 
     //Check if we need to remove a symbol.
-    for (int i = 0; i < ANON_LIST->size(); i++){
+    for (int i = 0; i < ANON_SIZE; i++){
         string item = ANON_LIST[i];
         if (label.find(item) != string::npos)
             label = replaceLabel(label, item, ANON_REPLACE[i]);
@@ -204,7 +214,100 @@ bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const c
 /********************************************************************************************************************/
 // START AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/
+void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec) {
+    //Generate the fields for the node.
+    string label = generateLabel(dec, ClangNode::FUNCTION);
+    string filename = generateFileName(results, dec->getInnerLocStart());
+    string ID = generateID(filename, dec->getQualifiedNameAsString());
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
+
+    //Creates a new function entry.
+    ClangNode* node = new ClangNode(ID, label, ClangNode::FUNCTION);
+    graph->addNode(node);
+
+    //Adds parameters.
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::FILE_ATTRIBUTE.attrName,
+                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+
+
+    //Check if we have a CXXMethodDecl.
+    if (isa<CXXMethodDecl>(dec->getAsFunction())){
+        //Perform a static cast.
+        const CXXMethodDecl* methDecl = static_cast<const CXXMethodDecl*>(dec->getAsFunction());
+
+        //Process method decls.
+        bool isStatic = methDecl->isStatic();
+        bool isConst = methDecl ->isConst();
+        bool isVol = methDecl->isVolatile();
+        bool isVari = methDecl->isVariadic();
+        AccessSpecifier spec = methDecl->getAccess();
+
+        //Add these types of attributes.
+        graph->addSingularAttribute(node->getID(),
+                                    ClangNode::FUNC_IS_ATTRIBUTE.staticName,
+                                    std::to_string(isStatic));
+        graph->addSingularAttribute(node->getID(),
+                                    ClangNode::FUNC_IS_ATTRIBUTE.constName,
+                                    std::to_string(isConst));
+        graph->addSingularAttribute(node->getID(),
+                                    ClangNode::FUNC_IS_ATTRIBUTE.volName,
+                                    std::to_string(isVol));
+        graph->addSingularAttribute(node->getID(),
+                                    ClangNode::FUNC_IS_ATTRIBUTE.varName,
+                                    std::to_string(isVari));
+        graph->addSingularAttribute(node->getID(),
+                                    ClangNode::VIS_ATTRIBUTE.attrName,
+                                    ClangNode::VIS_ATTRIBUTE.processAccessSpec(spec));
+    }
+}
+
+void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
+                                const clang::VarDecl *varDec, const clang::FieldDecl *fieldDec){
+    string label;
+    string filename;
+    string ID;
+    string scopeInfo;
+    string staticInfo;
+
+    //Check which one we use.
+    bool useField = false;
+    if (varDec == NULL) useField = true;
+
+    //Next, generate the fields for the decl.
+    if (useField){
+        label = generateLabel(fieldDec, ClangNode::VARIABLE);
+        filename = generateFileName(results, fieldDec->getInnerLocStart());
+        ID = generateID(filename, fieldDec->getQualifiedNameAsString());
+        scopeInfo = ClangNode::VAR_ATTRIBUTE.getScope(fieldDec);
+        staticInfo = ClangNode::VAR_ATTRIBUTE.getStatic(fieldDec);
+    } else {
+        label = generateLabel(varDec, ClangNode::VARIABLE);
+        filename = generateFileName(results, varDec->getInnerLocStart());
+        ID = generateID(filename, varDec->getQualifiedNameAsString());
+        scopeInfo = ClangNode::VAR_ATTRIBUTE.getScope(varDec);
+        staticInfo = ClangNode::VAR_ATTRIBUTE.getStatic(varDec);
+    }
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
+
+    //Creates a variable entry.
+    ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
+    graph->addNode(node);
+
+    //Process attributes.
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::FILE_ATTRIBUTE.attrName,
+                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+
+    //Get the scope of the decl.
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::VAR_ATTRIBUTE.scopeName,
+                                scopeInfo);
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::VAR_ATTRIBUTE.staticName,
+                                staticInfo);
+}
 /********************************************************************************************************************/
 // END AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/
@@ -231,4 +334,23 @@ std::string ASTWalker::replaceLabel(std::string label, std::string init, std::st
     }
 
     return label;
+}
+
+std::string ASTWalker::generateMD5(std::string text){
+    //Creates a digest buffer.
+    unsigned char digest[MD5_DIGEST_LENGTH];
+    const char* cText = text.c_str();
+
+    //Initializes the MD5 string.
+    MD5_CTX ctx;
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, cText, strlen(cText));
+    MD5_Final(digest, &ctx);
+
+    //Fills it with characters.
+    char mdString[MD5_LENGTH];
+    for (int i = 0; i < 16; i++)
+        sprintf(&mdString[i*2], "%02x", (unsigned int)digest[i]);
+
+    return string(mdString);
 }
