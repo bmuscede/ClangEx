@@ -156,7 +156,7 @@ map<string, vector<std::string>> ClangNode::getAttributes(){
 };
 
 string ClangNode::printSingleAttribute(string key, vector<string> value){
-    return key + " = " + value.at(0);
+    return key + " = \"" + value.at(0) + "\"";
 }
 
 string ClangNode::printSetAttribute(string key, vector<string> value){

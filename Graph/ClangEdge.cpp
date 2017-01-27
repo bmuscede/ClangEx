@@ -133,7 +133,7 @@ map<string, vector<string>> ClangEdge::getAttributes(){
 }
 
 std::string ClangEdge::printSingleAttribute(string key, vector<string> value){
-    return key + " = " + value.at(0);
+    return key + " = \"" + value.at(0) + "\"";
 }
 
 std::string ClangEdge::printSetAttribute(string key, vector<string> value){
@@ -144,7 +144,7 @@ std::string ClangEdge::printSetAttribute(string key, vector<string> value){
         string curr = value.at(i);
 
         //Get the attribute
-        attribute += curr;
+        attribute += "\"" + curr + "\"";
         if (i + 1 < value.size()) attribute += " ";
     }
     attribute += " )";
