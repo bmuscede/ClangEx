@@ -52,25 +52,44 @@ void ASTWalker::resolveFiles(){
     vector<ClangEdge*> fileEdges = vector<ClangEdge*>();
 
     //Gets all the associated clang nodes.
-    fileParser.processPaths(fileNodes, fileEdges);
+    fileParser.processPaths(fileNodes, fileEdges, md5Flag);
 
     //Adds them to the graph.
     if (!exclusions.cSubSystem) {
         for (ClangNode *file : fileNodes) {
-            if (file->getType() != ClangNode::NodeType::SUBSYSTEM) {
+            if (file->getType() == ClangNode::NodeType::SUBSYSTEM) {
                 graph->addNode(file);
             }
         }
 
         //Adds the edges to the graph.
         for (ClangEdge *edge : fileEdges) {
-            if (edge->getType() != ClangEdge::EdgeType::CONTAINS) {
+            if (edge->getType() == ClangEdge::EdgeType::CONTAINS) {
                 graph->addEdge(edge);
             }
         }
     }
     //Next, for each item in the graph, add it to a file.
     graph->addNodesToFile();
+}
+
+std::string ASTWalker::generateMD5(std::string text){
+    //Creates a digest buffer.
+    unsigned char digest[MD5_DIGEST_LENGTH];
+    const char* cText = text.c_str();
+
+    //Initializes the MD5 string.
+    MD5_CTX ctx;
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, cText, strlen(cText));
+    MD5_Final(digest, &ctx);
+
+    //Fills it with characters.
+    char mdString[MD5_LENGTH];
+    for (int i = 0; i < 16; i++)
+        sprintf(&mdString[i*2], "%02x", (unsigned int)digest[i]);
+
+    return string(mdString);
 }
 
 ASTWalker::ASTWalker(ClangArgParse::ClangExclude ex, bool md5, TAGraph* existing = new TAGraph()){
@@ -334,23 +353,4 @@ std::string ASTWalker::replaceLabel(std::string label, std::string init, std::st
     }
 
     return label;
-}
-
-std::string ASTWalker::generateMD5(std::string text){
-    //Creates a digest buffer.
-    unsigned char digest[MD5_DIGEST_LENGTH];
-    const char* cText = text.c_str();
-
-    //Initializes the MD5 string.
-    MD5_CTX ctx;
-    MD5_Init(&ctx);
-    MD5_Update(&ctx, cText, strlen(cText));
-    MD5_Final(digest, &ctx);
-
-    //Fills it with characters.
-    char mdString[MD5_LENGTH];
-    for (int i = 0; i < 16; i++)
-        sprintf(&mdString[i*2], "%02x", (unsigned int)digest[i]);
-
-    return string(mdString);
 }

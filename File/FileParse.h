@@ -16,13 +16,13 @@ public:
     ~FileParse();
 
     void addPath(std::string path);
-    void processPaths(std::vector<ClangNode*>& nodes, std::vector<ClangEdge*>& edges);
+    void processPaths(std::vector<ClangNode*>& nodes, std::vector<ClangEdge*>& edges, bool md5);
 
 private:
     std::vector<std::string> paths;
 
     std::vector<ClangNode*> processPath(std::string path, std::vector<ClangNode*>& curPath,
-                                        std::vector<ClangEdge*>& curContains);
+                                        std::vector<ClangEdge*>& curContains, bool md5);
 };
 
 

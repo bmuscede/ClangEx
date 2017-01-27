@@ -4,6 +4,7 @@
 
 #include <boost/filesystem.hpp>
 #include "FileParse.h"
+#include "../Walker/ASTWalker.h"
 
 using namespace std;
 
@@ -21,15 +22,16 @@ void FileParse::addPath(string path) {
     paths.push_back(path);
 }
 
-void FileParse::processPaths(vector<ClangNode*>& nodes, vector<ClangEdge*>& edges) {
+void FileParse::processPaths(vector<ClangNode*>& nodes, vector<ClangEdge*>& edges, bool md5) {
     //Iterate through all the paths.
     for (int i = 0; i < paths.size(); i++){
-        vector<ClangNode*> curr = processPath(paths.at(i), nodes, edges);
+        vector<ClangNode*> curr = processPath(paths.at(i), nodes, edges, md5);
         nodes.insert(nodes.end(), curr.begin(), curr.end());
     }
 }
 
-vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<ClangEdge*>& curContains) {
+vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<ClangEdge*>& curContains,
+                                          bool md5) {
     //Start by iterating at each path element.
     vector<string> pathComponents = vector<string>();
     for (auto& curr : boost::filesystem::path(path)){
@@ -48,7 +50,7 @@ vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPa
         }
 
         //Creates the node.
-        string current = pathComponents.at(i);
+        string current = (md5) ? ASTWalker::generateMD5(pathComponents.at(i)) : pathComponents.at(i);
         ClangNode* currentNode = new ClangNode(current, current, type);
         curPath.push_back(currentNode);
 

@@ -31,6 +31,8 @@ public:
     void resolveExternalReferences();
     void resolveFiles();
 
+    static std::string generateMD5(std::string text);
+
 protected:
     ClangArgParse::ClangExclude exclusions;
     TAGraph* graph;
@@ -65,7 +67,6 @@ private:
 
     void printFileName(std::string curFile);
     std::string replaceLabel(std::string label, std::string init, std::string aft);
-    std::string generateMD5(std::string text);
 };
 
 
