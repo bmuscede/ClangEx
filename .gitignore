@@ -8,3 +8,4 @@ ClangEx
 ClangEx.cbp
 *.autosave
 *.ta
+compile_commands.json
