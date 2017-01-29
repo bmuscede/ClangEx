@@ -12,11 +12,14 @@
 class ClangArgParse {
 public:
     typedef struct {
-        bool cClass = false;
-        bool cVariable = false;
         bool cSubSystem = false;
+        bool cFile = false;
+        bool cClass = false;
         bool cFunction = false;
+        bool cVariable = false;
         bool cEnum = false;
+        bool cStruct = false;
+        bool cUnion = false;
     } ClangExclude;
 
     ClangArgParse();

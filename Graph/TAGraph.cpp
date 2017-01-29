@@ -2,6 +2,7 @@
 // Created by bmuscede on 05/11/16.
 //
 
+#include <ctime>
 #include "TAGraph.h"
 
 using namespace std;
@@ -174,7 +175,6 @@ bool TAGraph::addAttribute(string ID, string key, string value){
     return node->addAttribute(key, value);
 }
 
-//TODO: FIX THIS!
 bool TAGraph::addAttribute(string IDSrc, string IDDst, ClangEdge::EdgeType type, string key, string value){
     //Get the edge.
     ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst, type);
@@ -191,7 +191,14 @@ bool TAGraph::addAttribute(string IDSrc, string IDDst, ClangEdge::EdgeType type,
 string TAGraph::generateTAFormat() {
     string format = "";
 
+    //Get the time.
+    char tString[1000];
+    time_t now = time(0);
+    struct tm * p = localtime(&now);
+    strftime(tString, 1000, "%A, %B %d %Y", p);
+
     //Generate the instances, relationships, and attributes.
+    format += TA_HEADER + " (" + tString + ")" + "\n";
     format += TA_SCHEMA;
     format += generateInstances();
     format += generateRelationships() + "\n";
@@ -200,7 +207,7 @@ string TAGraph::generateTAFormat() {
     return format;
 }
 
-void TAGraph::addNodesToFile() {
+void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
     //Iterate through all our nodes and find the appropriate file.
     for (ClangNode* node : nodeList){
         vector<string> fileAttrVec = node->getAttribute(FILE_ATTRIBUTE);
@@ -213,7 +220,15 @@ void TAGraph::addNodesToFile() {
         if (file.compare("") != 0){
             //Find the appropriate node.
             ClangNode* fileNode = findNodeByID(file);
-            if (fileNode == nullptr) continue;
+            if (fileNode == nullptr) {
+                //We now look up the file node.
+                try {
+                    ClangNode* skip = fileSkip.at(file);
+                    fileNode = skip;
+                } catch (...) {
+                    continue;
+                }
+            }
 
             //Add it to the graph.
             ClangEdge* edge = new ClangEdge(fileNode, node, ClangEdge::CONTAINS);

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "PartialWalker.h"
+#include "../File/ClangArgParse.h"
 
 using namespace std;
 using namespace clang;
@@ -129,16 +130,6 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
                                    .bind(types[CLASS_DEC_VAR_THREE]), this);
     }
 
-    //Finds unions in the program.
-    //finder->addMatcher(recordDecl(isExpansionInMainFile(), isStruct()).bind(types[STRUCT_DEC]), this);
-    //finder->addMatcher(varDecl(isExpansionInMainFile(),
-    //                           hasType(recordDecl(isStruct()).bind(types[STRUCT_DEC]))), this);
-
-    //Finds structs in the program.
-    //finder->addMatcher(recordDecl(isExpansionInMainFile(), isUnion()).bind(types[UNION_DEC]), this);
-    //finder->addMatcher(varDecl(isExpansionInMainFile(),
-    //                           hasType(recordDecl(isUnion()).bind(types[UNION_DEC]))), this);
-
     if (!exclusions.cEnum){
         //Finds enums in the program.
         finder->addMatcher(enumDecl(isExpansionInMainFile()).bind(types[ENUM_DEC]), this);
@@ -148,6 +139,14 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
         //Finds enum constants and their usage.
         finder->addMatcher(enumConstantDecl(isExpansionInMainFile(),
                                             hasAncestor(functionDecl().bind(types[ENUM_CONST_PARENT]))).bind(types[ENUM_CONST]), this);
+    }
+
+    if (!exclusions.cStruct){
+        //TODO: Implement
+    }
+
+    if (!exclusions.cUnion){
+        //TODO: Implement
     }
 }
 

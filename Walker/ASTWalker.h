@@ -76,6 +76,8 @@ private:
 
     void printFileName(std::string curFile);
     std::string replaceLabel(std::string label, std::string init, std::string aft);
+    std::string removeInvalidIDSymbols(std::string label);
+    std::string removeInvalidSymbols(std::string label);
 };
 
 

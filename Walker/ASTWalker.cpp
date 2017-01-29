@@ -3,7 +3,6 @@
 //
 
 //TODO:
-// - Create attribute structs in Node and Edge classes (Improve with functions in struct).
 // - Get unions and structs working
 // - Verify correctness of union, struct, and enums.
 
@@ -12,6 +11,7 @@
 #include <boost/filesystem.hpp>
 #include <openssl/md5.h>
 #include "ASTWalker.h"
+#include "../File/ClangArgParse.h"
 
 using namespace std;
 using namespace clang;
@@ -55,25 +55,29 @@ void ASTWalker::resolveFiles(){
     fileParser.processPaths(fileNodes, fileEdges, md5Flag);
 
     //Adds them to the graph.
-    if (!exclusions.cSubSystem) {
-        for (ClangNode *file : fileNodes) {
-            if (file->getType() == ClangNode::NodeType::SUBSYSTEM) {
-                graph->addNode(file);
-            }
-        }
-
-        //Adds the edges to the graph.
-        for (ClangEdge *edge : fileEdges) {
-            if (edge->getType() == ClangEdge::EdgeType::CONTAINS) {
-                graph->addEdge(edge);
-            }
+    for (ClangNode *file : fileNodes) {
+        if ((file->getType() == ClangNode::NodeType::SUBSYSTEM && !exclusions.cSubSystem) ||
+                (file->getType() == ClangNode::NodeType::FILE && !exclusions.cFile)) {
+            graph->addNode(file);
         }
     }
+
+    //Adds the edges to the graph.
+    map<string, ClangNode*> fileSkip;
+    for (ClangEdge *edge : fileEdges) {
+        //Surpasses.
+        if (exclusions.cFile && edge->getDst()->getType() == ClangNode::FILE){
+            fileSkip[edge->getDst()->getID()] = edge->getSrc();
+        } else {
+            graph->addEdge(edge);
+        }
+    }
+
     //Next, for each item in the graph, add it to a file.
-    graph->addNodesToFile();
+    graph->addNodesToFile(fileSkip);
 }
 
-std::string ASTWalker::generateMD5(std::string text){
+string ASTWalker::generateMD5(string text){
     //Creates a digest buffer.
     unsigned char digest[MD5_DIGEST_LENGTH];
     const char* cText = text.c_str();
@@ -135,6 +139,8 @@ string ASTWalker::generateID(string fileName, string qualifiedName){
     //Check what flag we're operating on.
     if (md5Flag){
         genID = generateMD5(genID);
+    } else {
+        genID = removeInvalidIDSymbols(genID);
     }
 
     return genID;
@@ -177,14 +183,8 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
         }
     }
 
-    //Check if we need to remove a symbol.
-    for (int i = 0; i < ANON_SIZE; i++){
-        string item = ANON_LIST[i];
-        if (label.find(item) != string::npos)
-            label = replaceLabel(label, item, ANON_REPLACE[i]);
-
-    }
-    replace(label.begin(), label.end(), '=', 'e');
+    //Removes all invalid symbols.
+    label = removeInvalidSymbols(label);
     return label;
 }
 
@@ -502,6 +502,24 @@ string ASTWalker::replaceLabel(string label, string init, string aft){
         //Advance index forward so the next iteration doesn't pick it up as well.
         index += aft.size();
     }
+
+    return label;
+}
+
+string ASTWalker::removeInvalidIDSymbols(string label) {
+    replace(label.begin(), label.end(), ':', '-');
+    return removeInvalidSymbols(label);
+}
+
+string ASTWalker::removeInvalidSymbols(string label) {
+    //Check if we need to remove a symbol.
+    for (int i = 0; i < ANON_SIZE; i++){
+        string item = ANON_LIST[i];
+        if (label.find(item) != string::npos)
+            label = replaceLabel(label, item, ANON_REPLACE[i]);
+
+    }
+    replace(label.begin(), label.end(), '=', 'e');
 
     return label;
 }

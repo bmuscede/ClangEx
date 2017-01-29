@@ -47,7 +47,9 @@ const string ClangArgParse::EXMETA_LONG = "exclude";
 const string ClangArgParse::EXMETA_SHORT = "r";
 const string ClangArgParse::EXMETA_HELP ="Allows users to exclude metamodel features from the tuple-attribute\n"
         "graph. Features that can be excluded are:\n\t- cSubSystem: Removes folders and directories.\n\t"
-        "- cClass: Removes classes.\n\t- cFunction: Removes functions.\n\t- cVariable: Removes variables.\nChain"
+        "- cFile: Removes source and header files.\n\t- cClass: Removes classes.\n\t"
+        "- cFunction: Removes functions.\n\t- cVariable: Removes variables.\n\t- cEnum: Removes enums.\n\t- cStruct:"
+        " Removes structs.\n\t- cUnion: Removes unions.\nChain"
         " these features through commas. For instance cClass,cVariable,cSubSystem";
 const string ClangArgParse::BLOB_LONG = "blob";
 const string ClangArgParse::BLOB_SHORT = "b";
@@ -66,7 +68,7 @@ const string ClangArgParse::MERGE_HELP = "Merges an existing TA program model wi
 const string ClangArgParse::MDFIVE_LONG = "md5Gen";
 const string ClangArgParse::MDFIVE_SHORT = "md";
 const string ClangArgParse::MDFIVE_HELP = "ClangEx will generate entity IDs by hashing them into an MD5 hash. This"
-        "produces shorter IDs at the trade off of potential collisions.";
+        " produces shorter IDs at the trade off of potential collisions.";
 
 ClangArgParse::ClangArgParse(){
     //Configures help message.
@@ -330,6 +332,8 @@ ClangArgParse::ClangExclude ClangArgParse::generateExclusions(){
         for (string item : ex){
             if (item.compare("cSubSystem") == 0){
                 exVals.cSubSystem = true;
+            } else if (item.compare("cFile") == 0){
+                exVals.cFile = true;
             } else if (item.compare("cClass") == 0){
                 exVals.cClass = true;
             } else if (item.compare("cFunction") == 0){
@@ -338,6 +342,10 @@ ClangArgParse::ClangExclude ClangArgParse::generateExclusions(){
                 exVals.cVariable = true;
             } else if (item.compare("cEnum") == 0) {
                 exVals.cEnum = true;
+            } else if (item.compare("cStruct") == 0){
+                exVals.cStruct = true;
+            } else if (item.compare("cUnion") == 0){
+                exVals.cUnion = true;
             } else {
                 cerr << "Error processing metamodel exclusion: " << item << endl;
                 _exit(1);

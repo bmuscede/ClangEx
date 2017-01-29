@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "BlobWalker.h"
+#include "../File/ClangArgParse.h"
 
 using namespace std;
 
@@ -107,7 +108,20 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
 
     //Enum methods.
     if (!exclusions.cEnum){
+        //Finds enum declarations.
         finder->addMatcher(enumDecl().bind(types[ENUM_DEC]), this);
+
+        //TODO: References not implemented.
+    }
+
+    //Struct methods.
+    if (!exclusions.cStruct){
+        //TODO: Implement structs.
+    }
+
+    //Union methods.
+    if (!exclusions.cUnion){
+        //TODO: Implement unions.
     }
 }
 
