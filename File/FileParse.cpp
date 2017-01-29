@@ -51,7 +51,7 @@ vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPa
 
         //Creates the node.
         string current = (md5) ? ASTWalker::generateMD5(pathComponents.at(i)) : pathComponents.at(i);
-        ClangNode* currentNode = new ClangNode(current, current, type);
+        ClangNode* currentNode = new ClangNode(current, pathComponents.at(i), type);
         curPath.push_back(currentNode);
 
         //Next, deals with contains.
