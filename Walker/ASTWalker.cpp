@@ -328,6 +328,70 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
                                 staticInfo);
 }
 
+void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRecordDecl *classDecl){
+    //Get the definition.
+    auto def = classDecl->getDefinition();
+    if (def == nullptr) return;
+
+    //Check if we're dealing with a class.
+    if (!classDecl->isClass()) return;
+
+    //Generate the fields for the node.
+    string filename = generateFileName(results, classDecl->getInnerLocStart());
+    string ID = generateID(filename, classDecl->getQualifiedNameAsString());
+    string className = generateLabel(classDecl, ClangNode::CLASS);
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
+
+    //Try to get the number of bases.
+    int numBases = 0;
+    try {
+        numBases = classDecl->getNumBases();
+    } catch (...){
+        return;
+    }
+
+    //Creates a class entry.
+    ClangNode* node = new ClangNode(ID, className, ClangNode::CLASS);
+    graph->addNode(node);
+
+    //Process attributes.
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::FILE_ATTRIBUTE.attrName,
+                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::BASE_ATTRIBUTE.attrName,
+                                std::to_string(numBases));
+
+    //Get base classes.
+    if (classDecl->getNumBases() > 0) {
+        for (auto base = classDecl->bases_begin(); base != classDecl->bases_end(); base++) {
+            if (base->getType().getTypePtr() == nullptr) continue;
+            CXXRecordDecl *baseClass = base->getType().getTypePtr()->getAsCXXRecordDecl();
+            if (baseClass == nullptr) continue;
+
+            //Add a linkage in our graph->
+            addClassInheritance(classDecl, baseClass);
+        }
+    }
+}
+
+void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *enumDecl){
+    //Generate the fields for the node.
+    string filename = generateFileName(result, enumDecl->getInnerLocStart());
+    string ID = generateID(filename, enumDecl->getQualifiedNameAsString());
+    string enumName = generateLabel(enumDecl, ClangNode::ENUM);
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
+
+    //Creates a class entry.
+    ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM);
+    graph->addNode(node);
+
+    //Process attributes.
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::FILE_ATTRIBUTE.attrName,
+                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+}
+
 void ASTWalker::addFunctionCall(const MatchFinder::MatchResult results, const DeclaratorDecl* caller,
                                 const FunctionDecl* callee){
     //Generate a label for the two functions.
@@ -396,6 +460,32 @@ void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const cla
     //Process attributes.
     graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(), ClangEdge::REFERENCES,
                         ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, variableShortName));
+}
+
+void ASTWalker::addClassInheritance(const CXXRecordDecl *childClass, const CXXRecordDecl *parentClass) {
+    string classLabel = generateLabel(childClass, ClangNode::CLASS);
+    string baseLabel = generateLabel(parentClass, ClangNode::CLASS);
+
+    //Get the nodes by their label.
+    vector<ClangNode*> classNode = graph->findNodeByName(classLabel);
+    vector<ClangNode*> baseNode = graph->findNodeByName(baseLabel);
+
+    //Check to see if we don't have these entries.
+    if (classNode.size() == 0 || baseNode.size() == 0){
+        graph->addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
+
+        //Add attributes.
+        //TODO: Any inheritance attributes?
+
+        return;
+    }
+
+    //Add the edge.
+    ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
+    graph->addEdge(edge);
+
+    //Process  attributes.
+    //TODO: Any inheritance attributes?
 }
 
 /********************************************************************************************************************/

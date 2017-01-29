@@ -52,12 +52,16 @@ protected:
     void addFunctionDecl(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec);
     void addVariableDecl(const MatchFinder::MatchResult results, const clang::VarDecl *varDec = nullptr,
                          const clang::FieldDecl *fieldDec = nullptr);
-
+    void addClassDecl(const MatchFinder::MatchResult results, const clang::CXXRecordDecl *classDecl);
+    void addEnumDecl(const MatchFinder::MatchResult results, const clang::EnumDecl *enumDecl);
 
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl* caller,
                          const clang::FunctionDecl* callee);
     void addVariableCall(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *caller,
                          const clang::Expr* expr, const clang::VarDecl *varCallee, const clang::FieldDecl *fieldCallee = nullptr);
+    void addClassCall();
+    void addClassInheritance(const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
+
 /********************************************************************************************************************/
 
 private:

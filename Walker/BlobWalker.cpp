@@ -62,12 +62,12 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, classRec)) return;
 
-        addClassDec(result, classRec);
+        addClassDecl(result, classRec);
     } else if (const EnumDecl *dec = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])){
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, dec)) return;
 
-        addEnumDec(result, dec);
+        addEnumDecl(result, dec);
     }
 }
 
@@ -111,92 +111,3 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
     }
 }
 
-void BlobWalker::addClassDec(const MatchFinder::MatchResult result, const CXXRecordDecl *classRec) {
-    //Get the definition.
-    auto def = classRec->getDefinition();
-    if (def == nullptr) return;
-
-    //Check if we're dealing with a class.
-    if (!classRec->isClass()) return;
-
-    //Generate the fields for the node.
-    string filename = generateFileName(result, classRec->getInnerLocStart());
-    string ID = generateID(filename, classRec->getQualifiedNameAsString());
-    string className = generateLabel(classRec, ClangNode::CLASS);
-    if (ID.compare("") == 0 || filename.compare("") == 0) return;
-
-    //Try to get the number of bases.
-    int numBases = 0;
-    try {
-        numBases = classRec->getNumBases();
-    } catch (...){
-        return;
-    }
-
-    //Creates a class entry.
-    ClangNode* node = new ClangNode(ID, className, ClangNode::CLASS);
-    graph->addNode(node);
-
-    //Process attributes.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::BASE_ATTRIBUTE.attrName,
-                               std::to_string(numBases));
-
-    //Get base classes.
-    if (classRec->getNumBases() > 0) {
-        for (auto base = classRec->bases_begin(); base != classRec->bases_end(); base++) {
-            if (base->getType().getTypePtr() == nullptr) continue;
-            CXXRecordDecl *baseClass = base->getType().getTypePtr()->getAsCXXRecordDecl();
-            if (baseClass == nullptr) continue;
-
-            //Add a linkage in our graph->
-            addClassInheritanceRef(classRec, baseClass);
-        }
-    }
-}
-
-void BlobWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, const CXXRecordDecl *parentClass) {
-    string classLabel = generateLabel(childClass, ClangNode::CLASS);
-    string baseLabel = generateLabel(parentClass, ClangNode::CLASS);
-
-    //Get the nodes by their label.
-    vector<ClangNode*> classNode = graph->findNodeByName(classLabel);
-    vector<ClangNode*> baseNode = graph->findNodeByName(baseLabel);
-
-    //Check to see if we don't have these entries.
-    if (classNode.size() == 0 || baseNode.size() == 0){
-        graph->addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
-
-        //Add attributes.
-        //TODO: Any inheritance attributes?
-
-        return;
-    }
-
-    //Add the edge.
-    ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
-    graph->addEdge(edge);
-
-    //Process  attributes.
-    //TODO: Any inheritance attributes?
-}
-
-void BlobWalker::addEnumDec(const MatchFinder::MatchResult result, const EnumDecl *dec){
-    //Generate the fields for the node.
-    string filename = generateFileName(result, dec->getInnerLocStart());
-    string ID = generateID(filename, dec->getQualifiedNameAsString());
-    string enumName = generateLabel(dec, ClangNode::ENUM);
-    if (ID.compare("") == 0 || filename.compare("") == 0) return;
-
-    //Creates a class entry.
-    ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM);
-    graph->addNode(node);
-
-    //Process attributes.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-}

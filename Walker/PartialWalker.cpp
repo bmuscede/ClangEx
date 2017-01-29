@@ -46,7 +46,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
         string filename = generateFileName(result, dec->getInnerLocStart());
 
         //If a class declaration was found.
-        addClassDecl(result, record, filename);
+        addClassDecl(result, record);
         addClassRef(result, record, dec);
     } else if (const VarDecl *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR])){
         //Get the CXXRecordDecl.
@@ -58,7 +58,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
         string filename = generateFileName(result, var->getInnerLocStart());
 
         //If a class declaration was found.
-        addClassDecl(result, record, filename);
+        addClassDecl(result, record);
         addClassRef(result, record, var);
     } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_VAR_TWO])){
         //Get the variable declaration.
@@ -73,7 +73,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
         string filename = generateFileName(result, dec->getInnerLocStart());
 
         //If a class declaration was found.
-        addClassDecl(result, record, filename);
+        addClassDecl(result, record);
         addClassRef(result, record, var);
     } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DEC])){
         cout << "The struct found is: " << rec->getQualifiedNameAsString() << endl;
@@ -151,36 +151,6 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
     }
 }
 
-void PartialWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *classDec, string fileName) {
-    //Get the name & ID of the class.
-    string classID = generateID(fileName, classDec->getQualifiedNameAsString());
-    string className = generateLabel(classDec, ClangNode::CLASS);
-
-    //Creates a new function entry.
-    ClangNode* node = new ClangNode(classID, className, ClangNode::CLASS);
-    graph->addNode(node);
-
-    //Process attributes.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::BASE_ATTRIBUTE.attrName,
-                               std::to_string(classDec->getNumBases()));
-
-    //Get base classes.
-    if (classDec->getNumBases() > 0) {
-        for (auto base = classDec->bases_begin(); base != classDec->bases_end(); base++) {
-            if (base->getType().getTypePtr() == nullptr) continue;
-            CXXRecordDecl *baseClass = base->getType().getTypePtr()->getAsCXXRecordDecl();
-            if (baseClass == nullptr) continue;
-
-            //Add a linkage in our graph.
-            addClassInheritanceRef(classDec, baseClass);
-        }
-    }
-}
-
 void PartialWalker::addClassRef(const MatchFinder::MatchResult result,
                             const CXXRecordDecl* classRec, const DeclaratorDecl* funcRec){
     //Generate the label of the class and the function.
@@ -221,32 +191,6 @@ void PartialWalker::addClassRef(string srcLabel, string dstLabel){
 
     //Process attributes.
     //TODO: Any class reference attributes?
-}
-
-void PartialWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXRecordDecl* baseDec){
-    string classLabel = generateLabel(classDec, ClangNode::CLASS);
-    string baseLabel = generateLabel(baseDec, ClangNode::CLASS);
-
-    //Get the nodes by their label.
-    vector<ClangNode*> classNode = graph->findNodeByName(classLabel);
-    vector<ClangNode*> baseNode = graph->findNodeByName(baseLabel);
-
-    //Check to see if we don't have these entries.
-    if (classNode.size() == 0 || baseNode.size() == 0){
-        graph->addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
-
-        //Add attributes.
-        //TODO: Any inheritance attributes?
-
-        return;
-    }
-
-    //Add the edge.
-    ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
-    graph->addEdge(edge);
-
-    //Process  attributes.
-    //TODO: Any inheritance attributes?
 }
 
 void PartialWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl){

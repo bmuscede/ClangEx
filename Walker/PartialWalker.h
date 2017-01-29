@@ -24,13 +24,11 @@ private:
                              "expr_var", "class_dec_func", "class_dec_var", "class_dec_var_two", "class_dec_var_three",
                              "struct_dec", "union_dec", "enum_dec", "enum_var", "enum_const", "enum_const_parent"};
 
-    void addClassDecl(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDec, std::string fileName);
     void addClassRef(const MatchFinder::MatchResult result,
                      const clang::CXXRecordDecl* classRec, const clang::DeclaratorDecl* funcRec);
     void addClassRef(const MatchFinder::MatchResult result,
                      const clang::CXXRecordDecl* classRec, const clang::VarDecl* varRec);
     void addClassRef(std::string srcLabel, std::string dstLabel);
-    void addClassInheritanceRef(const clang::CXXRecordDecl* classDec, const clang::CXXRecordDecl* baseDec);
     void addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl);
     void addEnumDecl(const MatchFinder::MatchResult result, const clang::EnumDecl *decl, const clang::VarDecl *parent);
     void addEnumClassRef(const MatchFinder::MatchResult result, const clang::EnumDecl *decl, const clang::CXXRecordDecl *record);
