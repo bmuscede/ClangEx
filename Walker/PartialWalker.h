@@ -30,7 +30,6 @@ private:
                      const clang::CXXRecordDecl* classRec, const clang::VarDecl* varRec);
     void addClassRef(std::string srcLabel, std::string dstLabel);
     void addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl);
-    void addEnumDecl(const MatchFinder::MatchResult result, const clang::EnumDecl *decl, const clang::VarDecl *parent);
     void addEnumClassRef(const MatchFinder::MatchResult result, const clang::EnumDecl *decl, const clang::CXXRecordDecl *record);
     void addEnumRef(const MatchFinder::MatchResult result, const clang::EnumDecl *decl, const clang::VarDecl *parent);
     void addEnumConstDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *decl);

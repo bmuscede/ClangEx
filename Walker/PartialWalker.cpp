@@ -84,7 +84,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
         auto *parent = result.Nodes.getNodeAs<clang::VarDecl>(types[ENUM_VAR]);
 
         //Adds the enum decl.
-        addEnumDecl(result, dec, parent);
+        addEnumDecl(result, dec);
 
         //Add the parent relationship.
         if (parent != nullptr) addEnumRef(result, dec, parent);
@@ -203,31 +203,6 @@ void PartialWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const c
     }
 
     //TODO: Stuff.
-}
-
-void PartialWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *decl, const VarDecl *parent){
-    string fileName = generateFileName(result,
-                                       (parent == nullptr) ? decl->getInnerLocStart() : parent->getInnerLocStart());
-
-    //First, generate the ID of the function.
-    string ID = generateID(fileName, decl->getQualifiedNameAsString());
-
-    //Gets the qualified name.
-    string qualName = generateLabel(decl, ClangNode::ENUM);
-
-    //Creates a new function entry.
-    ClangNode* node = new ClangNode(ID, qualName, ClangNode::ENUM);
-    graph->addNode(node);
-
-    //Process attributes.
-    graph->addSingularAttribute(node->getID(),
-                               ClangNode::FILE_ATTRIBUTE.attrName,
-                               ClangNode::FILE_ATTRIBUTE.processFileName(fileName));
-
-    //Add the class reference.
-    string classLabel = generateClassName(qualName);
-    if (classLabel.compare(string()) == 0) return;
-    addClassRef(generateClassName(qualName), generateLabel(decl, ClangNode::ENUM));
 }
 
 void PartialWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,

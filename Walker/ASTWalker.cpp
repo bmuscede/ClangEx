@@ -206,7 +206,7 @@ string ASTWalker::generateClassName(string qualifiedName){
     return quals.at(quals.size() - 2);
 }
 
-bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl){
+bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const Decl *decl){
     if (decl == nullptr) return false;
     bool isIn;
 
@@ -233,7 +233,7 @@ bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const c
 /********************************************************************************************************************/
 // START AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/
-void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec) {
+void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const DeclaratorDecl *dec) {
     //Generate the fields for the node.
     string label = generateLabel(dec, ClangNode::FUNCTION);
     string filename = generateFileName(results, dec->getInnerLocStart());
@@ -283,7 +283,7 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const cl
 }
 
 void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
-                                const clang::VarDecl *varDec, const clang::FieldDecl *fieldDec){
+                                const VarDecl *varDec, const FieldDecl *fieldDec){
     string label;
     string filename;
     string ID;
@@ -402,27 +402,23 @@ void ASTWalker::addFunctionCall(const MatchFinder::MatchResult results, const De
     vector<ClangNode*> callerNode = graph->findNodeByName(callerLabel);
     vector<ClangNode*> calleeNode = graph->findNodeByName(calleeLabel);
 
+    //TODO: Function call attributes?
+
     //Check if we have an already known reference.
     if (callerNode.size() == 0 || calleeNode.size() == 0){
         //Add to unresolved reference list.
         graph->addUnresolvedRef(callerLabel, calleeLabel, ClangEdge::CALLS);
+    } else {
+        //We finally add the edge.
+        ClangEdge* edge = new ClangEdge(callerNode.at(0), calleeNode.at(0), ClangEdge::CALLS);
+        graph->addEdge(edge);
 
-        //Add the attributes.
-        //TODO: Function call attributes?
-        return;
     }
-
-    //We finally add the edge.
-    ClangEdge* edge = new ClangEdge(callerNode.at(0), calleeNode.at(0), ClangEdge::CALLS);
-    graph->addEdge(edge);
-
-    //Process attributes.
-    //TODO: Function call attributes?
 }
 
-void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *caller,
-                                const clang::Expr* expr, const clang::VarDecl *varCallee,
-                                const clang::FieldDecl *fieldCallee){
+void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const DeclaratorDecl *caller,
+                                const Expr* expr, const VarDecl *varCallee,
+                                const FieldDecl *fieldCallee){
     string variableName;
     string variableShortName;
 
@@ -438,6 +434,10 @@ void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const cla
         variableShortName = fieldCallee->getName();
     }
 
+    //Generate the attributes.
+    auto variableAccessName = ClangEdge::ACCESS_ATTRIBUTE.attrName;
+    auto variableAccess = ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, variableShortName);
+
     //Next, we find their IDs.
     vector<ClangNode*> callerNode = graph->findNodeByName(callerName);
     vector<ClangNode*> varNode = graph->findNodeByName(variableName);
@@ -448,18 +448,16 @@ void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const cla
         graph->addUnresolvedRef(callerName, variableName, ClangEdge::REFERENCES);
 
         //Add attributes.
-        graph->addUnresolvedRefAttr(callerName, variableName,
-                                    ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, variableShortName));
-        return;
+        graph->addUnresolvedRefAttr(callerName, variableName, variableAccessName, variableAccess);
+    } else {
+        //Add the edge.
+        ClangEdge* edge = new ClangEdge(callerNode.at(0), varNode.at(0), ClangEdge::REFERENCES);
+        graph->addEdge(edge);
+
+        //Process attributes.
+        graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(), ClangEdge::REFERENCES,
+                            variableAccessName, variableAccess);
     }
-
-    //Add the edge.
-    ClangEdge* edge = new ClangEdge(callerNode.at(0), varNode.at(0), ClangEdge::REFERENCES);
-    graph->addEdge(edge);
-
-    //Process attributes.
-    graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(), ClangEdge::REFERENCES,
-                        ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, variableShortName));
 }
 
 void ASTWalker::addClassInheritance(const CXXRecordDecl *childClass, const CXXRecordDecl *parentClass) {
@@ -473,33 +471,25 @@ void ASTWalker::addClassInheritance(const CXXRecordDecl *childClass, const CXXRe
     //Check to see if we don't have these entries.
     if (classNode.size() == 0 || baseNode.size() == 0){
         graph->addUnresolvedRef(classLabel, baseLabel, ClangEdge::INHERITS);
-
-        //Add attributes.
-        //TODO: Any inheritance attributes?
-
-        return;
+    } else {
+        //Add the edge.
+        ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
+        graph->addEdge(edge);
     }
-
-    //Add the edge.
-    ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
-    graph->addEdge(edge);
-
-    //Process  attributes.
-    //TODO: Any inheritance attributes?
 }
 
 /********************************************************************************************************************/
 // END AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/
 
-void ASTWalker::printFileName(std::string curFile){
+void ASTWalker::printFileName(string curFile){
     if (curFile.compare(curFileName) != 0){
         cout << "\tCurrently processing: " << curFile << endl;
         curFileName = curFile;
     }
 }
 
-std::string ASTWalker::replaceLabel(std::string label, std::string init, std::string aft){
+string ASTWalker::replaceLabel(string label, string init, string aft){
     size_t index = 0;
     while (true) {
         //Locate the substring to replace.
