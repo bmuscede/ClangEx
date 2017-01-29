@@ -1,1 +1,0 @@
-./ClangEx --extra-arg="-I/home/bmuscede/Applications/LLVM-Build/lib/clang/4.0.0/include" --extra-arg="-std=c++11" Graph/TAGraph.cpp Graph/ClangEdge.cpp Graph/ClangNode.cpp main.cpp ASTWalker.cpp File/FileParse.cpp --
