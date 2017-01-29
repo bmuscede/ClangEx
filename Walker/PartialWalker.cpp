@@ -11,20 +11,22 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-FullWalker::FullWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
+PartialWalker::PartialWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
         ASTWalker(exclusions, md5, graph){ }
 
-FullWalker::~FullWalker() { }
+PartialWalker::~PartialWalker() { }
 
-void FullWalker::run(const MatchFinder::MatchResult &result) {
+void PartialWalker::run(const MatchFinder::MatchResult &result) {
     //Look for the AST matcher being triggered.
     if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
         //If a function has been found.
         addFunctionDecl(result, dec);
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALL])){
         //If a function call has been found.
-        auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER]);
-        addFunctionCall(result, expr, caller);
+        auto caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER]);
+        auto callee = expr->getCalleeDecl()->getAsFunction();
+
+        addFunctionCall(result, caller, callee);
     } else if (const VarDecl *dec = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
         //If a variable declaration has been found.
         addVariableDecl(result, dec);
@@ -33,12 +35,12 @@ void FullWalker::run(const MatchFinder::MatchResult &result) {
         auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER_VAR]);
         auto *expr = result.Nodes.getNodeAs<clang::Expr>(types[VAR_EXPR]);
 
-        addVariableRef(result, dec, caller, expr);
+        addVariableCall(result, caller, expr, dec);
     } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_FUNC])){
         //Get the CXXRecordDecl.
-        if (dec->getQualifier() == NULL || dec->getQualifier()->getAsType() == NULL) return;
+        if (dec->getQualifier() == nullptr || dec->getQualifier()->getAsType() == nullptr) return;
         CXXRecordDecl *record = dec->getQualifier()->getAsType()->getAsCXXRecordDecl();
-        if (record == NULL) return;
+        if (record == nullptr) return;
 
         //Get the filename.
         string filename = generateFileName(result, dec->getInnerLocStart());
@@ -48,9 +50,9 @@ void FullWalker::run(const MatchFinder::MatchResult &result) {
         addClassRef(result, record, dec);
     } else if (const VarDecl *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR])){
         //Get the CXXRecordDecl.
-        if (var->getQualifier() == NULL || var->getQualifier()->getAsType() == NULL) return;
+        if (var->getQualifier() == nullptr || var->getQualifier()->getAsType() == nullptr) return;
         CXXRecordDecl *record = var->getQualifier()->getAsType()->getAsCXXRecordDecl();
-        if (record == NULL) return;
+        if (record == nullptr) return;
 
         //Get the filename.
         string filename = generateFileName(result, var->getInnerLocStart());
@@ -63,9 +65,9 @@ void FullWalker::run(const MatchFinder::MatchResult &result) {
         auto *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR_THREE]);
 
         //Get the CXXRecordDecl.
-        if (dec->getQualifier() == NULL || dec->getQualifier()->getAsType() == NULL) return;
+        if (dec->getQualifier() == nullptr || dec->getQualifier()->getAsType() == nullptr) return;
         CXXRecordDecl *record = dec->getQualifier()->getAsType()->getAsCXXRecordDecl();
-        if (record == NULL) return;
+        if (record == nullptr) return;
 
         //Get the filename.
         string filename = generateFileName(result, dec->getInnerLocStart());
@@ -85,7 +87,7 @@ void FullWalker::run(const MatchFinder::MatchResult &result) {
         addEnumDecl(result, dec, parent);
 
         //Add the parent relationship.
-        if (parent != NULL) addEnumRef(result, dec, parent);
+        if (parent != nullptr) addEnumRef(result, dec, parent);
     } else if (const EnumConstantDecl *dec = result.Nodes.getNodeAs<clang::EnumConstantDecl>(types[ENUM_CONST])){
         auto *parent = result.Nodes.getNodeAs<clang::FunctionDecl>(types[ENUM_CONST_PARENT]);
 
@@ -97,7 +99,7 @@ void FullWalker::run(const MatchFinder::MatchResult &result) {
     }
 }
 
-void FullWalker::generateASTMatches(MatchFinder *finder) {
+void PartialWalker::generateASTMatches(MatchFinder *finder) {
     //Function methods.
     if (!exclusions.cFunction){
         //Finds function declarations for current C/C++ file.
@@ -149,65 +151,7 @@ void FullWalker::generateASTMatches(MatchFinder *finder) {
     }
 }
 
-void FullWalker::addFunctionCall(const MatchFinder::MatchResult result,
-                                const CallExpr *expr, const DeclaratorDecl *decl) {
-    //Generate the ID of the caller and callee.
-    string callerName = generateLabel(decl, ClangNode::FUNCTION);
-    string calleeName = generateLabel(expr->getCalleeDecl()->getAsFunction(), ClangNode::FUNCTION);
-
-    //Next, we find by ID.
-    vector<ClangNode*> caller = graph->findNodeByName(callerName);
-    vector<ClangNode*> callee = graph->findNodeByName(calleeName);
-
-    //Check if we have the correct size.
-    if (caller.size() == 0 || callee.size() == 0){
-        //Add to unresolved reference list.
-        graph->addUnresolvedRef(callerName, calleeName, ClangEdge::CALLS);
-
-        //Add the attributes.
-        //TODO: Function call attributes?
-        return;
-    }
-
-    //We finally add the edge.
-    ClangEdge* edge = new ClangEdge(caller.at(0), callee.at(0), ClangEdge::CALLS);
-    graph->addEdge(edge);
-
-    //Process attributes.
-    //TODO: Function call attributes?
-}
-
-void FullWalker::addVariableRef(const MatchFinder::MatchResult result,
-                               const VarDecl *decl, const DeclaratorDecl *caller, const Expr *expr) {
-    //Start by generating the ID of the caller and callee.
-    string callerName = generateLabel(caller, ClangNode::FUNCTION);
-    string varName = generateLabel(decl, ClangNode::VARIABLE);
-
-    //Next, we find their IDs.
-    vector<ClangNode*> callerNode = graph->findNodeByName(callerName);
-    vector<ClangNode*> varNode = graph->findNodeByName(varName);
-
-    //Check to see if we have these entries already done.
-    if (callerNode.size() == 0 || varNode.size() == 0){
-        //Add to unresolved reference list.
-        graph->addUnresolvedRef(callerName, varName, ClangEdge::REFERENCES);
-
-        //Add attributes.
-        graph->addUnresolvedRefAttr(callerName, varName,
-                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, decl->getName()));
-        return;
-    }
-
-    //Add the edge.
-    ClangEdge* edge = new ClangEdge(callerNode.at(0), varNode.at(0), ClangEdge::REFERENCES);
-    graph->addEdge(edge);
-
-    //Process attributes.
-    graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(), ClangEdge::REFERENCES,
-                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, decl->getName()));
-}
-
-void FullWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *classDec, string fileName) {
+void PartialWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRecordDecl *classDec, string fileName) {
     //Get the name & ID of the class.
     string classID = generateID(fileName, classDec->getQualifiedNameAsString());
     string className = generateLabel(classDec, ClangNode::CLASS);
@@ -227,9 +171,9 @@ void FullWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRe
     //Get base classes.
     if (classDec->getNumBases() > 0) {
         for (auto base = classDec->bases_begin(); base != classDec->bases_end(); base++) {
-            if (base->getType().getTypePtr() == NULL) continue;
+            if (base->getType().getTypePtr() == nullptr) continue;
             CXXRecordDecl *baseClass = base->getType().getTypePtr()->getAsCXXRecordDecl();
-            if (baseClass == NULL) continue;
+            if (baseClass == nullptr) continue;
 
             //Add a linkage in our graph.
             addClassInheritanceRef(classDec, baseClass);
@@ -237,7 +181,7 @@ void FullWalker::addClassDecl(const MatchFinder::MatchResult result, const CXXRe
     }
 }
 
-void FullWalker::addClassRef(const MatchFinder::MatchResult result,
+void PartialWalker::addClassRef(const MatchFinder::MatchResult result,
                             const CXXRecordDecl* classRec, const DeclaratorDecl* funcRec){
     //Generate the label of the class and the function.
     string className = generateLabel(classRec, ClangNode::CLASS);
@@ -246,7 +190,7 @@ void FullWalker::addClassRef(const MatchFinder::MatchResult result,
     addClassRef(className, funcName);
 }
 
-void FullWalker::addClassRef(const MatchFinder::MatchResult result,
+void PartialWalker::addClassRef(const MatchFinder::MatchResult result,
                             const CXXRecordDecl* classRec, const VarDecl* varRec){
     //Generate the label of the class and the variable.
     string className = generateLabel(classRec, ClangNode::CLASS);
@@ -255,7 +199,7 @@ void FullWalker::addClassRef(const MatchFinder::MatchResult result,
     addClassRef(className, objName);
 }
 
-void FullWalker::addClassRef(string srcLabel, string dstLabel){
+void PartialWalker::addClassRef(string srcLabel, string dstLabel){
     //Get the nodes by their label.
     vector<ClangNode*> classNode = graph->findNodeByName(srcLabel);
     vector<ClangNode*> innerNode = graph->findNodeByName(dstLabel);
@@ -279,7 +223,7 @@ void FullWalker::addClassRef(string srcLabel, string dstLabel){
     //TODO: Any class reference attributes?
 }
 
-void FullWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXRecordDecl* baseDec){
+void PartialWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXXRecordDecl* baseDec){
     string classLabel = generateLabel(classDec, ClangNode::CLASS);
     string baseLabel = generateLabel(baseDec, ClangNode::CLASS);
 
@@ -305,7 +249,7 @@ void FullWalker::addClassInheritanceRef(const CXXRecordDecl* classDec, const CXX
     //TODO: Any inheritance attributes?
 }
 
-void FullWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl){
+void PartialWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl){
     //Get the type.
     ClangNode::NodeType type;
     if (decl->isUnion()){
@@ -317,9 +261,9 @@ void FullWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clan
     //TODO: Stuff.
 }
 
-void FullWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *decl, const VarDecl *parent){
+void PartialWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *decl, const VarDecl *parent){
     string fileName = generateFileName(result,
-                                       (parent == NULL) ? decl->getInnerLocStart() : parent->getInnerLocStart());
+                                       (parent == nullptr) ? decl->getInnerLocStart() : parent->getInnerLocStart());
 
     //First, generate the ID of the function.
     string ID = generateID(fileName, decl->getQualifiedNameAsString());
@@ -342,7 +286,7 @@ void FullWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDe
     addClassRef(generateClassName(qualName), generateLabel(decl, ClangNode::ENUM));
 }
 
-void FullWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,
+void PartialWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,
                            const VarDecl *parent) {
     //First, get the names for both the parent and the enum.
     string varLabel = generateLabel(parent, ClangNode::VARIABLE);
@@ -370,11 +314,11 @@ void FullWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDec
     //TODO: Any enum reference attributes?
 }
 
-void FullWalker::addEnumConstDecl(const MatchFinder::MatchResult result, const EnumConstantDecl *decl) {
+void PartialWalker::addEnumConstDecl(const MatchFinder::MatchResult result, const EnumConstantDecl *decl) {
     //TODO
 }
 
-void FullWalker::addEnumConstRef(const MatchFinder::MatchResult result, const EnumConstantDecl *decl,
+void PartialWalker::addEnumConstRef(const MatchFinder::MatchResult result, const EnumConstantDecl *decl,
                                 const FunctionDecl *func) {
     //TODO
 }

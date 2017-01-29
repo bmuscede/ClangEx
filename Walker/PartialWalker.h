@@ -7,11 +7,11 @@
 
 #include "ASTWalker.h"
 
-class FullWalker : public ASTWalker {
+class PartialWalker : public ASTWalker {
 public:
-    FullWalker(bool md5, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
+    PartialWalker(bool md5, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
                TAGraph* graph = new TAGraph());
-    virtual ~FullWalker();
+    virtual ~PartialWalker();
 
     virtual void run(const MatchFinder::MatchResult &result);
     virtual void generateASTMatches(MatchFinder *finder);
@@ -24,10 +24,6 @@ private:
                              "expr_var", "class_dec_func", "class_dec_var", "class_dec_var_two", "class_dec_var_three",
                              "struct_dec", "union_dec", "enum_dec", "enum_var", "enum_const", "enum_const_parent"};
 
-    void addFunctionCall(const MatchFinder::MatchResult result,
-                         const clang::CallExpr *expr, const clang::DeclaratorDecl* decl);
-    void addVariableRef(const MatchFinder::MatchResult result,
-                        const clang::VarDecl *decl, const clang::DeclaratorDecl* caller, const clang::Expr* expr);
     void addClassDecl(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDec, std::string fileName);
     void addClassRef(const MatchFinder::MatchResult result,
                      const clang::CXXRecordDecl* classRec, const clang::DeclaratorDecl* funcRec);

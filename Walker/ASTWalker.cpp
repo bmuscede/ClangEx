@@ -112,7 +112,7 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
     SourceManager& SrcMgr = result.Context->getSourceManager();
     const FileEntry* Entry = SrcMgr.getFileEntryForID(SrcMgr.getFileID(loc));
 
-    if (Entry == NULL) return string();
+    if (Entry == nullptr) return string();
 
     string fileName(Entry->getName());
 
@@ -157,8 +157,8 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
             //We need to get the parent function.
             const DeclContext *parentContext = var->getParentFunctionOrMethod();
 
-            //If we have NULL, get the parent function.
-            if (parentContext != NULL) {
+            //If we have nullptr, get the parent function.
+            if (parentContext != nullptr) {
                 string parentQualName = static_cast<const FunctionDecl *>(parentContext)->getQualifiedNameAsString();
                 label = parentQualName + "::" + label;
             }
@@ -207,7 +207,7 @@ string ASTWalker::generateClassName(string qualifiedName){
 }
 
 bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl){
-    if (decl == NULL) return false;
+    if (decl == nullptr) return false;
     bool isIn;
 
     //Some system headers cause Clang to segfault.
@@ -292,7 +292,7 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
 
     //Check which one we use.
     bool useField = false;
-    if (varDec == NULL) useField = true;
+    if (varDec == nullptr) useField = true;
 
     //Next, generate the fields for the decl.
     if (useField){
@@ -327,6 +327,77 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
                                 ClangNode::VAR_ATTRIBUTE.staticName,
                                 staticInfo);
 }
+
+void ASTWalker::addFunctionCall(const MatchFinder::MatchResult results, const DeclaratorDecl* caller,
+                                const FunctionDecl* callee){
+    //Generate a label for the two functions.
+    string callerLabel = generateLabel(caller, ClangNode::FUNCTION);
+    string calleeLabel = generateLabel(callee, ClangNode::FUNCTION);
+
+    //Next, we find by ID.
+    vector<ClangNode*> callerNode = graph->findNodeByName(callerLabel);
+    vector<ClangNode*> calleeNode = graph->findNodeByName(calleeLabel);
+
+    //Check if we have an already known reference.
+    if (callerNode.size() == 0 || calleeNode.size() == 0){
+        //Add to unresolved reference list.
+        graph->addUnresolvedRef(callerLabel, calleeLabel, ClangEdge::CALLS);
+
+        //Add the attributes.
+        //TODO: Function call attributes?
+        return;
+    }
+
+    //We finally add the edge.
+    ClangEdge* edge = new ClangEdge(callerNode.at(0), calleeNode.at(0), ClangEdge::CALLS);
+    graph->addEdge(edge);
+
+    //Process attributes.
+    //TODO: Function call attributes?
+}
+
+void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *caller,
+                                const clang::Expr* expr, const clang::VarDecl *varCallee,
+                                const clang::FieldDecl *fieldCallee){
+    string variableName;
+    string variableShortName;
+
+    //Generate the information associated with the caller.
+    string callerName = generateLabel(caller, ClangNode::FUNCTION);
+
+    //Decide how we should process.
+    if (fieldCallee == nullptr){
+        variableName = generateLabel(varCallee, ClangNode::VARIABLE);
+        variableShortName = varCallee->getName();
+    } else {
+        variableName = generateLabel(fieldCallee, ClangNode::VARIABLE);
+        variableShortName = fieldCallee->getName();
+    }
+
+    //Next, we find their IDs.
+    vector<ClangNode*> callerNode = graph->findNodeByName(callerName);
+    vector<ClangNode*> varNode = graph->findNodeByName(variableName);
+
+    //Check to see if we have these entries already done.
+    if (callerNode.size() == 0 || varNode.size() == 0){
+        //Add to unresolved reference list.
+        graph->addUnresolvedRef(callerName, variableName, ClangEdge::REFERENCES);
+
+        //Add attributes.
+        graph->addUnresolvedRefAttr(callerName, variableName,
+                                    ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, variableShortName));
+        return;
+    }
+
+    //Add the edge.
+    ClangEdge* edge = new ClangEdge(callerNode.at(0), varNode.at(0), ClangEdge::REFERENCES);
+    graph->addEdge(edge);
+
+    //Process attributes.
+    graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(), ClangEdge::REFERENCES,
+                        ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, variableShortName));
+}
+
 /********************************************************************************************************************/
 // END AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/

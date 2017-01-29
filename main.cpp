@@ -48,7 +48,7 @@ int main(int argc, const char **argv) {
     //Gets whether whether we're dealing with a merge.
     vector<string> mergeVec = parser.getOption(ClangArgParse::MERGE_LONG);
     bool merge = false;
-    TAGraph* mergeGraph = NULL;
+    TAGraph* mergeGraph = nullptr;
     if (mergeVec.size() != 0){
         //We're dealing with a merge.
         merge = true;
@@ -64,7 +64,7 @@ int main(int argc, const char **argv) {
         
         //Gets the graph.
         TAGraph* graph = processor.writeTAGraph();
-        if (graph == NULL) return 1;
+        if (graph == nullptr) return 1;
     }
 
     //Check how we're dealing with IDs.
@@ -74,14 +74,14 @@ int main(int argc, const char **argv) {
     ASTWalker* walker;
     if (parser.getFlag(ClangArgParse::BLOB_LONG)){
         if (merge)
-            walker = new MinimalWalker(useMD5, exclude, mergeGraph);
+            walker = new BlobWalker(useMD5, exclude, mergeGraph);
         else
-            walker = new MinimalWalker(useMD5, exclude);
+            walker = new BlobWalker(useMD5, exclude);
     } else {
         if (merge)
-            walker = new FullWalker(useMD5, exclude, mergeGraph);
+            walker = new PartialWalker(useMD5, exclude, mergeGraph);
         else
-            walker = new FullWalker(useMD5, exclude);
+            walker = new PartialWalker(useMD5, exclude);
     }
     //Generates a matcher system.
     MatchFinder finder;

@@ -39,7 +39,7 @@ vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPa
     }
 
     //Next, we iterate until we hit the end.
-    ClangNode* prevNode = NULL;
+    ClangNode* prevNode = nullptr;
     for (int i = 0; i < pathComponents.size(); i++){
         //Determines the type of node.
         ClangNode::NodeType type;
@@ -55,7 +55,7 @@ vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPa
         curPath.push_back(currentNode);
 
         //Next, deals with contains.
-        if (prevNode != NULL){
+        if (prevNode != nullptr){
             //Adds a new link.
             curContains.push_back(new ClangEdge(prevNode, currentNode, ClangEdge::CONTAINS));
         }

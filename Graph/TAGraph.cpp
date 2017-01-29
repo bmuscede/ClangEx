@@ -53,8 +53,8 @@ ClangNode* TAGraph::findNodeByID(string ID) {
         }
     }
 
-    //If we don't find it, return NULL.
-    return NULL;
+    //If we don't find it, return nullptr.
+    return nullptr;
 }
 
 vector<ClangNode*> TAGraph::findNodeByName(string name) {
@@ -86,7 +86,7 @@ ClangEdge* TAGraph::findEdgeByIDs(string IDOne, string IDTwo, ClangEdge::EdgeTyp
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 vector<ClangNode*> TAGraph::findSrcNodesByEdge(ClangNode* dst, ClangEdge::EdgeType type){
@@ -144,7 +144,7 @@ bool TAGraph::edgeExists(string IDOne, string IDTwo) {
 bool TAGraph::addSingularAttribute(string ID, string key, string value){
     //Get the ClangNode.
     ClangNode* node = findNodeByID(ID);
-    if (node == NULL) return false;
+    if (node == nullptr) return false;
 
     //Clears the vector and adds the attribute.
     node->clearAttributes(key);
@@ -154,7 +154,7 @@ bool TAGraph::addSingularAttribute(string ID, string key, string value){
 bool TAGraph::addSingularAttribute(string IDSrc, string IDDst, ClangEdge::EdgeType type, string key, string value){
     //Get the ClangEdge.
     ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst, type);
-    if (edge == NULL) return false;
+    if (edge == nullptr) return false;
 
     //Clears the vector and adds the attribute.
     edge->clearAttribute(key);
@@ -165,7 +165,7 @@ bool TAGraph::addSingularAttribute(string IDSrc, string IDDst, ClangEdge::EdgeTy
 bool TAGraph::addAttribute(string ID, string key, string value){
     //Get the node.
     ClangNode* node = findNodeByID(ID);
-    if (node == NULL) return false;
+    if (node == nullptr) return false;
 
     //Check if the attribute exists.
     if (node->doesAttributeExist(key, value)) return true;
@@ -178,7 +178,7 @@ bool TAGraph::addAttribute(string ID, string key, string value){
 bool TAGraph::addAttribute(string IDSrc, string IDDst, ClangEdge::EdgeType type, string key, string value){
     //Get the edge.
     ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst, type);
-    if (edge == NULL) return false;
+    if (edge == nullptr) return false;
 
     //Check if the attribute exists.
     if (edge->doesAttributeExist(key, value)) return true;
@@ -213,7 +213,7 @@ void TAGraph::addNodesToFile() {
         if (file.compare("") != 0){
             //Find the appropriate node.
             ClangNode* fileNode = findNodeByID(file);
-            if (fileNode == NULL) continue;
+            if (fileNode == nullptr) continue;
 
             //Add it to the graph.
             ClangEdge* edge = new ClangEdge(fileNode, node, ClangEdge::CONTAINS);

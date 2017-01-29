@@ -7,11 +7,11 @@
 
 #include "ASTWalker.h"
 
-class MinimalWalker : public ASTWalker {
+class BlobWalker : public ASTWalker {
 public:
-    MinimalWalker(bool md5, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
+    BlobWalker(bool md5, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
                   TAGraph* graph = new TAGraph());
-    virtual ~MinimalWalker();
+    virtual ~BlobWalker();
 
     virtual void run(const MatchFinder::MatchResult &result);
     virtual void generateASTMatches(MatchFinder *finder);
@@ -22,13 +22,6 @@ private:
     const char* types[12] = {"func_dec", "var_dec", "field_dec", "caller", "callee", "v_caller", "v_callee", "v_expr",
                             "field_callee", "field_expr", "class_dec", "enum_dec"};
 
-    void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *caller, const clang::FunctionDecl *callee);
-    void addVariableCall(const MatchFinder::MatchResult result, const clang::VarDecl *callee, const clang::DeclaratorDecl *caller,
-                        const clang::Expr* expr);
-    void addVariableCall(const MatchFinder::MatchResult result, const clang::FieldDecl *callee, const clang::DeclaratorDecl *caller,
-                         const clang::Expr* expr);
-    void addVariableCall(const MatchFinder::MatchResult result, std::string calleeName,
-                         std::string callerLabel, std::string calleeLabel, const clang::Expr* expr);
     void addClassDec(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classRec);
     void addClassInheritanceRef(const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
     void addEnumDec(const MatchFinder::MatchResult result, const clang::EnumDecl *dec);

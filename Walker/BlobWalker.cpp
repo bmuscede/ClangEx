@@ -7,12 +7,12 @@
 
 using namespace std;
 
-MinimalWalker::MinimalWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
+BlobWalker::BlobWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
         ASTWalker(exclusions, md5, graph){ }
 
-MinimalWalker::~MinimalWalker(){ }
+BlobWalker::~BlobWalker(){ }
 
-void MinimalWalker::run(const MatchFinder::MatchResult &result){
+void BlobWalker::run(const MatchFinder::MatchResult &result){
     //Check if the current result fits any of our match criteria.
     if (const DeclaratorDecl *functionDecl = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
         //Get whether we have a system header.
@@ -30,9 +30,9 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
         if (isInSystemHeader(result, fieldDecl)) return;
         if (fieldDecl->getQualifiedNameAsString().compare("") == 0) return;
 
-        addVariableDecl(result, NULL, fieldDecl);
+        addVariableDecl(result, nullptr, fieldDecl);
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALLEE])){
-        if (expr->getCalleeDecl() == NULL || !(isa<const clang::FunctionDecl>(expr->getCalleeDecl()))) return;
+        if (expr->getCalleeDecl() == nullptr || !(isa<const clang::FunctionDecl>(expr->getCalleeDecl()))) return;
         auto callee = expr->getCalleeDecl()->getAsFunction();
         auto caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_CALLER]);
 
@@ -48,7 +48,7 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, callee)) return;
 
-        addVariableCall(result, callee, caller, expr);
+        addVariableCall(result, caller, expr, callee);
     } else if (const FieldDecl *callee = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_CALLEE])){
         //If a variable reference has been found.
         auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[VAR_CALLER]);
@@ -57,7 +57,7 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, callee)) return;
 
-        addVariableCall(result, callee, caller, expr);
+        addVariableCall(result, caller, expr, nullptr, callee);
     } else if (const CXXRecordDecl *classRec = result.Nodes.getNodeAs<clang::CXXRecordDecl>(types[CLASS_DEC])){
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, classRec)) return;
@@ -71,7 +71,7 @@ void MinimalWalker::run(const MatchFinder::MatchResult &result){
     }
 }
 
-void MinimalWalker::generateASTMatches(MatchFinder *finder){
+void BlobWalker::generateASTMatches(MatchFinder *finder){
     //Function methods.
     if (!exclusions.cFunction){
         //Finds function declarations for current C/C++ file.
@@ -111,83 +111,10 @@ void MinimalWalker::generateASTMatches(MatchFinder *finder){
     }
 }
 
-void MinimalWalker::addFunctionCall(const MatchFinder::MatchResult results, const DeclaratorDecl* caller,
-                                    const FunctionDecl* callee){
-    //Generate a label for the two functions.
-    string callerLabel = generateLabel(caller, ClangNode::FUNCTION);
-    string calleeLabel = generateLabel(callee, ClangNode::FUNCTION);
-
-    //Next, we find by ID.
-    vector<ClangNode*> callerNode = graph->findNodeByName(callerLabel);
-    vector<ClangNode*> calleeNode = graph->findNodeByName(calleeLabel);
-
-    //Check if we have an already known reference.
-    if (callerNode.size() == 0 || calleeNode.size() == 0){
-        //Add to unresolved reference list.
-        graph->addUnresolvedRef(callerLabel, calleeLabel, ClangEdge::CALLS);
-
-        //Add the attributes.
-        //TODO: Function call attributes?
-        return;
-    }
-
-    //We finally add the edge.
-    ClangEdge* edge = new ClangEdge(callerNode.at(0), calleeNode.at(0), ClangEdge::CALLS);
-    graph->addEdge(edge);
-
-    //Process attributes.
-    //TODO: Function call attributes?
-}
-
-void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, const VarDecl *callee, const DeclaratorDecl *caller,
-                                    const Expr* expr){
-    //Start by generating the ID of the caller and callee.
-    string callerLabel = generateLabel(caller, ClangNode::FUNCTION);
-    string calleeLabel = generateLabel(callee, ClangNode::VARIABLE);
-
-    addVariableCall(result, callee->getName(), callerLabel, calleeLabel, expr);
-
-}
-
-void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, const clang::FieldDecl *callee,
-                                    const clang::DeclaratorDecl *caller, const clang::Expr *expr) {
-    //Start by generating the ID of the caller and callee.
-    string callerLabel = generateLabel(caller, ClangNode::FUNCTION);
-    string calleeLabel = generateLabel(callee, ClangNode::VARIABLE);
-
-    addVariableCall(result, callee->getName(), callerLabel, calleeLabel, expr);
-}
-
-void MinimalWalker::addVariableCall(const MatchFinder::MatchResult result, string calleeName,
-                                    string callerLabel, string calleeLabel, const clang::Expr* expr){
-    //Next, we find their IDs.
-    vector<ClangNode*> callerNode = graph->findNodeByName(callerLabel);
-    vector<ClangNode*> calleeNode = graph->findNodeByName(calleeLabel);
-
-    //Check to see if we have these entries already done.
-    if (callerNode.size() == 0 || calleeNode.size() == 0){
-        //Add to unresolved reference list.
-        graph->addUnresolvedRef(callerLabel, calleeLabel, ClangEdge::REFERENCES);
-
-        //Add attributes.
-        graph->addUnresolvedRefAttr(callerLabel, calleeLabel,
-                             ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, calleeName));
-        return;
-    }
-
-    //Add the edge.
-    ClangEdge* edge = new ClangEdge(callerNode.at(0), calleeNode.at(0), ClangEdge::REFERENCES);
-    graph->addEdge(edge);
-
-    //Process attributes.
-    graph->addAttribute(callerNode.at(0)->getID(), calleeNode.at(0)->getID(), ClangEdge::REFERENCES,
-                       ClangEdge::ACCESS_ATTRIBUTE.attrName, ClangEdge::ACCESS_ATTRIBUTE.getVariableAccess(expr, calleeName));
-}
-
-void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXXRecordDecl *classRec) {
+void BlobWalker::addClassDec(const MatchFinder::MatchResult result, const CXXRecordDecl *classRec) {
     //Get the definition.
     auto def = classRec->getDefinition();
-    if (def == NULL) return;
+    if (def == nullptr) return;
 
     //Check if we're dealing with a class.
     if (!classRec->isClass()) return;
@@ -221,9 +148,9 @@ void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXX
     //Get base classes.
     if (classRec->getNumBases() > 0) {
         for (auto base = classRec->bases_begin(); base != classRec->bases_end(); base++) {
-            if (base->getType().getTypePtr() == NULL) continue;
+            if (base->getType().getTypePtr() == nullptr) continue;
             CXXRecordDecl *baseClass = base->getType().getTypePtr()->getAsCXXRecordDecl();
-            if (baseClass == NULL) continue;
+            if (baseClass == nullptr) continue;
 
             //Add a linkage in our graph->
             addClassInheritanceRef(classRec, baseClass);
@@ -231,7 +158,7 @@ void MinimalWalker::addClassDec(const MatchFinder::MatchResult result, const CXX
     }
 }
 
-void MinimalWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, const CXXRecordDecl *parentClass) {
+void BlobWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, const CXXRecordDecl *parentClass) {
     string classLabel = generateLabel(childClass, ClangNode::CLASS);
     string baseLabel = generateLabel(parentClass, ClangNode::CLASS);
 
@@ -257,7 +184,7 @@ void MinimalWalker::addClassInheritanceRef(const CXXRecordDecl *childClass, cons
     //TODO: Any inheritance attributes?
 }
 
-void MinimalWalker::addEnumDec(const MatchFinder::MatchResult result, const EnumDecl *dec){
+void BlobWalker::addEnumDec(const MatchFinder::MatchResult result, const EnumDecl *dec){
     //Generate the fields for the node.
     string filename = generateFileName(result, dec->getInnerLocStart());
     string ID = generateID(filename, dec->getQualifiedNameAsString());

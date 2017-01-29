@@ -71,7 +71,7 @@ bool TAProcessor::writeTAFile(string fileName){
 }
 
 bool TAProcessor::readTAGraph(TAGraph* graph){
-    if (graph == NULL){
+    if (graph == nullptr){
         cerr << "Invalid TA graph object supplied." << endl;
         cerr << "Please supply an initialized TA graph object!" << endl;
         return false;
@@ -90,9 +90,9 @@ TAGraph* TAProcessor::writeTAGraph(){
 
     //We now iterate through the facts first.
     bool succ = writeRelations(graph);
-    if (!succ) return NULL;
+    if (!succ) return nullptr;
     succ = writeAttributes(graph);
-    if (!succ) return NULL;
+    if (!succ) return nullptr;
 
     return graph;
 }
@@ -357,7 +357,7 @@ bool TAProcessor::writeRelations(TAGraph* graph){
             ClangNode* src = graph->findNodeByID(nodes.first);
             ClangNode* dst = graph->findNodeByID(nodes.second);
 
-            if (src == NULL || dst == NULL){
+            if (src == nullptr || dst == nullptr){
                 graph->addUnresolvedRef(nodes.first, nodes.second, type);
                 continue;
             }

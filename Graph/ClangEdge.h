@@ -39,7 +39,7 @@ private:
             //Gets the string.
             std::string TypeS;
             llvm::raw_string_ostream s(TypeS);
-            expr->printPretty(s, NULL, Policy);
+            expr->printPretty(s, nullptr, Policy);
 
             if (s.str().compare("") == 0) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
 
