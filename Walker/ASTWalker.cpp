@@ -48,6 +48,7 @@ void ASTWalker::resolveExternalReferences() {
 }
 
 void ASTWalker::resolveFiles(){
+    bool assumeValid = true;
     vector<ClangNode*> fileNodes = vector<ClangNode*>();
     vector<ClangEdge*> fileEdges = vector<ClangEdge*>();
 
@@ -58,7 +59,7 @@ void ASTWalker::resolveFiles(){
     for (ClangNode *file : fileNodes) {
         if ((file->getType() == ClangNode::NodeType::SUBSYSTEM && !exclusions.cSubSystem) ||
                 (file->getType() == ClangNode::NodeType::FILE && !exclusions.cFile)) {
-            graph->addNode(file);
+            graph->addNode(file, assumeValid);
         }
     }
 
@@ -69,12 +70,12 @@ void ASTWalker::resolveFiles(){
         if (exclusions.cFile && edge->getDst()->getType() == ClangNode::FILE){
             fileSkip[edge->getDst()->getID()] = edge->getSrc();
         } else {
-            graph->addEdge(edge);
+            graph->addEdge(edge, assumeValid);
         }
     }
 
     //Next, for each item in the graph, add it to a file.
-    graph->addNodesToFile(fileSkip);
+    graph->addNodesToFile(fileSkip, md5Flag);
 }
 
 string ASTWalker::generateMD5(string text){

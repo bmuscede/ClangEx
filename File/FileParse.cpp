@@ -25,12 +25,11 @@ void FileParse::addPath(string path) {
 void FileParse::processPaths(vector<ClangNode*>& nodes, vector<ClangEdge*>& edges, bool md5) {
     //Iterate through all the paths.
     for (int i = 0; i < paths.size(); i++){
-        vector<ClangNode*> curr = processPath(paths.at(i), nodes, edges, md5);
-        nodes.insert(nodes.end(), curr.begin(), curr.end());
+        processPath(paths.at(i), nodes, edges, md5);
     }
 }
 
-vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<ClangEdge*>& curContains,
+void FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<ClangEdge*>& curContains,
                                           bool md5) {
     //Start by iterating at each path element.
     vector<string> pathComponents = vector<string>();
@@ -41,27 +40,53 @@ vector<ClangNode*> FileParse::processPath(string path, vector<ClangNode*>& curPa
     //Next, we iterate until we hit the end.
     ClangNode* prevNode = nullptr;
     for (int i = 0; i < pathComponents.size(); i++){
-        //Determines the type of node.
-        ClangNode::NodeType type;
-        if (i + 1 == pathComponents.size()){
-            type = ClangNode::FILE;
+        ClangNode* currentNode;
+
+        //Check if a path component exists.
+        int existsIndex = doesNodeExist((md5) ? ASTWalker::generateMD5(pathComponents.at(i)) : pathComponents.at(i)
+                , curPath);
+        if (existsIndex == -1){
+            //Determines the type of node.
+            ClangNode::NodeType type;
+            if (i + 1 == pathComponents.size()){
+                type = ClangNode::FILE;
+            } else {
+                type = ClangNode::SUBSYSTEM;
+            }
+
+            //Creates the node.
+            string current = (md5) ? ASTWalker::generateMD5(pathComponents.at(i)) : pathComponents.at(i);
+            currentNode = new ClangNode(current, pathComponents.at(i), type);
+            curPath.push_back(currentNode);
         } else {
-            type = ClangNode::SUBSYSTEM;
+            currentNode = curPath.at(i);
         }
 
-        //Creates the node.
-        string current = (md5) ? ASTWalker::generateMD5(pathComponents.at(i)) : pathComponents.at(i);
-        ClangNode* currentNode = new ClangNode(current, pathComponents.at(i), type);
-        curPath.push_back(currentNode);
-
         //Next, deals with contains.
-        if (prevNode != nullptr){
+        if (prevNode != nullptr && !doesEdgeExist(prevNode, currentNode, curContains)){
             //Adds a new link.
             curContains.push_back(new ClangEdge(prevNode, currentNode, ClangEdge::CONTAINS));
         }
 
         prevNode = currentNode;
     }
+}
 
-    return curPath;
+int FileParse::doesNodeExist(string ID, const vector<ClangNode*>& nodes){
+    //Iterates through and checks.
+    for (int i = 0; i < nodes.size(); i++){
+        ClangNode* curNode = nodes.at(i);
+        if (curNode->getID().compare(ID) == 0) return i;
+    }
+
+    return -1;
+}
+
+bool FileParse::doesEdgeExist(ClangNode* src, ClangNode* dst, const vector<ClangEdge*>& edges){
+    //Iterates through and checks.
+    for (auto curEdge : edges){
+        if (curEdge->getSrc() == src && curEdge->getDst() == dst) return true;
+    }
+
+    return false;
 }

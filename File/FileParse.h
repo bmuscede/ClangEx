@@ -21,8 +21,11 @@ public:
 private:
     std::vector<std::string> paths;
 
-    std::vector<ClangNode*> processPath(std::string path, std::vector<ClangNode*>& curPath,
-                                        std::vector<ClangEdge*>& curContains, bool md5);
+    void processPath(std::string path, std::vector<ClangNode*>& curPath,
+                     std::vector<ClangEdge*>& curContains, bool md5);
+
+    int doesNodeExist(std::string ID, const std::vector<ClangNode*>& nodes);
+    bool doesEdgeExist(ClangNode* src, ClangNode* dst, const std::vector<ClangEdge*>& edges);
 };
 
 

@@ -101,20 +101,26 @@ int main(int argc, const char **argv) {
     walker->resolveExternalReferences();
 
     //Generates file paths.
+    cout << endl << "Resolving source code file paths..." << endl;
     walker->resolveFiles();
 
     //Processes the TA file.
     vector<string> outputFiles = parser.getOption(ClangArgParse::OUT_LONG);
-    cout << endl;
     if (outputFiles.size() == 0){
+        cout << "Writing TA file to ";
         if (merge){
+            cout << mergeVec.at(0) << "..." << endl;
             walker->buildGraph(mergeVec.at(0));
         } else {
+            cout << DEFAULT_OUT << "..." << endl;
             walker->buildGraph(DEFAULT_OUT);
         }
     } else {
-        for (string file : outputFiles)
+        cout << endl;
+        for (string file : outputFiles) {
+            cout << "Writing TA file to " << file << "..." << endl;
             walker->buildGraph(file);
+        }
     }
 
     delete walker;

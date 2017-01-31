@@ -4,6 +4,7 @@
 
 #include <ctime>
 #include "TAGraph.h"
+#include "../Walker/ASTWalker.h"
 
 using namespace std;
 
@@ -24,9 +25,9 @@ TAGraph::~TAGraph() {
         delete edgeList.at(i);
 }
 
-bool TAGraph::addNode(ClangNode *node) {
+bool TAGraph::addNode(ClangNode *node, bool assumeValid) {
     //Check if the node ID exists.
-    if (nodeExists(node->getID())){
+    if (!assumeValid && nodeExists(node->getID())){
         return false;
     }
 
@@ -35,9 +36,9 @@ bool TAGraph::addNode(ClangNode *node) {
     return true;
 }
 
-bool TAGraph::addEdge(ClangEdge *edge) {
+bool TAGraph::addEdge(ClangEdge *edge, bool assumeValid) {
     //Check if the edge already exists.
-    if (edgeExists(edge->getSrc()->getID(), edge->getDst()->getID())){
+    if (!assumeValid && edgeExists(edge->getSrc()->getID(), edge->getDst()->getID())){
         return false;
     }
 
@@ -207,7 +208,7 @@ string TAGraph::generateTAFormat() {
     return format;
 }
 
-void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
+void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip, bool md5Flag) {
     //Iterate through all our nodes and find the appropriate file.
     for (ClangNode* node : nodeList){
         vector<string> fileAttrVec = node->getAttribute(FILE_ATTRIBUTE);
@@ -217,6 +218,8 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
         if (isPartOfClass(node)) continue;
 
         string file = fileAttrVec.at(0);
+        if (md5Flag) file = ASTWalker::generateMD5(file);
+
         if (file.compare("") != 0){
             //Find the appropriate node.
             ClangNode* fileNode = findNodeByID(file);
