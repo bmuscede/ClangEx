@@ -222,15 +222,19 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip, bool md5Flag) {
 
         if (file.compare("") != 0){
             //Find the appropriate node.
-            ClangNode* fileNode = findNodeByID(file);
-            if (fileNode == nullptr) {
+            vector<ClangNode*> nodeList = findNodeByName(file);
+            ClangNode* fileNode;
+            if (nodeList.size() != 0) {
+                fileNode = nodeList.at(0);
+
                 //We now look up the file node.
-                try {
-                    ClangNode* skip = fileSkip.at(file);
+                auto ptrSkip = fileSkip.find(file);
+                if (ptrSkip != fileSkip.end()){
+                    ClangNode* skip = ptrSkip->second;
                     fileNode = skip;
-                } catch (...) {
-                    continue;
                 }
+            } else {
+                continue;
             }
 
             //Add it to the graph.

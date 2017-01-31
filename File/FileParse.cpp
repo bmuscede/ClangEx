@@ -33,8 +33,18 @@ void FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<Cla
                                           bool md5) {
     //Start by iterating at each path element.
     vector<string> pathComponents = vector<string>();
+    vector<string> pathLabels = vector<string>();
+    int i = 0;
     for (auto& curr : boost::filesystem::path(path)){
-        pathComponents.push_back(curr.string());
+        if (i == 0) {
+            pathComponents.push_back(curr.string());
+        } else {
+            string craft = (i == 1) ? "" : "/";
+            pathComponents.push_back(pathComponents.at(i - 1) + craft + curr.string());
+        }
+
+        pathLabels.push_back(curr.string());
+        i++;
     }
 
     //Next, we iterate until we hit the end.
@@ -56,10 +66,10 @@ void FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<Cla
 
             //Creates the node.
             string current = (md5) ? ASTWalker::generateMD5(pathComponents.at(i)) : pathComponents.at(i);
-            currentNode = new ClangNode(current, pathComponents.at(i), type);
+            currentNode = new ClangNode(current, pathLabels.at(i), type);
             curPath.push_back(currentNode);
         } else {
-            currentNode = curPath.at(i);
+            currentNode = curPath.at(existsIndex);
         }
 
         //Next, deals with contains.
