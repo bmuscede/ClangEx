@@ -47,7 +47,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
         string filename = generateFileName(result, dec->getInnerLocStart());
 
         //If a class declaration was found.
-        addClassDecl(result, record);
+        addClassDecl(result, record, filename);
         addClassRef(result, record, dec);
     } else if (const VarDecl *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR])){
         //Get the CXXRecordDecl.
@@ -59,7 +59,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
         string filename = generateFileName(result, var->getInnerLocStart());
 
         //If a class declaration was found.
-        addClassDecl(result, record);
+        addClassDecl(result, record, filename);
         addClassRef(result, record, var);
     } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_VAR_TWO])){
         //Get the variable declaration.
@@ -74,7 +74,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
         string filename = generateFileName(result, dec->getInnerLocStart());
 
         //If a class declaration was found.
-        addClassDecl(result, record);
+        addClassDecl(result, record, filename);
         addClassRef(result, record, var);
     } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DEC])){
         cout << "The struct found is: " << rec->getQualifiedNameAsString() << endl;

@@ -52,7 +52,8 @@ protected:
     void addFunctionDecl(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec);
     void addVariableDecl(const MatchFinder::MatchResult results, const clang::VarDecl *varDec = nullptr,
                          const clang::FieldDecl *fieldDec = nullptr);
-    void addClassDecl(const MatchFinder::MatchResult results, const clang::CXXRecordDecl *classDecl);
+    void addClassDecl(const MatchFinder::MatchResult results, const clang::CXXRecordDecl *classDecl,
+                      std::string fName = "");
     void addEnumDecl(const MatchFinder::MatchResult results, const clang::EnumDecl *enumDecl);
 
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl* caller,

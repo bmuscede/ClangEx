@@ -133,7 +133,6 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
     return newPath;
 }
 
-//TODO: This currently doesn't deal with classes.
 string ASTWalker::generateID(string fileName, string qualifiedName){
     string genID = fileName + "[" + qualifiedName + "]";
 
@@ -329,7 +328,7 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
                                 staticInfo);
 }
 
-void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRecordDecl *classDecl){
+void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRecordDecl *classDecl, string fName){
     //Get the definition.
     auto def = classDecl->getDefinition();
     if (def == nullptr) return;
@@ -338,7 +337,7 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRe
     if (!classDecl->isClass()) return;
 
     //Generate the fields for the node.
-    string filename = generateFileName(results, classDecl->getInnerLocStart());
+    string filename = (fName.compare("") == 0) ? generateFileName(results, classDecl->getInnerLocStart()) : fName;
     string ID = generateID(filename, classDecl->getQualifiedNameAsString());
     string className = generateLabel(classDecl, ClangNode::CLASS);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
