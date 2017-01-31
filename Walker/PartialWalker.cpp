@@ -25,6 +25,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALL])){
         //If a function call has been found.
         auto caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER]);
+        if (expr->getCalleeDecl() == nullptr || expr->getCalleeDecl()->getAsFunction() == nullptr) return;
         auto callee = expr->getCalleeDecl()->getAsFunction();
 
         addFunctionCall(result, caller, callee);

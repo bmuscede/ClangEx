@@ -150,14 +150,20 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
     string label;
 
     //Determines how we populate the string.
+    if (decl == nullptr) return string();
     switch (type) {
         case ClangNode::FUNCTION: {
-            label = decl->getAsFunction()->getQualifiedNameAsString();
+            auto funcDecl = decl->getAsFunction();
+            if (funcDecl == nullptr) return string();
+
+            label = funcDecl->getQualifiedNameAsString();
+
             break;
         }
         case ClangNode::VARIABLE: {
-
             const VarDecl *var = static_cast<const VarDecl *>(decl);
+            if (var == nullptr) return string();
+
             label = var->getQualifiedNameAsString();
 
             //We need to get the parent function.
@@ -171,15 +177,21 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
             break;
         }
         case ClangNode::CLASS: {
-            label = static_cast<const CXXRecordDecl *>(decl)->getQualifiedNameAsString();
+            auto classDecl = static_cast<const CXXRecordDecl *>(decl);
+            if (classDecl == nullptr) return string();
+
+            label = classDecl->getQualifiedNameAsString();
             break;
         }
         case ClangNode::ENUM: {
-            label = static_cast<const EnumDecl *>(decl)->getQualifiedNameAsString();
+            auto enumDecl = static_cast<const EnumDecl *>(decl);
+            if (enumDecl == nullptr) return string();
+
+            label = enumDecl->getQualifiedNameAsString();
             break;
         }
         default: {
-            label = "";
+            label = string();
         }
     }
 
@@ -252,7 +264,8 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const De
 
 
     //Check if we have a CXXMethodDecl.
-    if (isa<CXXMethodDecl>(dec->getAsFunction())){
+    auto func = dec->getAsFunction();
+    if (func != nullptr && isa<CXXMethodDecl>(func)){
         //Perform a static cast.
         const CXXMethodDecl* methDecl = static_cast<const CXXMethodDecl*>(dec->getAsFunction());
 
