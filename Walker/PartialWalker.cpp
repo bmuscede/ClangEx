@@ -22,6 +22,9 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
     if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
         //If a function has been found.
         addFunctionDecl(result, dec);
+
+        //Adds class declarations/references.
+        manageClasses(result, dec, ClangNode::FUNCTION);
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALL])){
         //If a function call has been found.
         auto caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER]);
@@ -32,6 +35,9 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
     } else if (const VarDecl *dec = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
         //If a variable declaration has been found.
         addVariableDecl(result, dec);
+
+        //Adds class declarations/references.
+        manageClasses(result, dec, ClangNode::VARIABLE);
     } else if (const VarDecl *dec = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_CALL])){
         //If a variable reference has been found.
         auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER_VAR]);
@@ -39,44 +45,11 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
 
         addVariableCall(result, caller, expr, dec);
     } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_FUNC])){
-        //Get the CXXRecordDecl.
-        if (dec->getQualifier() == nullptr || dec->getQualifier()->getAsType() == nullptr) return;
-        CXXRecordDecl *record = dec->getQualifier()->getAsType()->getAsCXXRecordDecl();
-        if (record == nullptr) return;
-
-        //Get the filename.
-        string filename = generateFileName(result, dec->getInnerLocStart());
-
-        //If a class declaration was found.
-        addClassDecl(result, record, filename);
-        addClassRef(result, record, dec);
-    } else if (const VarDecl *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR])){
-        //Get the CXXRecordDecl.
-        if (var->getQualifier() == nullptr || var->getQualifier()->getAsType() == nullptr) return;
-        CXXRecordDecl *record = var->getQualifier()->getAsType()->getAsCXXRecordDecl();
-        if (record == nullptr) return;
-
-        //Get the filename.
-        string filename = generateFileName(result, var->getInnerLocStart());
-
-        //If a class declaration was found.
-        addClassDecl(result, record, filename);
-        addClassRef(result, record, var);
-    } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_VAR_TWO])){
         //Get the variable declaration.
-        auto *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR_THREE]);
+        auto *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR]);
 
-        //Get the CXXRecordDecl.
-        if (dec->getQualifier() == nullptr || dec->getQualifier()->getAsType() == nullptr) return;
-        CXXRecordDecl *record = dec->getQualifier()->getAsType()->getAsCXXRecordDecl();
-        if (record == nullptr) return;
-
-        //Get the filename.
-        string filename = generateFileName(result, dec->getInnerLocStart());
-
-        //If a class declaration was found.
-        addClassDecl(result, record, filename);
-        addClassRef(result, record, var);
+        //Add the class reference.
+        manageClasses(result, dec, ClangNode::VARIABLE, var);
     } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DEC])){
         cout << "The struct found is: " << rec->getQualifiedNameAsString() << endl;
     } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[UNION_DEC])){
@@ -125,21 +98,19 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
     //Class methods.
     if (!exclusions.cClass){
         //Finds any class declarations.
-        finder->addMatcher(functionDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_FUNC]), this);
-        finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[CLASS_DEC_VAR]), this);
-        finder->addMatcher(varDecl(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CLASS_DEC_VAR_TWO])))
-                                   .bind(types[CLASS_DEC_VAR_THREE]), this);
+        finder->addMatcher(varDecl(isExpansionInMainFile(), hasAncestor(functionDecl().bind(types[CLASS_DEC_FUNC])))
+                                   .bind(types[CLASS_DEC_VAR]), this);
     }
 
     if (!exclusions.cEnum){
         //Finds enums in the program.
         finder->addMatcher(enumDecl(isExpansionInMainFile()).bind(types[ENUM_DEC]), this);
-        finder->addMatcher(varDecl(isExpansionInMainFile(),
-                                   hasType(enumType(hasDeclaration(enumDecl().bind(types[ENUM_DEC]))))).bind(types[ENUM_VAR]), this);
+        //finder->addMatcher(varDecl(isExpansionInMainFile(),
+        //                           hasType(enumType(hasDeclaration(enumDecl().bind(types[ENUM_DEC]))))).bind(types[ENUM_VAR]), this);
 
         //Finds enum constants and their usage.
-        finder->addMatcher(enumConstantDecl(isExpansionInMainFile(),
-                                            hasAncestor(functionDecl().bind(types[ENUM_CONST_PARENT]))).bind(types[ENUM_CONST]), this);
+        //finder->addMatcher(enumConstantDecl(isExpansionInMainFile(),
+        //                                    hasAncestor(functionDecl().bind(types[ENUM_CONST_PARENT]))).bind(types[ENUM_CONST]), this);
     }
 
     if (!exclusions.cStruct){
@@ -151,46 +122,28 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
     }
 }
 
-void PartialWalker::addClassRef(const MatchFinder::MatchResult result,
-                            const CXXRecordDecl* classRec, const DeclaratorDecl* funcRec){
-    //Generate the label of the class and the function.
-    string className = generateLabel(classRec, ClangNode::CLASS);
-    string funcName = generateLabel(funcRec, ClangNode::FUNCTION);
+void PartialWalker::manageClasses(const MatchFinder::MatchResult result,
+                                  const clang::DeclaratorDecl *decl, ClangNode::NodeType type,
+                                  const clang::DeclaratorDecl *innerDecl){
+    const DeclaratorDecl* labelDecl = innerDecl;
+    if (innerDecl == nullptr) labelDecl = decl;
 
-    addClassRef(className, funcName);
-}
+    //Checks if we need to process.
+    if (exclusions.cClass) return;
 
-void PartialWalker::addClassRef(const MatchFinder::MatchResult result,
-                            const CXXRecordDecl* classRec, const VarDecl* varRec){
-    //Generate the label of the class and the variable.
-    string className = generateLabel(classRec, ClangNode::CLASS);
-    string objName = generateLabel(varRec, ClangNode::VARIABLE);
+    //Get the filename.
+    string filename = generateFileName(result, labelDecl->getInnerLocStart(), true);
+    string declLabel = generateLabel(labelDecl, type);
 
-    addClassRef(className, objName);
-}
+    //Get the class.
+    CXXRecordDecl* record = extractClass(decl->getQualifier());
+    if (record == nullptr) return;
 
-void PartialWalker::addClassRef(string srcLabel, string dstLabel){
-    //Get the nodes by their label.
-    vector<ClangNode*> classNode = graph->findNodeByName(srcLabel);
-    vector<ClangNode*> innerNode = graph->findNodeByName(dstLabel);
+    //First, we add the class.
+    addClassDecl(result, record, filename);
 
-    //Check to see if we have these entries already done.
-    if (classNode.size() == 0 || innerNode.size() == 0){
-        //Add to unresolved reference list.
-        graph->addUnresolvedRef(srcLabel, dstLabel, ClangEdge::CONTAINS);
-
-        //Add attributes.
-        //TODO: Any class reference attributes?
-
-        return;
-    }
-
-    //Add the edge.
-    ClangEdge* edge = new ClangEdge(classNode.at(0), innerNode.at(0), ClangEdge::CONTAINS);
-    graph->addEdge(edge);
-
-    //Process attributes.
-    //TODO: Any class reference attributes?
+    //Next, we add the reference.
+    addClassCall(result, record, declLabel);
 }
 
 void PartialWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl){

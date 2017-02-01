@@ -19,19 +19,29 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
         //Get whether we have a system header.
         if (isInSystemHeader(result, functionDecl)) return;
 
+        //Adds a function decl.
         addFunctionDecl(result, functionDecl);
+
+        //Adds a class reference.
+        performAddClassCall(result, functionDecl, ClangNode::FUNCTION);
     } else if (const VarDecl *variableDecl = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
          //Get whether we have a system header.
-        if (isInSystemHeader(result, variableDecl)) return;
-        if (variableDecl->getQualifiedNameAsString().compare("") == 0) return;
+        if (isInSystemHeader(result, variableDecl) || variableDecl->getQualifiedNameAsString().compare("") == 0) return;
 
+        //Adds a variable decl.
         addVariableDecl(result, variableDecl);
+
+        //Adds a class reference.
+        performAddClassCall(result, variableDecl, ClangNode::VARIABLE);
     } else if (const FieldDecl *fieldDecl = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_DEC])){
         //Get whether we have a system header.
-        if (isInSystemHeader(result, fieldDecl)) return;
-        if (fieldDecl->getQualifiedNameAsString().compare("") == 0) return;
+        if (isInSystemHeader(result, fieldDecl) || fieldDecl->getQualifiedNameAsString().compare("") == 0) return;
 
+        //Adds a field decl.
         addVariableDecl(result, nullptr, fieldDecl);
+
+        //Adds a class reference.
+        performAddClassCall(result, fieldDecl, ClangNode::VARIABLE);
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALLEE])){
         if (expr->getCalleeDecl() == nullptr || !(isa<const clang::FunctionDecl>(expr->getCalleeDecl()))) return;
         auto callee = expr->getCalleeDecl()->getAsFunction();
@@ -68,7 +78,11 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, dec)) return;
 
+        //Adds the enum declaration.
         addEnumDecl(result, dec);
+
+        //Adds a class reference.
+        performAddClassCall(result, fieldDecl, ClangNode::ENUM);
     }
 }
 
@@ -102,8 +116,6 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
     if (!exclusions.cClass){
         //Finds class declarations.
         finder->addMatcher(cxxRecordDecl(isClass()).bind(types[CLASS_DEC]), this);
-
-        //TODO: References not implemented.
     }
 
     //Enum methods.

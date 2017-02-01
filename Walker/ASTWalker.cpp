@@ -242,6 +242,22 @@ bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const D
     return isIn;
 }
 
+void ASTWalker::performAddClassCall(const MatchFinder::MatchResult result, const DeclaratorDecl *decl,
+                                    ClangNode::NodeType type){
+    //Checks if we can add a class reference.
+    CXXRecordDecl* classDecl = extractClass(decl->getQualifier());
+    if (classDecl != nullptr && !exclusions.cClass) {
+        string declLabel = generateLabel(decl, type);
+        addClassCall(result, classDecl, declLabel);
+    }
+}
+
+CXXRecordDecl* ASTWalker::extractClass(NestedNameSpecifier* name){
+    //Checks if the qualifier is null.
+    if (name == nullptr || name->getAsType() == nullptr) return nullptr;
+    return name->getAsType()->getAsCXXRecordDecl();
+}
+
 /********************************************************************************************************************/
 // START AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/
@@ -350,7 +366,7 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRe
     if (!classDecl->isClass()) return;
 
     //Generate the fields for the node.
-    string filename = (fName.compare("") == 0) ? generateFileName(results, classDecl->getInnerLocStart()) : fName;
+    string filename = (fName.compare("") == 0) ? generateFileName(results, classDecl->getInnerLocStart(), true) : fName;
     string ID = generateID(filename, classDecl->getQualifiedNameAsString());
     string className = generateLabel(classDecl, ClangNode::CLASS);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
@@ -470,6 +486,24 @@ void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const Dec
         //Process attributes.
         graph->addAttribute(callerNode.at(0)->getID(), varNode.at(0)->getID(), ClangEdge::REFERENCES,
                             variableAccessName, variableAccess);
+    }
+}
+
+void ASTWalker::addClassCall(const MatchFinder::MatchResult result, const CXXRecordDecl *classDecl, string declLabel){
+    string classLabel = generateLabel(classDecl, ClangNode::CLASS);
+
+    //Looks up the entities being added.
+    vector<ClangNode*> src = graph->findNodeByName(classLabel);
+    vector<ClangNode*> dst = graph->findNodeByName(declLabel);
+
+    //Check if we found the entity.
+    if (src.size() == 0 || dst.size() == 0){
+        //Add to unresolved reference list.
+        graph->addUnresolvedRef(classLabel, declLabel, ClangEdge::REFERENCES);
+    } else {
+        //Add the edge.
+        ClangEdge* edge = new ClangEdge(src.at(0), dst.at(0), ClangEdge::REFERENCES);
+        graph->addEdge(edge);
     }
 }
 

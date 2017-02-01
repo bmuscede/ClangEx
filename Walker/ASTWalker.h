@@ -47,6 +47,10 @@ protected:
 
     bool isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl);
 
+    void performAddClassCall(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl,
+                             ClangNode::NodeType type);
+    clang::CXXRecordDecl* extractClass(clang::NestedNameSpecifier* name);
+
 /********************************************************************************************************************/
 
     void addFunctionDecl(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec);
@@ -60,7 +64,7 @@ protected:
                          const clang::FunctionDecl* callee);
     void addVariableCall(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *caller,
                          const clang::Expr* expr, const clang::VarDecl *varCallee, const clang::FieldDecl *fieldCallee = nullptr);
-    void addClassCall();
+    void addClassCall(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDecl, std::string declLabel);
     void addClassInheritance(const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
 
 /********************************************************************************************************************/
