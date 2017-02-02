@@ -74,15 +74,23 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
         if (isInSystemHeader(result, classRec)) return;
 
         addClassDecl(result, classRec);
-    } else if (const EnumDecl *dec = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])){
+    } else if (const EnumDecl *enumDecl = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])){
         //Get whether this call expression is in the system header.
-        if (isInSystemHeader(result, dec)) return;
+        if (isInSystemHeader(result, enumDecl)) return;
 
         //Adds the enum declaration.
-        addEnumDecl(result, dec);
+        addEnumDecl(result, enumDecl);
+    } else if (const EnumConstantDecl *enumConstDecl = result.Nodes.getNodeAs<clang::EnumConstantDecl>(types[ENUM_CONST_DECL])){
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, enumConstDecl)) return;
 
-        //Adds a class reference.
-        performAddClassCall(result, fieldDecl, ClangNode::ENUM);
+        //Adds the enum constant declarations.
+        addEnumConstantDecl(result, enumConstDecl);
+
+        auto *parent = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_PARENT]);
+        if (parent == nullptr) return;
+
+        addEnumConstantCall(result, parent, enumConstDecl);
     }
 }
 
@@ -109,7 +117,6 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
         finder->addMatcher(declRefExpr(hasDeclaration(fieldDecl().bind(types[FIELD_CALLEE])),
                                        hasAncestor(functionDecl().bind(types[VAR_CALLER])),
                                        hasParent(expr().bind(types[FIELD_EXPR]))), this);
-
     }
 
     //Class methods.
@@ -122,6 +129,12 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
     if (!exclusions.cEnum){
         //Finds enum declarations.
         finder->addMatcher(enumDecl().bind(types[ENUM_DEC]), this);
+
+        //Finds enum constant declarations.
+        //Also deals with their connections to enums.
+        finder->addMatcher(enumConstantDecl().bind(types[ENUM_CONST_DECL]), this);
+        finder->addMatcher(enumConstantDecl(hasAncestor(enumDecl().bind(types[ENUM_PARENT])))
+                .bind(types[ENUM_CONST_DECL]), this);
 
         //TODO: References not implemented.
     }

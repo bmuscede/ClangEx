@@ -12,6 +12,7 @@
 #include <openssl/md5.h>
 #include "ASTWalker.h"
 #include "../File/ClangArgParse.h"
+#include "../Graph/ClangNode.h"
 
 using namespace std;
 using namespace clang;
@@ -185,6 +186,13 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
         }
         case ClangNode::ENUM: {
             auto enumDecl = static_cast<const EnumDecl *>(decl);
+            if (enumDecl == nullptr) return string();
+
+            label = enumDecl->getQualifiedNameAsString();
+            break;
+        }
+        case ClangNode::ENUM_CONST: {
+            auto enumDecl = static_cast<const EnumConstantDecl*>(decl);
             if (enumDecl == nullptr) return string();
 
             label = enumDecl->getQualifiedNameAsString();
@@ -411,8 +419,25 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
     string enumName = generateLabel(enumDecl, ClangNode::ENUM);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
-    //Creates a class entry.
+    //Creates a enum entry.
     ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM);
+    graph->addNode(node);
+
+    //Process attributes.
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::FILE_ATTRIBUTE.attrName,
+                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+}
+
+void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl){
+    //Generate the fields for the node.
+    string filename = generateFileName(result, enumDecl->getLocStart());
+    string ID = generateID(filename, enumDecl->getQualifiedNameAsString());
+    string enumName = generateLabel(enumDecl, ClangNode::ENUM_CONST);
+    if (ID.compare("") == 0 || filename.compare("") == 0) return;
+
+    //Creates a new enum entry.
+    ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM_CONST);
     graph->addNode(node);
 
     //Process attributes.
@@ -521,6 +546,25 @@ void ASTWalker::addClassInheritance(const CXXRecordDecl *childClass, const CXXRe
     } else {
         //Add the edge.
         ClangEdge* edge = new ClangEdge(classNode.at(0), baseNode.at(0), ClangEdge::INHERITS);
+        graph->addEdge(edge);
+    }
+}
+
+void ASTWalker::addEnumConstantCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
+                                    const clang::EnumConstantDecl *enumConstantDecl){
+    //Gets the labels.
+    string enumLabel = generateLabel(enumDecl, ClangNode::ENUM);
+    string enumConstLabel = generateLabel(enumConstantDecl, ClangNode::ENUM_CONST);
+
+    //Looks up the nodes by label.
+    vector<ClangNode*> enumNode = graph->findNodeByName(enumLabel);
+    vector<ClangNode*> enumConstNode = graph->findNodeByName(enumConstLabel);
+
+    if (enumNode.size() == 0 || enumConstNode.size() == 0){
+        graph->addUnresolvedRef(enumLabel, enumConstLabel, ClangEdge::CONTAINS);
+    }  else {
+        //Add the edge.
+        ClangEdge* edge = new ClangEdge(enumNode.at(0), enumConstNode.at(0), ClangEdge::CONTAINS);
         graph->addEdge(edge);
     }
 }

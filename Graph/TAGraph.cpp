@@ -118,11 +118,11 @@ vector<ClangNode*> TAGraph::findDstNodesByEdge(ClangNode* src, ClangEdge::EdgeTy
 bool TAGraph::nodeExists(string ID) {
     //TODO: Is this necessary?!
     //Iterate through the node list.
-    /*for (int i = 0; i < nodeList.size(); i++){
+    for (int i = 0; i < nodeList.size(); i++){
         if (ID.compare(nodeList.at(i)->getID()) == 0){
             return true;
         }
-    }*/
+    }
 
     return false;
 }
@@ -130,7 +130,7 @@ bool TAGraph::nodeExists(string ID) {
 bool TAGraph::edgeExists(string IDOne, string IDTwo) {
     //TODO: Is this necessary?!
     //Iterate through the edge list.
-    /*for (int i = 0; i < edgeList.size(); i++){
+    for (int i = 0; i < edgeList.size(); i++){
         //Get the nodes.
         ClangNode* src = edgeList.at(i)->getSrc();
         ClangNode* dst = edgeList.at(i)->getDst();
@@ -140,7 +140,7 @@ bool TAGraph::edgeExists(string IDOne, string IDTwo) {
                 IDTwo.compare(dst->getID()) == 0){
             return true;
         }
-    }*/
+    }
 
     return false;
 }
@@ -217,7 +217,7 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip, bool md5Flag) {
         if (fileAttrVec.size() != 1) continue;
 
         //First, get all the current edges for this attribute.
-        if (isPartOfClass(node)) continue;
+        if (isPartOfContains(node)) continue;
 
         string file = fileAttrVec.at(0);
         if (md5Flag) file = ASTWalker::generateMD5(file);
@@ -246,14 +246,12 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip, bool md5Flag) {
     }
 }
 
-bool TAGraph::isPartOfClass(ClangNode* node){
+bool TAGraph::isPartOfContains(ClangNode* node){
     //First, find all source edges with contains.
     vector<ClangNode*> srcNodes = findSrcNodesByEdge(node, ClangEdge::CONTAINS);
 
-    //Look for a class node in the src list.
-    for (auto srcNode : srcNodes)
-        if (srcNode->getType() == ClangNode::CLASS) return true;
-
+    //Checks if we already have a contains relationship.
+    if (srcNodes.size() != 0) return true;
     return false;
 }
 

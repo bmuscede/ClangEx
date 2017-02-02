@@ -83,7 +83,7 @@ private:
         }
     } VarStruct;
 public:
-    enum NodeType {FILE, VARIABLE, FUNCTION, SUBSYSTEM, CLASS, UNION, STRUCT, ENUM};
+    enum NodeType {FILE, VARIABLE, FUNCTION, SUBSYSTEM, CLASS, UNION, STRUCT, ENUM, ENUM_CONST};
     static std::string getTypeString(NodeType type);
     static ClangNode::NodeType getTypeNode(std::string name);
 

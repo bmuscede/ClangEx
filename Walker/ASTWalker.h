@@ -59,6 +59,7 @@ protected:
     void addClassDecl(const MatchFinder::MatchResult results, const clang::CXXRecordDecl *classDecl,
                       std::string fName = "");
     void addEnumDecl(const MatchFinder::MatchResult results, const clang::EnumDecl *enumDecl);
+    void addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl);
 
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl* caller,
                          const clang::FunctionDecl* callee);
@@ -66,6 +67,8 @@ protected:
                          const clang::Expr* expr, const clang::VarDecl *varCallee, const clang::FieldDecl *fieldCallee = nullptr);
     void addClassCall(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDecl, std::string declLabel);
     void addClassInheritance(const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
+    void addEnumConstantCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
+                             const clang::EnumConstantDecl *enumConstantDecl);
 
 /********************************************************************************************************************/
 

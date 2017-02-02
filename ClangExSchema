@@ -11,6 +11,7 @@ $INHERIT	cFunction		cAsgNds
 $INHERIT	cVariable		cAsgNds
 $INHERIT	cLang			cAsgNds
 $INHERIT	cEnum			cLang
+$INHERIT	cEnumConst		cLang
 $INHERIT	cStruct			cLang
 $INHERIT	cUnion			cLang
 
@@ -88,6 +89,12 @@ cClass {
 }
 
 cEnum {
+	filename
+	color = (0.9 0.2 0.5)
+	labelcolor = (0.0 0.0 0.0)
+}
+
+cEnumConst {
 	filename
 	color = (0.9 0.2 0.5)
 	labelcolor = (0.0 0.0 0.0)

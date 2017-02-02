@@ -18,9 +18,9 @@ public:
 
 private:
     enum {FUNC_DEC = 0, VAR_DEC, FIELD_DEC, FUNC_CALLER, FUNC_CALLEE, VAR_CALLER, VAR_CALLEE, VAR_EXPR,
-        FIELD_CALLEE, FIELD_EXPR, CLASS_DEC, ENUM_DEC};
-    const char* types[12] = {"func_dec", "var_dec", "field_dec", "caller", "callee", "v_caller", "v_callee", "v_expr",
-                            "field_callee", "field_expr", "class_dec", "enum_dec"};
+        FIELD_CALLEE, FIELD_EXPR, CLASS_DEC, ENUM_DEC, ENUM_CONST_DECL, ENUM_PARENT};
+    const char* types[14] = {"func_dec", "var_dec", "field_dec", "caller", "callee", "v_caller", "v_callee", "v_expr",
+                            "field_callee", "field_expr", "class_dec", "enum_dec", "enum_const_decl", "enum_parent"};
 };
 
 

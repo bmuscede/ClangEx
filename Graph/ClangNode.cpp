@@ -30,6 +30,8 @@ string ClangNode::getTypeString(NodeType type) {
         return "cStruct";
     } else if (type == ENUM){
         return "cEnum";
+    } else if (type == ENUM_CONST){
+        return "cEnumConst";
     }
 
     //Default value if there is no node type specified.
@@ -54,6 +56,8 @@ ClangNode::NodeType ClangNode::getTypeNode(string name){
         return STRUCT;
     } else if (name.compare("cEnum") == 0){
         return ENUM;
+    } else if (name.compare("cEnumConst") == 0){
+        return ENUM_CONST;
     }
 
     //Default value if there is no node type specified.
