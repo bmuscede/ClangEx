@@ -19,58 +19,57 @@ PartialWalker::~PartialWalker() { }
 
 void PartialWalker::run(const MatchFinder::MatchResult &result) {
     //Look for the AST matcher being triggered.
-    if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
+    if (const FunctionDecl *functionDecl = result.Nodes.getNodeAs<clang::FunctionDecl>(types[FUNC_DEC])) {
         //If a function has been found.
-        addFunctionDecl(result, dec);
+        addFunctionDecl(result, functionDecl);
 
         //Adds class declarations/references.
-        manageClasses(result, dec, ClangNode::FUNCTION);
-    } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALL])){
+        manageClasses(result, functionDecl, ClangNode::FUNCTION);
+    } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALL])) {
         //If a function call has been found.
         auto caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER]);
         if (expr->getCalleeDecl() == nullptr || expr->getCalleeDecl()->getAsFunction() == nullptr) return;
         auto callee = expr->getCalleeDecl()->getAsFunction();
 
         addFunctionCall(result, caller, callee);
-    } else if (const VarDecl *dec = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
+    } else if (const VarDecl *varDecl = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])) {
         //If a variable declaration has been found.
-        addVariableDecl(result, dec);
+        addVariableDecl(result, varDecl);
 
         //Adds class declarations/references.
-        manageClasses(result, dec, ClangNode::VARIABLE);
-    } else if (const VarDecl *dec = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_CALL])){
+        manageClasses(result, varDecl, ClangNode::VARIABLE);
+    } else if (const VarDecl *varDeclExpr = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_CALL])) {
         //If a variable reference has been found.
         auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER_VAR]);
         auto *expr = result.Nodes.getNodeAs<clang::Expr>(types[VAR_EXPR]);
 
-        addVariableCall(result, caller, expr, dec);
-    } else if (const DeclaratorDecl *dec = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CLASS_DEC_FUNC])){
+        addVariableCall(result, caller, expr, varDeclExpr);
+    } else if (const FunctionDecl *functionDeclClass = result.Nodes.getNodeAs<clang::FunctionDecl>(types[CLASS_DEC_FUNC])) {
         //Get the variable declaration.
         auto *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR]);
 
         //Add the class reference.
-        manageClasses(result, dec, ClangNode::VARIABLE, var);
-    } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DEC])){
-        cout << "The struct found is: " << rec->getQualifiedNameAsString() << endl;
-    } else if (const RecordDecl *rec = result.Nodes.getNodeAs<clang::RecordDecl>(types[UNION_DEC])){
-        cout << "The union found is: " << rec->getQualifiedNameAsString() << endl;
-    } else if (const EnumDecl *dec = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])){
-        //Get the parent type.
-        auto *parent = result.Nodes.getNodeAs<clang::VarDecl>(types[ENUM_VAR]);
+        manageClasses(result, functionDeclClass, ClangNode::VARIABLE, var);
+    } else if (const VarDecl *varRefDecl = result.Nodes.getNodeAs<clang::VarDecl>(types[ENUM_VAR])) {
+        auto *enumDecl = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC]);
 
-        //Adds the enum decl.
-        addEnumDecl(result, dec);
+        //Get the file name of the varRef.
+        string filename = generateFileName(result, varRefDecl->getInnerLocStart());
 
-        //Add the parent relationship.
-        if (parent != nullptr) addEnumRef(result, dec, parent);
-    } else if (const EnumConstantDecl *dec = result.Nodes.getNodeAs<clang::EnumConstantDecl>(types[ENUM_CONST])){
-        auto *parent = result.Nodes.getNodeAs<clang::FunctionDecl>(types[ENUM_CONST_PARENT]);
+        //Add the enum decl first.
+        addEnumDecl(result, enumDecl, filename);
 
-        //Adds the enum constant.
-        addEnumConstDecl(result, dec);
+        //Add the variable reference.
+        addEnumCall(result, enumDecl, varRefDecl);
 
-        //Next, adds the reference between parent and constant.
-        addEnumConstRef(result, dec, parent);
+        //Finally, add the enum constants.
+        addEnumConstants(result, enumDecl, filename);
+    } else if (const EnumDecl *enumDecl = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC])) {
+        //Add the enum.
+        addEnumDecl(result, enumDecl);
+
+        //Add the enum constants.
+        addEnumConstants(result, enumDecl);
     }
 }
 
@@ -103,14 +102,12 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
     }
 
     if (!exclusions.cEnum){
-        //Finds enums in the program.
+        //Finds enum declarations (assuming they're defined in the source file).
         finder->addMatcher(enumDecl(isExpansionInMainFile()).bind(types[ENUM_DEC]), this);
-        //finder->addMatcher(varDecl(isExpansionInMainFile(),
-        //                           hasType(enumType(hasDeclaration(enumDecl().bind(types[ENUM_DEC]))))).bind(types[ENUM_VAR]), this);
 
-        //Finds enum constants and their usage.
-        //finder->addMatcher(enumConstantDecl(isExpansionInMainFile(),
-        //                                    hasAncestor(functionDecl().bind(types[ENUM_CONST_PARENT]))).bind(types[ENUM_CONST]), this);
+        //Finds enums, adds them, and adds their associated references.
+        finder->addMatcher(varDecl(isExpansionInMainFile(),
+                                   hasType(enumType(hasDeclaration(enumDecl().bind(types[ENUM_DEC]))))).bind(types[ENUM_VAR]), this);
     }
 
     if (!exclusions.cStruct){
@@ -146,51 +143,22 @@ void PartialWalker::manageClasses(const MatchFinder::MatchResult result,
     addClassCall(result, record, declLabel);
 }
 
-void PartialWalker::addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl){
-    //Get the type.
-    ClangNode::NodeType type;
-    if (decl->isUnion()){
-        type = ClangNode::UNION;
-    } else {
-        type = ClangNode::STRUCT;
+void PartialWalker::addEnumConstants(const MatchFinder::MatchResult result, const EnumDecl *enumDecl,
+                                     string filename){
+    //Iterate through the values in the enum.
+    for (DeclContext::specific_decl_iterator<EnumConstantDecl> constant = enumDecl->enumerator_begin();
+         constant != enumDecl->enumerator_end(); constant++) {
+        //Get the iterator pointer.
+        EnumConstantDecl* constDecl = constant->getFirstDecl();
+        if (constDecl == nullptr) continue;
+
+        //Add the enum constant.
+        if (filename.compare(string()) == 0)
+            addEnumConstantDecl(result, constDecl);
+        else
+            addEnumConstantDecl(result, constDecl, filename);
+
+        //Finally, add the reference between enum and enum constant.
+        addEnumConstantCall(result, enumDecl, constDecl);
     }
-
-    //TODO: Stuff.
-}
-
-void PartialWalker::addEnumRef(const MatchFinder::MatchResult result, const EnumDecl *decl,
-                           const VarDecl *parent) {
-    //First, get the names for both the parent and the enum.
-    string varLabel = generateLabel(parent, ClangNode::VARIABLE);
-    string enumLabel = generateLabel(decl, ClangNode::ENUM);
-
-    //Get the nodes by their label.
-    vector<ClangNode*> varNode = graph->findNodeByName(varLabel);
-    vector<ClangNode*> enumNode = graph->findNodeByName(enumLabel);
-
-    //Check to see if we don't have these entries.
-    if (varNode.size() == 0 || enumNode.size() == 0){
-        graph->addUnresolvedRef(varLabel, enumLabel, ClangEdge::REFERENCES);
-
-        //Add attributes.
-        //TODO: Any enum reference attributes?
-
-        return;
-    }
-
-    //Add the edge.
-    ClangEdge* edge = new ClangEdge(varNode.at(0), enumNode.at(0), ClangEdge::REFERENCES);
-    graph->addEdge(edge);
-
-    //Process  attributes.
-    //TODO: Any enum reference attributes?
-}
-
-void PartialWalker::addEnumConstDecl(const MatchFinder::MatchResult result, const EnumConstantDecl *decl) {
-    //TODO
-}
-
-void PartialWalker::addEnumConstRef(const MatchFinder::MatchResult result, const EnumConstantDecl *decl,
-                                const FunctionDecl *func) {
-    //TODO
 }

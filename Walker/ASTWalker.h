@@ -58,8 +58,10 @@ protected:
                          const clang::FieldDecl *fieldDec = nullptr);
     void addClassDecl(const MatchFinder::MatchResult results, const clang::CXXRecordDecl *classDecl,
                       std::string fName = "");
-    void addEnumDecl(const MatchFinder::MatchResult results, const clang::EnumDecl *enumDecl);
-    void addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl);
+    void addEnumDecl(const MatchFinder::MatchResult results, const clang::EnumDecl *enumDecl,
+                     std::string spoofFilename = std::string());
+    void addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl,
+                             std::string filenameSpoof = std::string());
 
     /** Relation Insertion Functions */
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl* caller,

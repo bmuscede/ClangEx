@@ -18,20 +18,15 @@ public:
 
 private:
     enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR,
-        VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, STRUCT_DEC, UNION_DEC, ENUM_DEC,
-        ENUM_VAR, ENUM_CONST, ENUM_CONST_PARENT};
-    const char* types[15] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
-                             "expr_var", "class_dec_func", "class_dec_var",
-                             "struct_dec", "union_dec", "enum_dec", "enum_var", "enum_const", "enum_const_parent"};
+        VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, ENUM_DEC, ENUM_VAR};
+    const char* types[11] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
+                             "expr_var", "class_dec_func", "class_dec_var", "enum_dec", "enum_var"};
 
     void manageClasses(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl,
                        ClangNode::NodeType type, const clang::DeclaratorDecl *innerDecl = nullptr);
+    void addEnumConstants(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
+                          std::string filename = std::string());
 
-    void addUnStrcDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *decl);
-    void addEnumClassRef(const MatchFinder::MatchResult result, const clang::EnumDecl *decl, const clang::CXXRecordDecl *record);
-    void addEnumRef(const MatchFinder::MatchResult result, const clang::EnumDecl *decl, const clang::VarDecl *parent);
-    void addEnumConstDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *decl);
-    void addEnumConstRef(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *decl, const clang::FunctionDecl *func);
 };
 
 
