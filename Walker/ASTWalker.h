@@ -35,7 +35,6 @@ public:
 
 protected:
     ClangArgParse::ClangExclude exclusions;
-    TAGraph* graph;
 
     ASTWalker(ClangArgParse::ClangExclude ex, bool md5, TAGraph* existing);
 
@@ -62,6 +61,7 @@ protected:
                      std::string spoofFilename = std::string());
     void addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl,
                              std::string filenameSpoof = std::string());
+    void addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl);
 
     /** Relation Insertion Functions */
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl* caller,
@@ -85,6 +85,7 @@ private:
     std::string curFileName;
     FileParse fileParser;
     bool md5Flag;
+    TAGraph* graph;
 
     void printFileName(std::string curFile);
     std::string replaceLabel(std::string label, std::string init, std::string aft);

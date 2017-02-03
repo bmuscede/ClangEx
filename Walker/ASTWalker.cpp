@@ -11,6 +11,7 @@
 #include <boost/filesystem.hpp>
 #include <openssl/md5.h>
 #include "ASTWalker.h"
+#include "clang/AST/Mangle.h"
 #include "../File/ClangArgParse.h"
 #include "../Graph/ClangNode.h"
 
@@ -196,6 +197,14 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
             if (enumDecl == nullptr) return string();
 
             label = enumDecl->getQualifiedNameAsString();
+            break;
+        }
+        case ClangNode::UNION:
+        case ClangNode::STRUCT: {
+            auto recordDecl = static_cast<const RecordDecl*>(decl);
+            if (recordDecl == nullptr) return string();
+
+            label = recordDecl->getQualifiedNameAsString();
             break;
         }
         default: {
@@ -447,6 +456,37 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
     graph->addSingularAttribute(node->getID(),
                                 ClangNode::FILE_ATTRIBUTE.attrName,
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+}
+
+void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl){
+    bool isAnonymous = false;
+
+    //First, generates a specialized name.
+    string qualifiedName = structDecl->getQualifiedNameAsString();
+    for (string currList : ANON_LIST){
+        if (qualifiedName.find(currList) != std::string::npos) {
+            qualifiedName += "::" + std::to_string(result.SourceManager->getSpellingLineNumber(structDecl->getLocStart()));
+            isAnonymous = true;
+            break;
+        }
+    }
+
+    //With that, generates the ID, label, and filename.
+    string filename = generateFileName(result, structDecl->getInnerLocStart());
+    string ID = generateID(filename, qualifiedName);
+    string label = generateLabel(structDecl, ClangNode::STRUCT);
+
+    //Next, generates the node.
+    ClangNode* node = new ClangNode(ID, label, ClangNode::STRUCT);
+    graph->addNode(node);
+
+    //Process the attributes.
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::FILE_ATTRIBUTE.attrName,
+                                ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+    graph->addSingularAttribute(node->getID(),
+                                ClangNode::STRUCT_ATTRIBUTE.anonymousName,
+                                ClangNode::STRUCT_ATTRIBUTE.processAnonymous(isAnonymous));
 }
 
 void ASTWalker::addFunctionCall(const MatchFinder::MatchResult results, const DeclaratorDecl* caller,

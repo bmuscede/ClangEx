@@ -105,6 +105,19 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
         if (isInSystemHeader(result, fieldEnumRef) || isInSystemHeader(result, enumRef)) return;
 
         addEnumCall(result, enumRef, nullptr, fieldEnumRef);
+    } else if (const RecordDecl *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DECL])){
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, structDecl)) return;
+
+        addStructDecl(result, structDecl);
+    } else if (const DeclaratorDecl *itemDecl = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[STRUCT_REF_ITEM])){
+        //Get the struct being referenced.
+        auto *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_REF]);
+
+        //Checks if the expression is in the system header.
+        if (isInSystemHeader(result, itemDecl) || isInSystemHeader(result, structDecl)) return;
+
+        cout << itemDecl->getQualifiedNameAsString() << " -> " << structDecl->getQualifiedNameAsString() << endl;
     }
 }
 
@@ -157,7 +170,13 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
 
     //Struct methods.
     if (!exclusions.cStruct){
-        //TODO: Implement structs.
+        //Builds the struct definition.
+        finder->addMatcher(recordDecl(isStruct()).bind(types[STRUCT_DECL]), this);
+
+        //Builds up struct.
+        finder->addMatcher(varDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
+        finder->addMatcher(fieldDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
+        finder->addMatcher(functionDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
     }
 
     //Union methods.

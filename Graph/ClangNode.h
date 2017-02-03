@@ -82,6 +82,18 @@ private:
             return "todo";
         }
     } VarStruct;
+    typedef struct {
+        const std::string anonymousName = "isAnonymous";
+
+        std::string processAnonymous(bool anonymous){
+            if (anonymous){
+                return "1";
+            }
+
+            return "0";
+        }
+    } StructStruct;
+
 public:
     enum NodeType {FILE, VARIABLE, FUNCTION, SUBSYSTEM, CLASS, UNION, STRUCT, ENUM, ENUM_CONST};
     static std::string getTypeString(NodeType type);
@@ -111,6 +123,7 @@ public:
     static FuncIsAStruct FUNC_IS_ATTRIBUTE;
     static AccessStruct VIS_ATTRIBUTE;
     static VarStruct VAR_ATTRIBUTE;
+    static StructStruct STRUCT_ATTRIBUTE;
 
 private:
     const std::string INSTANCE_FLAG = "$INSTANCE";
