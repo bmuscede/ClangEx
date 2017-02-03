@@ -569,6 +569,26 @@ void ASTWalker::addEnumConstantCall(const MatchFinder::MatchResult result, const
     }
 }
 
+void ASTWalker::addEnumCall(const MatchFinder::MatchResult result, const EnumDecl *enumDecl, const VarDecl *varDecl,
+                            const FieldDecl *fieldDecl){
+    //Generate the labels.
+    string enumLabel = generateLabel(enumDecl, ClangNode::ENUM);
+    string refLabel = (fieldDecl == nullptr) ?
+                      generateLabel(varDecl, ClangNode::VARIABLE) : generateLabel(fieldDecl, ClangNode::VARIABLE);
+
+    //Looks up the nodes by label.
+    vector<ClangNode*> enumNode = graph->findNodeByName(enumLabel);
+    vector<ClangNode*> refNode = graph->findNodeByName(refLabel);
+
+    if (enumNode.size() == 0 || refNode.size() == 0){
+        graph->addUnresolvedRef(enumLabel, refLabel, ClangEdge::REFERENCES);
+    }  else {
+        //Add the edge.
+        ClangEdge* edge = new ClangEdge(enumNode.at(0), refNode.at(0), ClangEdge::REFERENCES);
+        graph->addEdge(edge);
+    }
+}
+
 /********************************************************************************************************************/
 // END AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/

@@ -52,7 +52,7 @@ protected:
     clang::CXXRecordDecl* extractClass(clang::NestedNameSpecifier* name);
 
 /********************************************************************************************************************/
-
+    /** Node Insertion Functions */
     void addFunctionDecl(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec);
     void addVariableDecl(const MatchFinder::MatchResult results, const clang::VarDecl *varDec = nullptr,
                          const clang::FieldDecl *fieldDec = nullptr);
@@ -61,6 +61,7 @@ protected:
     void addEnumDecl(const MatchFinder::MatchResult results, const clang::EnumDecl *enumDecl);
     void addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl);
 
+    /** Relation Insertion Functions */
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl* caller,
                          const clang::FunctionDecl* callee);
     void addVariableCall(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *caller,
@@ -69,7 +70,8 @@ protected:
     void addClassInheritance(const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
     void addEnumConstantCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
                              const clang::EnumConstantDecl *enumConstantDecl);
-
+    void addEnumCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
+                     const clang::VarDecl *varDecl, const clang::FieldDecl *fieldDecl = nullptr);
 /********************************************************************************************************************/
 
 private:

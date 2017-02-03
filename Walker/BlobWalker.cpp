@@ -91,6 +91,20 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
         if (parent == nullptr) return;
 
         addEnumConstantCall(result, parent, enumConstDecl);
+    } else if (const VarDecl *varEnumRef = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_REF_ENUM])){
+        auto *enumRef = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC_REF]);
+
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, varEnumRef) || isInSystemHeader(result, enumRef)) return;
+
+        addEnumCall(result, enumRef, varEnumRef);
+    } else if (const FieldDecl *fieldEnumRef = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_REF_ENUM])){
+        auto *enumRef = result.Nodes.getNodeAs<clang::EnumDecl>(types[ENUM_DEC_REF]);
+
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, fieldEnumRef) || isInSystemHeader(result, enumRef)) return;
+
+        addEnumCall(result, enumRef, nullptr, fieldEnumRef);
     }
 }
 
@@ -136,7 +150,9 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
         finder->addMatcher(enumConstantDecl(hasAncestor(enumDecl().bind(types[ENUM_PARENT])))
                 .bind(types[ENUM_CONST_DECL]), this);
 
-        //TODO: References not implemented.
+        //Looks for enum references.
+        finder->addMatcher(varDecl(hasType(enumDecl().bind(types[ENUM_DEC_REF]))).bind(types[VAR_REF_ENUM]), this);
+        finder->addMatcher(fieldDecl(hasType(enumDecl().bind(types[ENUM_DEC_REF]))).bind(types[FIELD_REF_ENUM]), this);
     }
 
     //Struct methods.
