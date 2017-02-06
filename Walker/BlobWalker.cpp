@@ -13,7 +13,7 @@ BlobWalker::BlobWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph
 
 BlobWalker::~BlobWalker(){ }
 
-void BlobWalker::run(const MatchFinder::MatchResult &result){
+void BlobWalker::run(const MatchFinder::MatchResult &result) {
     //Check if the current result fits any of our match criteria.
     if (const DeclaratorDecl *functionDecl = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
         //Get whether we have a system header.
@@ -24,8 +24,8 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
 
         //Adds a class reference.
         performAddClassCall(result, functionDecl, ClangNode::FUNCTION);
-    } else if (const VarDecl *variableDecl = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
-         //Get whether we have a system header.
+    } else if (const VarDecl *variableDecl = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])) {
+        //Get whether we have a system header.
         if (isInSystemHeader(result, variableDecl) || variableDecl->getQualifiedNameAsString().compare("") == 0) return;
 
         //Adds a variable decl.
@@ -33,7 +33,7 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
 
         //Adds a class reference.
         performAddClassCall(result, variableDecl, ClangNode::VARIABLE);
-    } else if (const FieldDecl *fieldDecl = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_DEC])){
+    } else if (const FieldDecl *fieldDecl = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_DEC])) {
         //Get whether we have a system header.
         if (isInSystemHeader(result, fieldDecl) || fieldDecl->getQualifiedNameAsString().compare("") == 0) return;
 
@@ -42,6 +42,33 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
 
         //Adds a class reference.
         performAddClassCall(result, fieldDecl, ClangNode::VARIABLE);
+    } else if (const VarDecl *varInside = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_INSIDE])) {
+        //Get the parent function.
+        auto *parentFunc = result.Nodes.getNodeAs<clang::FunctionDecl>(types[INSIDE_FUNC]);
+
+        //Get whether this call expression is a system header.
+        if (isInSystemHeader(result, varInside) || varInside->getQualifiedNameAsString().compare("") == 0) return;
+
+        //Adds the function call.
+        addVariableInsideCall(result, parentFunc, varInside);
+    } else if (const FieldDecl *fieldInside = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_INSIDE])) {
+        //Get the parent function.
+        auto *parentFunc = result.Nodes.getNodeAs<clang::FunctionDecl>(types[INSIDE_FUNC]);
+
+        //Get whether this call expression is a system header.
+        if (isInSystemHeader(result, fieldInside) || fieldInside->getQualifiedNameAsString().compare("") == 0) return;
+
+        //Adds the function call.
+        addVariableInsideCall(result, parentFunc, nullptr, fieldInside);
+    } else if (const VarDecl *varParam = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_PARAM])) {
+        //Get the parent function.
+        auto *parentFunc = result.Nodes.getNodeAs<clang::FunctionDecl>(types[FUNC_PARAM]);
+
+        //Get whether this call expression is a system header.
+        if (isInSystemHeader(result, varParam) || varParam->getQualifiedNameAsString().compare("") == 0) return;
+
+        //Adds the function call.
+        addVariableInsideCall(result, parentFunc, static_cast<const VarDecl*>(varParam));
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALLEE])){
         if (expr->getCalleeDecl() == nullptr || !(isa<const clang::FunctionDecl>(expr->getCalleeDecl()))) return;
         auto callee = expr->getCalleeDecl()->getAsFunction();
@@ -124,6 +151,8 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
 
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, varStruct) || isInSystemHeader(result, structDecl)) return;
+
+        cout << "trigger" << endl;
         addStructUseCall(result, structDecl, varStruct);
     } else if (const FieldDecl *fieldStruct = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_BOUND_STRUCT])){
         //Get the struct being referenced.
@@ -131,6 +160,8 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
 
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, fieldStruct) || isInSystemHeader(result, structDecl)) return;
+
+        cout << "trigger" << endl;
         addStructUseCall(result, structDecl, nullptr, fieldStruct);
     }
 }
@@ -150,6 +181,12 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
         //Finds variable declarations in functions AND in class decs.
         finder->addMatcher(varDecl().bind(types[VAR_DEC]), this);
         finder->addMatcher(fieldDecl().bind(types[FIELD_DEC]), this);
+
+        //Adds scope for variables.
+        finder->addMatcher(varDecl(hasAncestor(functionDecl().bind(types[INSIDE_FUNC]))).bind(types[VAR_INSIDE]), this);
+        finder->addMatcher(fieldDecl(hasAncestor(functionDecl().bind(types[INSIDE_FUNC]))).bind(types[FIELD_INSIDE]), this);
+        finder->addMatcher(parmVarDecl(hasAncestor(functionDecl()
+                                                           .bind(types[FUNC_PARAM]))).bind(types[VAR_PARAM]), this);
 
         //Finds variable uses amongst functions.
         finder->addMatcher(declRefExpr(hasDeclaration(varDecl().bind(types[VAR_CALLEE])),
@@ -188,18 +225,19 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
         finder->addMatcher(recordDecl(isStruct()).bind(types[STRUCT_DECL]), this);
 
         //Builds up struct.
-        finder->addMatcher(varDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF])))
+        finder->addMatcher(varDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
                                    .bind(types[STRUCT_REF_ITEM]), this);
-        finder->addMatcher(fieldDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF])))
+        finder->addMatcher(fieldDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
                                    .bind(types[STRUCT_REF_ITEM]), this);
-        finder->addMatcher(functionDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF])))
+        finder->addMatcher(functionDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
                                    .bind(types[STRUCT_REF_ITEM]), this);
         //TODO: Add more items.
 
         //Builds the struct reference.
-        finder->addMatcher(varDecl(hasType(recordDecl(isStruct()).bind(types[STRUCT_DECL])))
+        //TODO: This doesn't work!
+        finder->addMatcher(varDecl(hasType(recordDecl().bind(types[STRUCT_DECL])))
                                    .bind(types[VAR_BOUND_STRUCT]), this);
-        finder->addMatcher(fieldDecl(hasType(recordDecl(isStruct()).bind(types[STRUCT_DECL])))
+        finder->addMatcher(fieldDecl(hasType(recordDecl().bind(types[STRUCT_DECL])))
                                    .bind(types[FIELD_BOUND_STRUCT]), this);
     }
 

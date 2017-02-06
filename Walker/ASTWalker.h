@@ -61,13 +61,15 @@ protected:
                      std::string spoofFilename = std::string());
     void addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl,
                              std::string filenameSpoof = std::string());
-    void addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl);
+    void addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl, std::string filename = "");
 
     /** Relation Insertion Functions */
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl* caller,
                          const clang::FunctionDecl* callee);
     void addVariableCall(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *caller,
                          const clang::Expr* expr, const clang::VarDecl *varCallee, const clang::FieldDecl *fieldCallee = nullptr);
+    void addVariableInsideCall(const MatchFinder::MatchResult result, const clang::FunctionDecl *functionParent,
+                               const clang::VarDecl *varChild, const clang::FieldDecl *fieldChild = nullptr);
     void addClassCall(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDecl, std::string declLabel);
     void addClassInheritance(const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
     void addEnumConstantCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,

@@ -458,7 +458,7 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 }
 
-void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl){
+void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl, string filename){
     bool isAnonymous = false;
 
     //First, generates a specialized name.
@@ -472,7 +472,7 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
     }
 
     //With that, generates the ID, label, and filename.
-    string filename = generateFileName(result, structDecl->getInnerLocStart());
+    if (filename.compare("") == 0) generateFileName(result, structDecl->getInnerLocStart());
     string ID = generateID(filename, qualifiedName);
     string label = generateLabel(structDecl, ClangNode::STRUCT);
 
@@ -557,6 +557,33 @@ void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const Dec
     }
 }
 
+void ASTWalker::addVariableInsideCall(const MatchFinder::MatchResult result, const clang::FunctionDecl *functionParent,
+                                      const clang::VarDecl *varChild, const clang::FieldDecl *fieldChild){
+    string functionLabel = generateLabel(functionParent, ClangNode::FUNCTION);
+    string varLabel;
+
+    //Checks whether we have a field or var.
+    if (fieldChild == nullptr){
+        varLabel = generateLabel(varChild, ClangNode::VARIABLE);
+    } else {
+        varLabel = generateLabel(fieldChild, ClangNode::VARIABLE);
+    }
+
+    //Next, we find their IDs.
+    vector<ClangNode*> callerNode = graph->findNodeByName(functionLabel);
+    vector<ClangNode*> varNode = graph->findNodeByName(varLabel);
+
+    //Check to see if we have these entries already done.
+    if (callerNode.size() == 0 || varNode.size() == 0){
+        //Add to unresolved reference list.
+        graph->addUnresolvedRef(functionLabel, varLabel, ClangEdge::CONTAINS);
+    } else {
+        //Add the edge.
+        ClangEdge* edge = new ClangEdge(callerNode.at(0), varNode.at(0), ClangEdge::CONTAINS);
+        graph->addEdge(edge);
+    }
+}
+
 void ASTWalker::addClassCall(const MatchFinder::MatchResult result, const CXXRecordDecl *classDecl, string declLabel){
     string classLabel = generateLabel(classDecl, ClangNode::CLASS);
 
@@ -624,10 +651,10 @@ void ASTWalker::addEnumCall(const MatchFinder::MatchResult result, const EnumDec
     vector<ClangNode*> refNode = graph->findNodeByName(refLabel);
 
     if (enumNode.size() == 0 || refNode.size() == 0){
-        graph->addUnresolvedRef(enumLabel, refLabel, ClangEdge::REFERENCES);
+        graph->addUnresolvedRef(refLabel, enumLabel, ClangEdge::REFERENCES);
     }  else {
         //Add the edge.
-        ClangEdge* edge = new ClangEdge(enumNode.at(0), refNode.at(0), ClangEdge::REFERENCES);
+        ClangEdge* edge = new ClangEdge(refNode.at(0), enumNode.at(0), ClangEdge::REFERENCES);
         graph->addEdge(edge);
     }
 }
@@ -672,10 +699,10 @@ void ASTWalker::addStructUseCall(const MatchFinder::MatchResult result, const Re
     vector<ClangNode*> refNode = graph->findNodeByName(refLabel);
 
     if (structNode.size() == 0 || refNode.size() == 0){
-        graph->addUnresolvedRef(structLabel, refLabel, ClangEdge::REFERENCES);
-    }  else {
+        graph->addUnresolvedRef(refLabel, structLabel, ClangEdge::REFERENCES);
+    } else {
         //Add the edge.
-        ClangEdge* edge = new ClangEdge(structNode.at(0), refNode.at(0), ClangEdge::REFERENCES);
+        ClangEdge* edge = new ClangEdge(refNode.at(0), structNode.at(0), ClangEdge::REFERENCES);
         graph->addEdge(edge);
     }
 }

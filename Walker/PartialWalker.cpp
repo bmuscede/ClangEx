@@ -44,7 +44,8 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
         auto *expr = result.Nodes.getNodeAs<clang::Expr>(types[VAR_EXPR]);
 
         addVariableCall(result, caller, expr, varDeclExpr);
-    } else if (const FunctionDecl *functionDeclClass = result.Nodes.getNodeAs<clang::FunctionDecl>(types[CLASS_DEC_FUNC])) {
+    } else if (const FunctionDecl *functionDeclClass = result.Nodes.getNodeAs<clang::FunctionDecl>(
+            types[CLASS_DEC_FUNC])) {
         //Get the variable declaration.
         auto *var = result.Nodes.getNodeAs<clang::VarDecl>(types[CLASS_DEC_VAR]);
 
@@ -70,6 +71,16 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
 
         //Add the enum constants.
         addEnumConstants(result, enumDecl);
+    } else if (const RecordDecl *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DECL])){
+        //Adds the struct.
+        addStructDecl(result, structDecl);
+    } else if (const DeclaratorDecl *itemDecl = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[STRUCT_REF_ITEM])) {
+        //Get the struct being referenced.
+        auto *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_REF]);
+
+        //Adds the structure.
+        addStructDecl(result, structDecl, generateFileName(result, itemDecl->getInnerLocStart()));
+        addStructCall(result, structDecl, itemDecl);
     }
 }
 
@@ -115,7 +126,15 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
         finder->addMatcher(recordDecl(isStruct(), isExpansionInMainFile()).bind(types[STRUCT_DECL]), this);
 
         //Finds items that are part of structs.
-        //TODO: Implement
+        finder->addMatcher(varDecl(isExpansionInMainFile(),
+                                   hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
+        finder->addMatcher(fieldDecl(isExpansionInMainFile(),
+                                     hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
+        finder->addMatcher(functionDecl(isExpansionInMainFile(),
+                                        hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
+        //TODO: Add more items.
+
+        //TODO: Add matcher for variable referencing struct.
     }
 
     if (!exclusions.cUnion){
