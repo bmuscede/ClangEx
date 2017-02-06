@@ -111,6 +111,10 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
     }
 
     if (!exclusions.cStruct){
+        //Finds struct declarations.
+        finder->addMatcher(recordDecl(isStruct(), isExpansionInMainFile()).bind(types[STRUCT_DECL]), this);
+
+        //Finds items that are part of structs.
         //TODO: Implement
     }
 

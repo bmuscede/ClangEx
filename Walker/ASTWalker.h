@@ -74,12 +74,16 @@ protected:
                              const clang::EnumConstantDecl *enumConstantDecl);
     void addEnumCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
                      const clang::VarDecl *varDecl, const clang::FieldDecl *fieldDecl = nullptr);
+    void addStructCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
+                       const clang::DeclaratorDecl *itemDecl, ClangNode::NodeType inputType = ClangNode::NodeType::SUBSYSTEM);
+    void addStructUseCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
+                          const clang::VarDecl *varDecl, const clang::FieldDecl *fieldDecl = nullptr);
 /********************************************************************************************************************/
 
 private:
     const static int ANON_SIZE = 3;
     const std::string ANON_LIST[ANON_SIZE] = {"(anonymous struct)", "(union struct)", "(anonymous)"};
-    const std::string ANON_REPLACE[ANON_SIZE] = {"anon_struct", "union_struct", "anon"};
+    const std::string ANON_REPLACE = "Anonymous";
     const static int MD5_LENGTH = 33;
 
     std::string curFileName;

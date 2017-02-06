@@ -65,6 +65,25 @@ ClangNode::NodeType ClangNode::getTypeNode(string name){
     return SUBSYSTEM;
 }
 
+ClangNode::NodeType ClangNode::convertToNodeType(clang::Decl::Kind src){
+    if (src == clang::Decl::Kind::Var || src == clang::Decl::Kind::Field){
+        return VARIABLE;
+    } else if (src == clang::Decl::Kind::Function || src == clang::Decl::Kind::CXXMethod){
+        return FUNCTION;
+    } else if (src == clang::Decl::Kind::Enum){
+        return ENUM;
+    } else if (src == clang::Decl::Kind::EnumConstant){
+        return ENUM_CONST;
+    } else if (src == clang::Decl::Kind::Record || src == clang::Decl::Kind::CXXRecord){
+        //Note, a class is returned here since there is no way to
+        //distinguish between class, structs, and unions.
+        return CLASS;
+    }
+
+    assert("Error! The item being passed to the conversion system is not recognized.");
+    return SUBSYSTEM;
+}
+
 ClangNode::ClangNode(string ID, string name, NodeType type) {
     //Set the ID and type.
     this->ID = ID;

@@ -98,6 +98,7 @@ public:
     enum NodeType {FILE, VARIABLE, FUNCTION, SUBSYSTEM, CLASS, UNION, STRUCT, ENUM, ENUM_CONST};
     static std::string getTypeString(NodeType type);
     static ClangNode::NodeType getTypeNode(std::string name);
+    static ClangNode::NodeType convertToNodeType(clang::Decl::Kind src);
 
     ClangNode(std::string ID, std::string name, NodeType type);
     ~ClangNode();

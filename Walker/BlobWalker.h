@@ -19,11 +19,11 @@ public:
 private:
     enum {FUNC_DEC = 0, VAR_DEC, FIELD_DEC, FUNC_CALLER, FUNC_CALLEE, VAR_CALLER, VAR_CALLEE, VAR_EXPR,
         FIELD_CALLEE, FIELD_EXPR, CLASS_DEC, ENUM_DEC, ENUM_CONST_DECL, ENUM_PARENT, ENUM_DEC_REF, VAR_REF_ENUM,
-        FIELD_REF_ENUM, STRUCT_DECL, STRUCT_REF_ITEM, STRUCT_REF};
-    const char* types[20] = {"func_dec", "var_dec", "field_dec", "caller", "callee", "v_caller", "v_callee", "v_expr",
+        FIELD_REF_ENUM, STRUCT_DECL, STRUCT_REF_ITEM, STRUCT_REF, VAR_BOUND_STRUCT, FIELD_BOUND_STRUCT};
+    const char* types[22] = {"func_dec", "var_dec", "field_dec", "caller", "callee", "v_caller", "v_callee", "v_expr",
                             "field_callee", "field_expr", "class_dec", "enum_dec", "enum_const_decl", "enum_parent",
                             "enum_dec_ref", "var_ref_enum", "field_ref_enum", "struct_decl", "struct_ref_item",
-                            "struct_ref"};
+                            "struct_ref", "var_bound_struct", "field_bound_struct"};
 };
 
 

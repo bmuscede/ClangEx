@@ -632,6 +632,53 @@ void ASTWalker::addEnumCall(const MatchFinder::MatchResult result, const EnumDec
     }
 }
 
+void ASTWalker::addStructCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
+                              const clang::DeclaratorDecl *itemDecl, ClangNode::NodeType inputType){
+    //First, determine the declarator's type.
+    ClangNode::NodeType type = (inputType == ClangNode::NodeType::SUBSYSTEM) ?
+                                    ClangNode::convertToNodeType(itemDecl->getKind()) : inputType;
+
+    //Generate the labels.
+    string structLabel = generateLabel(structDecl, ClangNode::STRUCT);
+    string refLabel = generateLabel(itemDecl, type);
+
+    //Looks up the nodes by label.
+    vector<ClangNode*> structNode = graph->findNodeByName(structLabel);
+    vector<ClangNode*> refNode = graph->findNodeByName(refLabel);
+
+    if (structNode.size() == 0 || refNode.size() == 0){
+        graph->addUnresolvedRef(structLabel, refLabel, ClangEdge::CONTAINS);
+    }  else {
+        //Add the edge.
+        ClangEdge* edge = new ClangEdge(structNode.at(0), refNode.at(0), ClangEdge::CONTAINS);
+        graph->addEdge(edge);
+    }
+}
+
+void ASTWalker::addStructUseCall(const MatchFinder::MatchResult result, const RecordDecl *structDecl,
+                                 const VarDecl *varDecl, const FieldDecl *fieldDecl){
+    string structLabel = generateLabel(structDecl, ClangNode::STRUCT);
+    string refLabel;
+
+    //Determine whether we are using a field or variable.
+    if (fieldDecl == nullptr){
+        refLabel = generateLabel(fieldDecl, ClangNode::VARIABLE);
+    } else {
+        refLabel = generateLabel(varDecl, ClangNode::VARIABLE);
+    }
+
+    //Looks up the nodes by label.
+    vector<ClangNode*> structNode = graph->findNodeByName(structLabel);
+    vector<ClangNode*> refNode = graph->findNodeByName(refLabel);
+
+    if (structNode.size() == 0 || refNode.size() == 0){
+        graph->addUnresolvedRef(structLabel, refLabel, ClangEdge::REFERENCES);
+    }  else {
+        //Add the edge.
+        ClangEdge* edge = new ClangEdge(structNode.at(0), refNode.at(0), ClangEdge::REFERENCES);
+        graph->addEdge(edge);
+    }
+}
 /********************************************************************************************************************/
 // END AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/
@@ -670,7 +717,7 @@ string ASTWalker::removeInvalidSymbols(string label) {
     for (int i = 0; i < ANON_SIZE; i++){
         string item = ANON_LIST[i];
         if (label.find(item) != string::npos)
-            label = replaceLabel(label, item, ANON_REPLACE[i]);
+            label = replaceLabel(label, item, ANON_REPLACE);
 
     }
     replace(label.begin(), label.end(), '=', 'e');

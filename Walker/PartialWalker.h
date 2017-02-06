@@ -18,9 +18,9 @@ public:
 
 private:
     enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR,
-        VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, ENUM_DEC, ENUM_VAR};
-    const char* types[11] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
-                             "expr_var", "class_dec_func", "class_dec_var", "enum_dec", "enum_var"};
+        VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, ENUM_DEC, ENUM_VAR, STRUCT_DECL};
+    const char* types[12] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
+                             "expr_var", "class_dec_func", "class_dec_var", "enum_dec", "enum_var", "struct_decl"};
 
     void manageClasses(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl,
                        ClangNode::NodeType type, const clang::DeclaratorDecl *innerDecl = nullptr);

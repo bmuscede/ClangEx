@@ -117,7 +117,21 @@ void BlobWalker::run(const MatchFinder::MatchResult &result){
         //Checks if the expression is in the system header.
         if (isInSystemHeader(result, itemDecl) || isInSystemHeader(result, structDecl)) return;
 
-        cout << itemDecl->getQualifiedNameAsString() << " -> " << structDecl->getQualifiedNameAsString() << endl;
+        addStructCall(result, structDecl, itemDecl);
+    } else if (const VarDecl *varStruct = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_BOUND_STRUCT])){
+        //Get the struct being referenced.
+        auto *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DECL]);
+
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, varStruct) || isInSystemHeader(result, structDecl)) return;
+        addStructUseCall(result, structDecl, varStruct);
+    } else if (const FieldDecl *fieldStruct = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_BOUND_STRUCT])){
+        //Get the struct being referenced.
+        auto *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DECL]);
+
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, fieldStruct) || isInSystemHeader(result, structDecl)) return;
+        addStructUseCall(result, structDecl, nullptr, fieldStruct);
     }
 }
 
@@ -174,9 +188,19 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
         finder->addMatcher(recordDecl(isStruct()).bind(types[STRUCT_DECL]), this);
 
         //Builds up struct.
-        finder->addMatcher(varDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
-        finder->addMatcher(fieldDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
-        finder->addMatcher(functionDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
+        finder->addMatcher(varDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF])))
+                                   .bind(types[STRUCT_REF_ITEM]), this);
+        finder->addMatcher(fieldDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF])))
+                                   .bind(types[STRUCT_REF_ITEM]), this);
+        finder->addMatcher(functionDecl(hasParent(recordDecl(isStruct()).bind(types[STRUCT_REF])))
+                                   .bind(types[STRUCT_REF_ITEM]), this);
+        //TODO: Add more items.
+
+        //Builds the struct reference.
+        finder->addMatcher(varDecl(hasType(recordDecl(isStruct()).bind(types[STRUCT_DECL])))
+                                   .bind(types[VAR_BOUND_STRUCT]), this);
+        finder->addMatcher(fieldDecl(hasType(recordDecl(isStruct()).bind(types[STRUCT_DECL])))
+                                   .bind(types[FIELD_BOUND_STRUCT]), this);
     }
 
     //Union methods.
