@@ -17,11 +17,11 @@ public:
     virtual void generateASTMatches(MatchFinder *finder);
 
 private:
-    enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, VAR_CALL, CALLER_VAR,
+    enum {FUNC_DEC = 0, FUNC_CALL, CALLER, VAR_DEC, INSIDE_FUNC, VAR_INSIDE, PARAM_INSIDE, VAR_CALL, CALLER_VAR,
         VAR_EXPR, CLASS_DEC_FUNC, CLASS_DEC_VAR, ENUM_DEC, ENUM_VAR, STRUCT_DECL, STRUCT_REF, STRUCT_REF_ITEM};
-    const char* types[14] = {"func_dec", "func_call", "caller", "var_dec", "var_call", "caller_var",
-                             "expr_var", "class_dec_func", "class_dec_var", "enum_dec", "enum_var", "struct_decl",
-                             "struct_ref", "struct_ref_item"};
+    const char* types[17] = {"func_dec", "func_call", "caller", "var_dec", "inside_func", "var_inside", "param_inside",
+                             "var_call", "caller_var", "expr_var", "class_dec_func", "class_dec_var", "enum_dec",
+                             "enum_var", "struct_decl", "struct_ref", "struct_ref_item"};
 
     void manageClasses(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl,
                        ClangNode::NodeType type, const clang::DeclaratorDecl *innerDecl = nullptr);

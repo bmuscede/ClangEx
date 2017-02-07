@@ -68,7 +68,7 @@ void BlobWalker::run(const MatchFinder::MatchResult &result) {
         if (isInSystemHeader(result, varParam) || varParam->getQualifiedNameAsString().compare("") == 0) return;
 
         //Adds the function call.
-        addVariableInsideCall(result, parentFunc, static_cast<const VarDecl*>(varParam));
+        addVariableInsideCall(result, parentFunc, varParam);
     } else if (const CallExpr *expr = result.Nodes.getNodeAs<clang::CallExpr>(types[FUNC_CALLEE])){
         if (expr->getCalleeDecl() == nullptr || !(isa<const clang::FunctionDecl>(expr->getCalleeDecl()))) return;
         auto callee = expr->getCalleeDecl()->getAsFunction();

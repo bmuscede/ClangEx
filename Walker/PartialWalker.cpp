@@ -38,6 +38,18 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
 
         //Adds class declarations/references.
         manageClasses(result, varDecl, ClangNode::VARIABLE);
+    } else if (const VarDecl *varInside = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_INSIDE])) {
+        //Gets the parent function.
+        auto *functionDecl = result.Nodes.getNodeAs<clang::FunctionDecl>(types[INSIDE_FUNC]);
+
+        //Adds the function.
+        addVariableInsideCall(result, functionDecl, varInside);
+    } else if (const ParmVarDecl *paramInside = result.Nodes.getNodeAs<clang::ParmVarDecl>(types[PARAM_INSIDE])) {
+        //Gets the parent function.
+        auto *functionDecl = result.Nodes.getNodeAs<clang::FunctionDecl>(types[INSIDE_FUNC]);
+
+        //Adds the function.
+        addVariableInsideCall(result, functionDecl, paramInside);
     } else if (const VarDecl *varDeclExpr = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_CALL])) {
         //If a variable reference has been found.
         auto *caller = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[CALLER_VAR]);
@@ -98,6 +110,11 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
     if (!exclusions.cVariable){
         //Finds variables in functions or in class declaration.
         finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[VAR_DEC]), this);
+
+        //Adds scope for variables.
+        finder->addMatcher(varDecl(hasAncestor(functionDecl().bind(types[INSIDE_FUNC]))).bind(types[VAR_INSIDE]), this);
+        finder->addMatcher(parmVarDecl(hasAncestor(functionDecl()
+                                                           .bind(types[INSIDE_FUNC]))).bind(types[PARAM_INSIDE]), this);
 
         //Finds variable uses from a function to a variable.
         finder->addMatcher(declRefExpr(hasDeclaration(varDecl(isExpansionInMainFile()).bind(types[VAR_CALL])),
