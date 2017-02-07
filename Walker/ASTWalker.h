@@ -40,9 +40,11 @@ protected:
 
     std::string generateFileName(const MatchFinder::MatchResult result,
                                  clang::SourceLocation loc, bool suppressOutput = false);
-    std::string generateID(std::string fileName, std::string qualifiedName);
+    std::string generateID(const MatchFinder::MatchResult result, const clang::NamedDecl *decl);
+    //std::string generateID(std::string fileName, std::string qualifiedName);
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
     std::string generateClassName(std::string qualifiedName);
+    std::string generateLineNumber(const MatchFinder::MatchResult result, clang::SourceLocation loc);
 
     bool isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl);
 

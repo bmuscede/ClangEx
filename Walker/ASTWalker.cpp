@@ -135,7 +135,25 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
     return newPath;
 }
 
-string ASTWalker::generateID(string fileName, string qualifiedName){
+string ASTWalker::generateID(const MatchFinder::MatchResult result, const NamedDecl* dec){
+    //Starts by generating fields.
+    string filename = generateFileName(result, dec->getLocStart());
+    string lineNumber = generateLineNumber(result, dec->getLocStart());
+    string qualifiedName = dec->getQualifiedNameAsString();
+
+    string ID = filename + "[" + qualifiedName + "-" + lineNumber + "]";
+
+    //Check what flag we're operating on.
+    if (md5Flag){
+        ID = generateMD5(ID);
+    } else {
+        ID = removeInvalidIDSymbols(ID);
+    }
+
+    return ID;
+}
+
+/*string ASTWalker::generateID(string fileName, string qualifiedName){
     string genID = fileName + "[" + qualifiedName + "]";
 
     //Check what flag we're operating on.
@@ -146,7 +164,7 @@ string ASTWalker::generateID(string fileName, string qualifiedName){
     }
 
     return genID;
-}
+}*/
 
 string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
     string label;
@@ -235,6 +253,11 @@ string ASTWalker::generateClassName(string qualifiedName){
     return quals.at(quals.size() - 2);
 }
 
+string ASTWalker::generateLineNumber(const MatchFinder::MatchResult result, SourceLocation loc){
+    int lineNum = result.SourceManager->getSpellingLineNumber(loc);
+    return std::to_string(lineNum);
+}
+
 bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const Decl *decl){
     if (decl == nullptr) return false;
     bool isIn;
@@ -282,7 +305,7 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const De
     //Generate the fields for the node.
     string label = generateLabel(dec, ClangNode::FUNCTION);
     string filename = generateFileName(results, dec->getInnerLocStart());
-    string ID = generateID(filename, dec->getQualifiedNameAsString());
+    string ID = generateID(results, dec);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
 
@@ -344,13 +367,13 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
     if (useField){
         label = generateLabel(fieldDec, ClangNode::VARIABLE);
         filename = generateFileName(results, fieldDec->getInnerLocStart());
-        ID = generateID(filename, fieldDec->getQualifiedNameAsString());
+        ID = generateID(results, fieldDec);
         scopeInfo = ClangNode::VAR_ATTRIBUTE.getScope(fieldDec);
         staticInfo = ClangNode::VAR_ATTRIBUTE.getStatic(fieldDec);
     } else {
         label = generateLabel(varDec, ClangNode::VARIABLE);
         filename = generateFileName(results, varDec->getInnerLocStart());
-        ID = generateID(filename, varDec->getQualifiedNameAsString());
+        ID = generateID(results, varDec);
         scopeInfo = ClangNode::VAR_ATTRIBUTE.getScope(varDec);
         staticInfo = ClangNode::VAR_ATTRIBUTE.getStatic(varDec);
     }
@@ -384,7 +407,7 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRe
 
     //Generate the fields for the node.
     string filename = (fName.compare("") == 0) ? generateFileName(results, classDecl->getInnerLocStart(), true) : fName;
-    string ID = generateID(filename, classDecl->getQualifiedNameAsString());
+    string ID = generateID(results, classDecl);
     string className = generateLabel(classDecl, ClangNode::CLASS);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
@@ -425,7 +448,7 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
     //Generate the fields for the node.
     string filename = (spoofFilename.compare(string()) == 0) ?
                       generateFileName(result, enumDecl->getInnerLocStart()) : spoofFilename;
-    string ID = generateID(filename, enumDecl->getQualifiedNameAsString());
+    string ID = generateID(result, enumDecl);
     string enumName = generateLabel(enumDecl, ClangNode::ENUM);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
@@ -444,7 +467,7 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
     //Generate the fields for the node.
     string filename = (filenameSpoof.compare(string()) == 0) ?
                       generateFileName(result, enumDecl->getLocStart()) : filenameSpoof;
-    string ID = generateID(filename, enumDecl->getQualifiedNameAsString());
+    string ID = generateID(result, enumDecl);
     string enumName = generateLabel(enumDecl, ClangNode::ENUM_CONST);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
@@ -473,7 +496,7 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
 
     //With that, generates the ID, label, and filename.
     if (filename.compare("") == 0) generateFileName(result, structDecl->getInnerLocStart());
-    string ID = generateID(filename, qualifiedName);
+    string ID = generateID(result, structDecl);
     string label = generateLabel(structDecl, ClangNode::STRUCT);
 
     //Next, generates the node.
