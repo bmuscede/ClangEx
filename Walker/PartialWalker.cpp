@@ -170,7 +170,8 @@ void PartialWalker::manageClasses(const MatchFinder::MatchResult result,
 
     //Get the filename.
     string filename = generateFileName(result, labelDecl->getInnerLocStart(), true);
-    string declLabel = generateLabel(labelDecl, type);
+    string declID = generateID(result, labelDecl);
+    string declLabel = generateLabel(labelDecl, ClangNode::convertToNodeType(innerDecl->getKind()));
 
     //Get the class.
     CXXRecordDecl* record = extractClass(decl->getQualifier());
@@ -180,7 +181,7 @@ void PartialWalker::manageClasses(const MatchFinder::MatchResult result,
     addClassDecl(result, record, filename);
 
     //Next, we add the reference.
-    addClassCall(result, record, declLabel);
+    addClassCall(result, record, declID, declLabel);
 }
 
 void PartialWalker::addEnumConstants(const MatchFinder::MatchResult result, const EnumDecl *enumDecl,

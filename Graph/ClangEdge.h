@@ -112,6 +112,9 @@ public:
     ClangNode* getDst();
     ClangEdge::EdgeType getType();
 
+    void setSrc(ClangNode* newSrc);
+    void setDst(ClangNode* newDst);
+
     bool addAttribute(std::string key, std::string value);
     bool clearAttribute(std::string key);
     std::vector<std::string> getAttribute(std::string key);

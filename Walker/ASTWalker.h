@@ -40,8 +40,8 @@ protected:
 
     std::string generateFileName(const MatchFinder::MatchResult result,
                                  clang::SourceLocation loc, bool suppressOutput = false);
-    std::string generateID(const MatchFinder::MatchResult result, const clang::NamedDecl *decl);
-    //std::string generateID(std::string fileName, std::string qualifiedName);
+    std::string generateID(const MatchFinder::MatchResult result, const clang::TagDecl* dec);
+    std::string generateID(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl);
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
     std::string generateClassName(std::string qualifiedName);
     std::string generateLineNumber(const MatchFinder::MatchResult result, clang::SourceLocation loc);
@@ -54,7 +54,7 @@ protected:
 
 /********************************************************************************************************************/
     /** Node Insertion Functions */
-    void addFunctionDecl(const MatchFinder::MatchResult results, const clang::DeclaratorDecl *dec);
+    void addFunctionDecl(const MatchFinder::MatchResult results, const clang::FunctionDecl *dec);
     void addVariableDecl(const MatchFinder::MatchResult results, const clang::VarDecl *varDec = nullptr,
                          const clang::FieldDecl *fieldDec = nullptr);
     void addClassDecl(const MatchFinder::MatchResult results, const clang::CXXRecordDecl *classDecl,
@@ -72,14 +72,16 @@ protected:
                          const clang::Expr* expr, const clang::VarDecl *varCallee, const clang::FieldDecl *fieldCallee = nullptr);
     void addVariableInsideCall(const MatchFinder::MatchResult result, const clang::FunctionDecl *functionParent,
                                const clang::VarDecl *varChild, const clang::FieldDecl *fieldChild = nullptr);
-    void addClassCall(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDecl, std::string declLabel);
-    void addClassInheritance(const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
+    void addClassCall(const MatchFinder::MatchResult result, const clang::CXXRecordDecl *classDecl, std::string declID,
+                      std::string declLabel);
+    void addClassInheritance(const MatchFinder::MatchResult result,
+                             const clang::CXXRecordDecl *childClass, const clang::CXXRecordDecl *parentClass);
     void addEnumConstantCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
                              const clang::EnumConstantDecl *enumConstantDecl);
     void addEnumCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
                      const clang::VarDecl *varDecl, const clang::FieldDecl *fieldDecl = nullptr);
     void addStructCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
-                       const clang::DeclaratorDecl *itemDecl, ClangNode::NodeType inputType = ClangNode::NodeType::SUBSYSTEM);
+                       const clang::DeclaratorDecl *itemDecl);
     void addStructUseCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
                           const clang::VarDecl *varDecl, const clang::FieldDecl *fieldDecl = nullptr);
 /********************************************************************************************************************/
@@ -90,6 +92,8 @@ private:
     const std::string ANON_REPLACE = "Anonymous";
     const static int MD5_LENGTH = 33;
 
+    const std::string CLASS_PREPEND = "-class";
+
     std::string curFileName;
     FileParse fileParser;
     bool md5Flag;
@@ -99,6 +103,15 @@ private:
     std::string replaceLabel(std::string label, std::string init, std::string aft);
     std::string removeInvalidIDSymbols(std::string label);
     std::string removeInvalidSymbols(std::string label);
+
+    void processEdge(std::string srcID, std::string srcLabel, std::string dstID, std::string dstLabel,
+                     ClangEdge::EdgeType type, std::vector<std::pair<std::string, std::string>> attributes =
+                     std::vector<std::pair<std::string, std::string>>());
+    std::string generateID(const MatchFinder::MatchResult result, const clang::NamedDecl *dec, clang::SourceLocation loc);
+    std::string generateMangledName(const MatchFinder::MatchResult result, const clang::NamedDecl *dec, bool &success);
+
+    bool canCollapse(std::vector<ClangNode*> nodes);
+    void collapseDuplicates(std::vector<ClangNode*> duplicates);
 };
 
 

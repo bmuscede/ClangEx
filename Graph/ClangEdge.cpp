@@ -63,6 +63,14 @@ ClangEdge::EdgeType ClangEdge::getType(){
     return type;
 }
 
+void ClangEdge::setSrc(ClangNode* newSrc){
+    src = newSrc;
+}
+
+void ClangEdge::setDst(ClangNode* newDst){
+    dst = newDst;
+}
+
 bool ClangEdge::addAttribute(string key, string value){
     //Add the attribute by key.
     edgeAttributes[key].push_back(value);

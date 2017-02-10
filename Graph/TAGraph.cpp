@@ -115,6 +115,30 @@ vector<ClangNode*> TAGraph::findDstNodesByEdge(ClangNode* src, ClangEdge::EdgeTy
     return dstNodes;
 }
 
+vector<ClangEdge*> TAGraph::findEdgesBySrcID(ClangNode* src){
+    vector<ClangEdge*> edges;
+
+    //Iterate through the edge list.
+    for (auto edge : edgeList){
+        if (edge->getSrc() == src)
+            edges.push_back(edge);
+    }
+
+    return edges;
+}
+
+vector<ClangEdge*> TAGraph::findEdgesByDstID(ClangNode* dst){
+    vector<ClangEdge*> edges;
+
+    //Iterate through the edge list.
+    for (auto edge : edgeList){
+        if (edge->getDst() == dst)
+            edges.push_back(edge);
+    }
+
+    return edges;
+}
+
 bool TAGraph::nodeExists(string ID) {
     //TODO: Is this necessary?!
     //Iterate through the node list.
@@ -222,12 +246,12 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip, bool md5Flag) {
         string file = fileAttrVec.at(0);
         if (md5Flag) file = ASTWalker::generateMD5(file);
 
+        ClangNode *fileNode;
         if (file.compare("") != 0){
             //Find the appropriate node.
-            vector<ClangNode*> nodeList = findNodeByName(file);
-            ClangNode* fileNode;
-            if (nodeList.size() != 0) {
-                fileNode = nodeList.at(0);
+            vector<ClangNode*> fileVec = findNodeByName(file);
+            if (fileVec.size() != 0) {
+                fileNode = fileVec.at(0);
 
                 //We now look up the file node.
                 auto ptrSkip = fileSkip.find(file);
@@ -318,21 +342,24 @@ void TAGraph::resolveExternalReferences(bool silent) {
         pair<pair<string, string>, ClangEdge::EdgeType> entry = unresolvedRef.at(i);
 
         //Find the two items.
-        vector<ClangNode*> srcs = findNodeByName(entry.first.first);
-        vector<ClangNode*> dsts = findNodeByName(entry.first.second);
+        vector<ClangNode*> srcVec = findNodeByName(entry.first.first);
+        vector<ClangNode*> dstVec = findNodeByName(entry.first.second);
 
         //See if they could be resolved.
-        if (srcs.size() == 0 || dsts.size() == 0){
+        if (srcVec.size() == 0 || dstVec.size() == 0){
             unresolved++;
         } else {
-            ClangEdge* edge = new ClangEdge(srcs.at(0), dsts.at(0), entry.second);
+            ClangNode* src = srcVec.at(0);
+            ClangNode* dst = dstVec.at(0);
+
+            ClangEdge* edge = new ClangEdge(src, dst, entry.second);
             addEdge(edge);
 
             //Now, find all associated attributes.
             vector<pair<string, vector<string>>> attributes = findAttributes(entry.first.first, entry.first.second);
             for (auto attribute : attributes){
                 for (auto attVal : attribute.second){
-                    addAttribute(srcs.at(0)->getID(), dsts.at(0)->getID(), entry.second, attribute.first, attVal);
+                    addAttribute(src->getID(), dst->getID(), entry.second, attribute.first, attVal);
                 }
             }
 
@@ -353,6 +380,32 @@ vector<ClangNode*> TAGraph::getNodes(){
 
 vector<ClangEdge*> TAGraph::getEdges(){
     return edgeList;
+}
+
+void TAGraph::removeNode(ClangNode *node, bool unsafe) {
+    //First, goes through and deletes the node from the vector.
+    int i = 0;
+    for (int i; i < nodeList.size(); i++){
+        if (nodeList.at(i) != node) break;
+    }
+    if (i == nodeList.size()) return;
+
+    //Removes.
+    nodeList.erase(nodeList.begin() + i);
+
+    //Checks if we've got unsafe deletion.
+    if (!unsafe){
+        //Goes through the edges.
+        for (int j = 0; j < edgeList.size(); j++){
+            ClangEdge* current = edgeList.at(j);
+            if (current->getSrc() == node || current->getDst() == node){
+                edgeList.erase(edgeList.begin() + j);
+                delete current;
+            }
+        }
+    }
+
+    delete node;
 }
 
 string TAGraph::generateInstances() {

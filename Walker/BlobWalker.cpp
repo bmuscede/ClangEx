@@ -15,7 +15,7 @@ BlobWalker::~BlobWalker(){ }
 
 void BlobWalker::run(const MatchFinder::MatchResult &result) {
     //Check if the current result fits any of our match criteria.
-    if (const DeclaratorDecl *functionDecl = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[FUNC_DEC])) {
+    if (const FunctionDecl *functionDecl = result.Nodes.getNodeAs<clang::FunctionDecl>(types[FUNC_DEC])) {
         //Get whether we have a system header.
         if (isInSystemHeader(result, functionDecl)) return;
 

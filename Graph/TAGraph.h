@@ -23,6 +23,8 @@ public:
     ClangEdge* findEdgeByIDs(std::string IDOne, std::string IDTwo, ClangEdge::EdgeType type);
     std::vector<ClangNode*> findSrcNodesByEdge(ClangNode* dst, ClangEdge::EdgeType type);
     std::vector<ClangNode*> findDstNodesByEdge(ClangNode* src, ClangEdge::EdgeType type);
+    std::vector<ClangEdge*> findEdgesBySrcID(ClangNode* src);
+    std::vector<ClangEdge*> findEdgesByDstID(ClangNode* dst);
 
     bool nodeExists(std::string ID);
     bool edgeExists(std::string IDOne, std::string IDTwo);
@@ -44,6 +46,8 @@ public:
     std::vector<ClangNode*> getNodes();
     std::vector<ClangEdge*> getEdges();
 
+    void removeNode(ClangNode* node, bool unsafe = true);
+
     static const std::string FILE_ATTRIBUTE;
 
 private:
@@ -59,7 +63,7 @@ private:
             "ile\t\t\tcArchitecturalNds\n$INHERIT\tcClass\t\t\tcAsgNds\n$INHERIT\tcFunction\t\tcAsgNds\n$INHERIT\tcVari"
             "able\t\tcAsgNds\n$INHERIT\tcLang\t\t\tcAsgNds\n$INHERIT\tcEnum\t\t\tcLang\n$INHERIT\tcEnumConst\t\tcLang\n"
             "$INHERIT\tcStruct\t\t\tcLang\n$INHERIT\tcUnion\t\t\tcLang\n\n//Relationships\ncontain\t\tcRoot\t\tcRoot\nc"
-            "all\t\tcFunction\tcFunction\nreference\tcAsgNds\t\tcAsgNds\ninherits\tcClass\t\tcClass\n\nSCHEME ATTRIBUTE"
+            "all\t\tcFunction\tcFunction\nreference\tcAsgNds\t\tcAsgNds\ninherit\tcClass\t\tcClass\n\nSCHEME ATTRIBUTE"
             " :\n$ENTITY {\n\tx\n\ty\n\twidth\n\theight\n\tlabel\n}\n\ncRoot {\n\telision = contain\n\tcolor = (0.0 0.0"
             " 0.0)\n\tfile\n\tline\n\tname\n}\n\ncAsgNds {\n\tbeg\n\tend\n\tfile\n\tline\n\tvalue\n\tcolor = (0.0 0.0 0"
             ".0)\n}\n\ncArchitecturalNds {\n\tclass_style = 4\n\tcolor = (0.0 0.0 1.0)\n\tcolor = (0.0 0.0 0.0)\n}\n\nc"
