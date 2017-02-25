@@ -11,6 +11,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "ClangArgParse.h"
+#include "../Printer/Printer.h"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -69,6 +70,9 @@ const string ClangArgParse::MDFIVE_LONG = "md5Gen";
 const string ClangArgParse::MDFIVE_SHORT = "md";
 const string ClangArgParse::MDFIVE_HELP = "ClangEx will generate entity IDs by hashing them into an MD5 hash. This"
         " produces shorter IDs at the trade off of potential collisions.";
+const string ClangArgParse::VERBOSE_LONG = "verbose";
+const string ClangArgParse::VERBOSE_SHORT = "v";
+const string ClangArgParse::VERBOSE_HELP = "Prints detailed output regarding ClangEx's processing of files.";
 
 ClangArgParse::ClangArgParse(){
     //Configures help message.
@@ -87,6 +91,7 @@ ClangArgParse::ClangArgParse(){
     addFlag(ClangArgParse::BLOB_LONG, ClangArgParse::BLOB_SHORT, ClangArgParse::BLOB_HELP);
     addFlag(ClangArgParse::HELP_LONG, ClangArgParse::HELP_SHORT, ClangArgParse::HELP_HELP);
     addFlag(ClangArgParse::MDFIVE_LONG, ClangArgParse::MDFIVE_SHORT, ClangArgParse::MDFIVE_HELP);
+    addFlag(ClangArgParse::VERBOSE_LONG, ClangArgParse::VERBOSE_SHORT, ClangArgParse::VERBOSE_HELP);
 }
 
 ClangArgParse::~ClangArgParse(){
@@ -95,6 +100,10 @@ ClangArgParse::~ClangArgParse(){
         delete item;
     for (auto item : flagList)
         delete item;
+}
+
+int ClangArgParse::getNumFiles() {
+    return numFiles;
 }
 
 bool ClangArgParse::addOption(string longVal, string shortVal, string description){
@@ -356,7 +365,7 @@ ClangArgParse::ClangExclude ClangArgParse::generateExclusions(){
     return exVals;
 }
 
-const char** ClangArgParse::generateClangArgv(int& argc){
+const char** ClangArgParse::generateClangArgv(int& argc, Printer* clangPrint){
     //Creates a vector.
     vector<string> arguments;
     arguments.push_back(getFilename());
@@ -387,11 +396,10 @@ const char** ClangArgParse::generateClangArgv(int& argc){
     if (searchDirs.size() > 0){
         vector<string> files;
         for (string dir : searchDirs){
-            cout << "Searching automatically for C/C++ files with base directory: " << dir
-                 << "..." << endl;
+            clangPrint->printFileSearchStart(dir);
 
-            files = findSourceCode(path(dir));
-            cout << endl;
+            files = findSourceCode(path(dir), clangPrint);
+            clangPrint->printFileSearchDone();
 
             arguments.insert(arguments.end(), files.begin(), files.end());
         }
@@ -460,7 +468,7 @@ void ClangArgParse::printHelpMessage() {
     }
 }
 
-vector<string> ClangArgParse::findSourceCode(path curr){
+vector<string> ClangArgParse::findSourceCode(path curr, Printer* clangPrint){
     vector<string> files;
     vector<path> interiorDir;
     directory_iterator endIter;
@@ -477,7 +485,7 @@ vector<string> ClangArgParse::findSourceCode(path curr){
                 //Checks the file.
                 if (extFile.compare(cExtensions[i]) == 0){
                     files.push_back(iter->path().string());
-                    cout << "Found: " << iter->path().string() << "\n";
+                    clangPrint->printFileSearch(iter->path().string());
                 }
             }
         } else if (is_directory(iter->path())){
@@ -490,11 +498,14 @@ vector<string> ClangArgParse::findSourceCode(path curr){
     for (int i = 0; i < interiorDir.size(); i++){
         //Gets the path and object files.
         path current = interiorDir.at(i);
-        vector<string> newObj = findSourceCode(current);
+        vector<string> newObj = findSourceCode(current, clangPrint);
 
         //Adds to current vector.
         files.insert(files.end(), newObj.begin(), newObj.end());
     }
+
+    //Gets the size.
+    numFiles = files.size();
 
     //Return a list of object files.
     return files;

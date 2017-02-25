@@ -7,13 +7,17 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include "ClangNode.h"
 #include "ClangEdge.h"
+#include "../Printer/VerbosePrinter.h"
 
 class TAGraph {
 public:
-    TAGraph();
+    TAGraph(Printer* print = new VerbosePrinter());
     ~TAGraph();
+
+    void setPrinter(Printer* newPrint);
 
     bool addNode(ClangNode* node, bool assumeValid = false);
     bool addEdge(ClangEdge* edge, bool assumeValid = false);
@@ -27,7 +31,7 @@ public:
     std::vector<ClangEdge*> findEdgesByDstID(ClangNode* dst);
 
     bool nodeExists(std::string ID);
-    bool edgeExists(std::string IDOne, std::string IDTwo);
+    bool edgeExists(std::string IDOne, std::string IDTwo, ClangEdge::EdgeType type);
 
     bool addSingularAttribute(std::string ID, std::string key, std::string value);
     bool addSingularAttribute(std::string IDSrc, std::string IDDst, ClangEdge::EdgeType type, std::string key, std::string value);
@@ -51,11 +55,15 @@ public:
     static const std::string FILE_ATTRIBUTE;
 
 private:
-    std::vector<ClangNode*> nodeList;
-    std::vector<ClangEdge*> edgeList;
+    std::unordered_map<std::string, ClangNode*> nodeList;
+    std::unordered_map<std::string, std::vector<std::string>> nodeNameList;
+    std::unordered_map<std::string, std::vector<ClangEdge*>> edgeSrcList;
+    std::unordered_map<std::string, std::vector<ClangEdge*>> edgeDstList;
 
     std::vector<std::pair<std::pair<std::string, std::string>, ClangEdge::EdgeType>> unresolvedRef;
     std::vector<std::pair<std::pair<std::string, std::string>, std::pair<std::string, std::vector<std::string>>>*> unresolvedRefAttr;
+
+    Printer *clangPrinter;
 
     std::string const TA_HEADER = "//Generated TA File";
     std::string const TA_SCHEMA = "//Author: Jingwei Wu & Bryan J Muscedere\n\nSCHEME TUPLE :\n//Nodes\n$INHERIT\tcArch"

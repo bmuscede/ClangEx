@@ -9,7 +9,7 @@
 
 class BlobWalker : public ASTWalker {
 public:
-    BlobWalker(bool md5, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
+    BlobWalker(bool md5, Printer* print, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
                   TAGraph* graph = new TAGraph());
     virtual ~BlobWalker();
 
@@ -26,6 +26,9 @@ private:
                             "field_callee", "field_expr", "class_dec", "enum_dec", "enum_const_decl", "enum_parent",
                             "enum_dec_ref", "var_ref_enum", "field_ref_enum", "struct_decl", "struct_ref_item",
                             "struct_ref", "var_bound_struct", "field_bound_struct"};
+
+    void performAddClassCall(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl,
+                             ClangNode::NodeType type);
 };
 
 

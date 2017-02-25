@@ -12,8 +12,8 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-PartialWalker::PartialWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
-        ASTWalker(exclusions, md5, graph){ }
+PartialWalker::PartialWalker(bool md5, Printer* print, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
+        ASTWalker(exclusions, md5, print, graph){ }
 
 PartialWalker::~PartialWalker() { }
 
@@ -112,10 +112,12 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
         finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[VAR_DEC]), this);
 
         //Adds scope for variables.
-        finder->addMatcher(varDecl(hasAncestor(functionDecl().bind(types[INSIDE_FUNC]))).bind(types[VAR_INSIDE]), this);
-        finder->addMatcher(parmVarDecl(hasAncestor(functionDecl()
+        /*finder->addMatcher(varDecl(isExpansionInMainFile(),
+                                   hasAncestor(functionDecl().bind(types[INSIDE_FUNC]))).bind(types[VAR_INSIDE]), this);
+        finder->addMatcher(parmVarDecl(isExpansionInMainFile(),
+                                       hasAncestor(functionDecl()
                                                            .bind(types[INSIDE_FUNC]))).bind(types[PARAM_INSIDE]), this);
-
+        */
         //Finds variable uses from a function to a variable.
         finder->addMatcher(declRefExpr(hasDeclaration(varDecl(isExpansionInMainFile()).bind(types[VAR_CALL])),
                                        hasAncestor(functionDecl().bind(types[CALLER_VAR])),
@@ -164,14 +166,15 @@ void PartialWalker::manageClasses(const MatchFinder::MatchResult result,
                                   const clang::DeclaratorDecl *innerDecl){
     const DeclaratorDecl* labelDecl = innerDecl;
     if (innerDecl == nullptr) labelDecl = decl;
+    if (labelDecl == nullptr) return;
 
     //Checks if we need to process.
     if (exclusions.cClass) return;
 
     //Get the filename.
     string filename = generateFileName(result, labelDecl->getInnerLocStart(), true);
-    string declID = generateID(result, labelDecl);
-    string declLabel = generateLabel(labelDecl, ClangNode::convertToNodeType(innerDecl->getKind()));
+    string declID = generateID(result, labelDecl, ClangNode::convertToNodeType(labelDecl->getKind()));
+    string declLabel = generateLabel(labelDecl, ClangNode::convertToNodeType(labelDecl->getKind()));
 
     //Get the class.
     CXXRecordDecl* record = extractClass(decl->getQualifier());

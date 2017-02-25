@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include "../Printer/Printer.h"
 
 class ClangArgParse {
 public:
@@ -25,6 +26,8 @@ public:
     ClangArgParse();
     ~ClangArgParse();
 
+    int getNumFiles();
+
     bool addOption(std::string longVal, std::string shortVal, std::string description);
     bool addFlag(std::string longVal, std::string shortVal, std::string description);
     void setHelpMessage(std::string msg);
@@ -36,7 +39,7 @@ public:
     void addFlagValue(std::string key);
 
     bool parseArguments(int argc, const char** argv);
-    const char** generateClangArgv(int& argc);
+    const char** generateClangArgv(int& argc, Printer* clangPrint);
 
     void printHelpMessage();
 
@@ -60,12 +63,16 @@ public:
     const static std::string MDFIVE_LONG;
     const static std::string MDFIVE_SHORT;
     const static std::string MDFIVE_HELP;
+    const static std::string VERBOSE_LONG;
+    const static std::string VERBOSE_SHORT;
+    const static std::string VERBOSE_HELP;
 private:
     const bool DEFAULT_FLAG = false;
     const std::string ARG_LONG = "--";
     const std::string ARG_SHORT = "-";
     const std::string EMPTY_ARG = "";
     const std::string NOT_ARG = "not_arg";
+    int numFiles = 0;
 
     /** PRIVATE ARGUMENTS AND FLAGS */
     const static std::string HELP_MESSAGE;
@@ -99,7 +106,7 @@ private:
     std::string helpMessage;
     std::string fileName;
 
-    std::vector<std::string> findSourceCode(boost::filesystem::path path);
+    std::vector<std::string> findSourceCode(boost::filesystem::path path, Printer* clangPrint);
 };
 
 

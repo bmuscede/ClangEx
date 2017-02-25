@@ -8,10 +8,10 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "Walker/ASTWalker.h"
-#include "File/ClangArgParse.h"
 #include "Walker/PartialWalker.h"
 #include "Walker/BlobWalker.h"
 #include "TupleAttribute/TAProcessor.h"
+#include "Printer/MinimalPrinter.h"
 
 using namespace std;
 using namespace clang;
@@ -33,9 +33,21 @@ int main(int argc, const char **argv) {
     //Check return code.
     if (!succ) return 1;
 
+    //Get whether we're running in verbose or not.
+    bool verbose = parser.getFlag(ClangArgParse::VERBOSE_LONG);
+    Printer* clangPrint;
+    if (verbose) {
+        clangPrint = new VerbosePrinter();
+    } else {
+        clangPrint = new MinimalPrinter();
+    }
+
     //Generates a specialized version of arguments for Clang.
     int genArgC = 0;
-    const char** genArgV = parser.generateClangArgv(genArgC);
+    const char** genArgV = parser.generateClangArgv(genArgC, clangPrint);
+
+    //Get the number of files.
+    if (!verbose) static_cast<MinimalPrinter*>(clangPrint)->setNumSteps(parser.getNumFiles() + 3);
 
     //Get the exclusions.
     ClangArgParse::ClangExclude exclude = parser.generateExclusions();
@@ -54,17 +66,29 @@ int main(int argc, const char **argv) {
         merge = true;
         string mergeFile = mergeVec.at(0);
 
-        cout << "Reading TA file " << mergeFile << "..." << endl << endl;
+        clangPrint->printMerge(mergeFile);
 
         //Loads the file.
-        TAProcessor processor = TAProcessor(INSTANCE_FLAG);
+        TAProcessor processor = TAProcessor(INSTANCE_FLAG, clangPrint);
         bool succ = processor.readTAFile(mergeFile);
 
-        if (!succ) return 1;
+        if (!succ) {
+            for (int i = 0; i < genArgC; i++)
+                delete[] genArgV[i];
+            delete[] genArgV;
+            delete clangPrint;
+            return 1;
+        }
         
         //Gets the graph.
         TAGraph* graph = processor.writeTAGraph();
-        if (graph == nullptr) return 1;
+        if (graph == nullptr) {
+            for (int i = 0; i < genArgC; i++)
+                delete[] genArgV[i];
+            delete[] genArgV;
+            delete clangPrint;
+            return 1;
+        }
     }
 
     //Check how we're dealing with IDs.
@@ -74,14 +98,14 @@ int main(int argc, const char **argv) {
     ASTWalker* walker;
     if (parser.getFlag(ClangArgParse::BLOB_LONG)){
         if (merge)
-            walker = new BlobWalker(useMD5, exclude, mergeGraph);
+            walker = new BlobWalker(useMD5, clangPrint, exclude, mergeGraph);
         else
-            walker = new BlobWalker(useMD5, exclude);
+            walker = new BlobWalker(useMD5, clangPrint, exclude);
     } else {
         if (merge)
-            walker = new PartialWalker(useMD5, exclude, mergeGraph);
+            walker = new PartialWalker(useMD5, clangPrint, exclude, mergeGraph);
         else
-            walker = new PartialWalker(useMD5, exclude);
+            walker = new PartialWalker(useMD5, clangPrint, exclude);
     }
     //Generates a matcher system.
     MatchFinder finder;
@@ -90,39 +114,55 @@ int main(int argc, const char **argv) {
     walker->generateASTMatches(&finder);
 
     //Runs the Clang tool.
-    cout << "Compiling the source code..." << endl;
+    clangPrint->printProcessStatus(Printer::COMPILING);
     int code = tool.run(newFrontendActionFactory(&finder).get());
+    clangPrint->printFileNameDone();
+
     if (code != 0) {
-        return code;
+        //Prompt the user if they'd like to contiune.
+        bool generateModel = clangPrint->printProcessFailure();
+
+        //Delete everything if not.
+        if (!generateModel){
+            delete walker;
+            for (int i = 0; i < genArgC; i++)
+                delete[] genArgV[i];
+            delete[] genArgV;
+            delete clangPrint;
+            return code;
+        }
     }
 
     //Resolves references.
-    cout << endl << "Resolving external references..." << endl;
+    clangPrint->printProcessStatus(Printer::RESOLVE_REF);
     walker->resolveExternalReferences();
 
     //Generates file paths.
-    cout << endl << "Resolving source code file paths..." << endl;
+    clangPrint->printProcessStatus(Printer::RESOLVE_FILE);
     walker->resolveFiles();
+    clangPrint->printResolvePathDone();
 
     //Processes the TA file.
     vector<string> outputFiles = parser.getOption(ClangArgParse::OUT_LONG);
     if (outputFiles.size() == 0){
-        cout << "Writing TA file to ";
         if (merge){
-            cout << mergeVec.at(0) << "..." << endl;
+            clangPrint->printGenTA(mergeVec.at(0));
             walker->buildGraph(mergeVec.at(0));
         } else {
-            cout << DEFAULT_OUT << "..." << endl;
+            clangPrint->printGenTA(DEFAULT_OUT);
             walker->buildGraph(DEFAULT_OUT);
         }
     } else {
-        cout << endl;
         for (string file : outputFiles) {
-            cout << "Writing TA file to " << file << "..." << endl;
+            clangPrint->printGenTA(file);
             walker->buildGraph(file);
         }
     }
 
+    for (int i = 0; i < genArgC; i++)
+        delete[] genArgV[i];
+    delete[] genArgV;
     delete walker;
+    delete clangPrint;
     return code;
 }

@@ -8,8 +8,8 @@
 
 using namespace std;
 
-BlobWalker::BlobWalker(bool md5, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
-        ASTWalker(exclusions, md5, graph){ }
+BlobWalker::BlobWalker(bool md5, Printer* print, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
+        ASTWalker(exclusions, md5, print, graph){ }
 
 BlobWalker::~BlobWalker(){ }
 
@@ -187,7 +187,7 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
         finder->addMatcher(fieldDecl(hasAncestor(functionDecl().bind(types[INSIDE_FUNC]))).bind(types[FIELD_INSIDE]), this);
         finder->addMatcher(parmVarDecl(hasAncestor(functionDecl()
                                                            .bind(types[FUNC_PARAM]))).bind(types[VAR_PARAM]), this);
-
+        
         //Finds variable uses amongst functions.
         finder->addMatcher(declRefExpr(hasDeclaration(varDecl().bind(types[VAR_CALLEE])),
                            hasAncestor(functionDecl().bind(types[VAR_CALLER])),
@@ -247,3 +247,14 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
     }
 }
 
+
+void BlobWalker::performAddClassCall(const MatchFinder::MatchResult result, const DeclaratorDecl *decl,
+                                    ClangNode::NodeType type){
+    //Checks if we can add a class reference.
+    CXXRecordDecl* classDecl = extractClass(decl->getQualifier());
+    if (classDecl != nullptr && !exclusions.cClass) {
+        string declID = generateID(result, decl, type);
+        string declLabel = generateLabel(decl, ClangNode::convertToNodeType(decl->getKind()));
+        addClassCall(result, classDecl, declID, declLabel);
+    }
+}

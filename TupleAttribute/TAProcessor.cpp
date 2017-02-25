@@ -27,7 +27,7 @@ static inline string &trim(string &s) {
     return ltrim(rtrim(s));
 }
 
-TAProcessor::TAProcessor(string entityRelName){
+TAProcessor::TAProcessor(string entityRelName, Printer* print) : clangPrinter(print) {
     this->entityString = entityRelName;
 }
 
@@ -39,8 +39,7 @@ bool TAProcessor::readTAFile(string fileName){
 
     //Check if the file opens.
     if (!modelStream.is_open()){
-        cerr << "The TA file " << fileName << " does not exist!" << endl;
-        cerr << "Exiting program..." << endl;
+        clangPrinter->printErrorTAProcessRead(fileName);
         return false;
     }
 
@@ -58,7 +57,7 @@ bool TAProcessor::writeTAFile(string fileName){
 
     //Check if it opened.
     if (!taFile.is_open()){
-        cerr << "The output TA file could not be written to the file called " << fileName << "!" << endl;
+        clangPrinter->printErrorTAProcessWrite(fileName);
         return false;
     }
 
@@ -66,14 +65,13 @@ bool TAProcessor::writeTAFile(string fileName){
     taFile << generateTAString();
     taFile.close();
 
-    cout << "TA file successfully written to " << fileName << "!" << endl;
+    clangPrinter->printGenTADone(fileName, true);
     return true;
 }
 
 bool TAProcessor::readTAGraph(TAGraph* graph){
     if (graph == nullptr){
-        cerr << "Invalid TA graph object supplied." << endl;
-        cerr << "Please supply an initialized TA graph object!" << endl;
+        clangPrinter->printErrorTAProcessGraph();
         return false;
     }
 
@@ -125,8 +123,7 @@ bool TAProcessor::readGeneric(ifstream& modelStream, string fileName){
             if (!success) return false;
         } else if (!curLine.compare(0, ATTRIBUTE_FLAG.size(), ATTRIBUTE_FLAG)){
             if (tupleEncountered == false){
-                cerr << "Error on line " << line << "." << endl;
-                cerr << ATTRIBUTE_FLAG << " encountered before " << RELATION_FLAG << "!" << endl;
+                clangPrinter->printErrorTAProcess(line, ATTRIBUTE_FLAG + " encountered before " + RELATION_FLAG + "!");
                 return false;
             }
 
@@ -155,8 +152,7 @@ bool TAProcessor::readScheme(ifstream& modelStream, int* lineNum){
         //Check the line.
         if (!line.compare(0, SCHEME_FLAG.size(), SCHEME_FLAG)){
             //Invalid input.
-            cerr << "Invalid input on line " << *lineNum << "." << endl;
-            cerr << "Unexpected flag." << endl;
+            clangPrinter->printErrorTAProcess(*lineNum, UNEXPECTED_FLAG);
 
             return false;
         } else if (!line.compare(0, RELATION_FLAG.size(), RELATION_FLAG) ||
@@ -189,8 +185,7 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
             break;
         } else if (!line.compare(0, RELATION_FLAG.size(), RELATION_FLAG)) {
             //Invalid input.
-            cerr << "Invalid input on line " << *lineNum << "." << endl;
-            cerr << "Unexpected flag." << endl;
+            clangPrinter->printErrorTAProcess(*lineNum, UNEXPECTED_FLAG);
 
             return false;
         }
@@ -203,8 +198,7 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
 
         //Check whether the entry is valid.
         if (entry.size() != 3) {
-            cerr << "Invalid input on line " << *lineNum << "." << endl;
-            cerr << "Line should contain a single tuple in RSF format." << endl;
+            clangPrinter->printErrorTAProcess(*lineNum, RSF_INVALID);
             return false;
         }
 
@@ -262,8 +256,7 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
 
             //Check for valid entry.
             if (entry.size() < 3 || entry.at(1).compare(")") == 0 || entry.at(2).compare(")") == 0){
-                cerr << "Invalid input on line " << *lineNum << "." << endl;
-                cerr << "Attribute line is too short to be valid!" << endl;
+                clangPrinter->printErrorTAProcess(*lineNum, ATTRIBUTE_SHORT);
                 return false;
             }
 
@@ -322,8 +315,7 @@ bool TAProcessor::writeRelations(TAGraph* graph){
     //First, finds the instance relation.
     int pos = findRelEntry(entityString);
     if (pos == -1){
-        cerr << "TA file does not have a relation called " << entityString << "!" << endl;
-        cerr << "Cannot continue..." << endl;
+        clangPrinter->printErrorTAProcess(Printer::RELATION_FIND, entityString);
         return false;
     }
 
@@ -384,8 +376,7 @@ bool TAProcessor::writeAttributes(TAGraph* graph){
             for (auto value : values) {
                 bool succ = graph->addAttribute(itemID, key, value);
                 if (!succ) {
-                    cerr << "TA file does not have a node called " << itemID << "!" << endl;
-                    cerr << "This item needs to be specified before giving it attributes." << endl;
+                    clangPrinter->printErrorTAProcess(Printer::ENTITY_ATTRIBUTE, itemID);
                     return false;
                 }
             }
@@ -396,8 +387,7 @@ bool TAProcessor::writeAttributes(TAGraph* graph){
     for (auto attr : relAttributes){
         vector<string> items = attr.first;
         if (items.size() != 3) {
-            cerr << "The TA structure in memory is malformed." << endl;
-            cerr << "Please check the relation attributes in the TA file!" << endl;
+            clangPrinter->printErrorTAProcessMalformed();
             return false;
         }
 
@@ -414,8 +404,7 @@ bool TAProcessor::writeAttributes(TAGraph* graph){
             for (auto value : values) {
                 bool succ = graph->addAttribute(srcID, dstID, relName, key, value);
                 if (!succ) {
-                    cerr << "TA file does not have an edge called (" << srcID << ", " << dstID << ")!" << endl;
-                    cerr << "This item needs to be specified before giving it attributes." << endl;
+                    clangPrinter->printErrorTAProcess(Printer::RELATION_ATTRIBUTE, "(" + srcID + ", " + dstID + ")");
                     return false;
                 }
             }

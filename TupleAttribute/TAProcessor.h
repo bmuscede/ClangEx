@@ -10,7 +10,7 @@
 
 class TAProcessor {
 public:
-    TAProcessor(std::string entityRelName);
+    TAProcessor(std::string entityRelName, Printer* print);
     ~TAProcessor();
 
     bool readTAFile(std::string fileName);
@@ -23,6 +23,10 @@ private:
     const char COMMENT_CHAR = '/';
     const char COMMENT_BLOCK_CHAR = '*';
 
+    const std::string UNEXPECTED_FLAG = "Unexpected flag.";
+    const std::string RSF_INVALID = "Line should contain a single tuple in RSF format.";
+    const std::string ATTRIBUTE_SHORT = "Attribute line is too short to be valid!";
+
     const std::string RELATION_FLAG = "FACT TUPLE :";
     const std::string ATTRIBUTE_FLAG = "FACT ATTRIBUTE :";
     const std::string SCHEME_FLAG = "SCHEME TUPLE :";
@@ -30,6 +34,8 @@ private:
     const std::string SCHEMA_HEADER = "//TAProcessor TA File Created by ClangEx";
 
     std::string entityString;
+
+    Printer *clangPrinter;
 
     std::vector<std::pair<std::string, std::set<std::pair<std::string, std::string>>>> relations;
     std::vector<std::pair<std::string, std::vector<std::pair<std::string, std::vector<std::string>>>>> attributes;
