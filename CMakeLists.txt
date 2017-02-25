@@ -22,7 +22,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -std=c++11")
 
 set(SOURCE_FILES main.cpp Walker/ASTWalker.cpp Walker/ASTWalker.h Graph/TAGraph.cpp Graph/TAGraph.h Graph/ClangNode.cpp
         Graph/ClangNode.h Graph/ClangEdge.cpp Graph/ClangEdge.h File/FileParse.cpp File/FileParse.h File/ClangArgParse.cpp
-        File/ClangArgParse.h Walker/PartialWalker.cpp Walker/PartialWalker.h Walker/BlobWalker.cpp Walker/BlobWalker.h TupleAttribute/TAProcessor.cpp TupleAttribute/TAProcessor.h)
+        File/ClangArgParse.h Walker/PartialWalker.cpp Walker/PartialWalker.h Walker/BlobWalker.cpp Walker/BlobWalker.h
+        TupleAttribute/TAProcessor.cpp TupleAttribute/TAProcessor.h Printer/VerbosePrinter.cpp Printer/VerbosePrinter.h
+        Printer/MinimalPrinter.cpp Printer/MinimalPrinter.h Printer/Printer.cpp Printer/Printer.h Printer/ProgressBar.c
+        Printer/ProgressBar.h)
 add_executable(ClangEx ${SOURCE_FILES})
 
 target_link_libraries(ClangEx
