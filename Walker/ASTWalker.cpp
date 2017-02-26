@@ -720,6 +720,9 @@ string ASTWalker::replaceLabel(string label, string init, string aft){
 
 string ASTWalker::removeInvalidIDSymbols(string label) {
     replace(label.begin(), label.end(), ':', '-');
+    replace(label.begin(), label.end(), ' ', '_');
+    replace(label.begin(), label.end(), '(', '_');
+    replace(label.begin(), label.end(), ')', '_');
     return removeInvalidSymbols(label);
 }
 

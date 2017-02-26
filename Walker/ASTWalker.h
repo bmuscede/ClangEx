@@ -91,8 +91,8 @@ protected:
 /********************************************************************************************************************/
 
 private:
-    const static int ANON_SIZE = 3;
-    const std::string ANON_LIST[ANON_SIZE] = {"(anonymous struct)", "(union struct)", "(anonymous)"};
+    const static int ANON_SIZE = 4;
+    const std::string ANON_LIST[ANON_SIZE] = {"(anonymous struct)", "(union struct)", "(anonymous)", "(anonymous union)"};
     const std::string FILE_EXT[7] = {".C", ".cc", ".cpp", ".CPP", ".c++", ".cp", ".cxx"};
     const std::string ANON_REPLACE = "Anonymous";
     const static int MD5_LENGTH = 33;

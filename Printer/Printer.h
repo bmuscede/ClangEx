@@ -39,6 +39,8 @@ public:
     void printErrorTAProcessWrite(std::string fileName);
     void printErrorTAProcessGraph();
 
+    void printErrorNoFiles();
+
 protected:
     Printer();
 

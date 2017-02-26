@@ -49,6 +49,16 @@ int main(int argc, const char **argv) {
     //Get the number of files.
     if (!verbose) static_cast<MinimalPrinter*>(clangPrint)->setNumSteps(parser.getNumFiles() + 3);
 
+    //Check the number of files.
+    if (parser.getNumFiles() == 0) {
+        clangPrint->printErrorNoFiles();
+        for (int i = 0; i < genArgC; i++)
+            delete[] genArgV[i];
+        delete[] genArgV;
+        delete clangPrint; //SOMEHOW CAUSES A SEGFAULT?!
+        return 1;
+    }
+
     //Get the exclusions.
     ClangArgParse::ClangExclude exclude = parser.generateExclusions();
 
