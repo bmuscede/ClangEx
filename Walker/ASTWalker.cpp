@@ -685,7 +685,7 @@ void ASTWalker::processEdge(string srcID, string srcLabel, string dstID, string 
 
         //Iterate through our vector and add.
         for (auto mapItem : attributes) {
-            graph->addAttribute(edge->getSrc()->getID(), edge->getSrc()->getID(), type,
+            graph->addAttribute(edge->getSrc()->getID(), edge->getDst()->getID(), type,
                                 mapItem.first, mapItem.second);
         }
     }
