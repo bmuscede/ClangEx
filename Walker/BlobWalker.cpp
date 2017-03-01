@@ -24,7 +24,7 @@ void BlobWalker::run(const MatchFinder::MatchResult &result) {
 
         //Adds a class reference.
         performAddClassCall(result, functionDecl, ClangNode::FUNCTION);
-    } else if (const VarDecl *variableDecl = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])) {
+    } else if (const VarDecl *variableDecl = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_DEC])){
         //Get whether we have a system header.
         if (isInSystemHeader(result, variableDecl) || variableDecl->getQualifiedNameAsString().compare("") == 0) return;
 

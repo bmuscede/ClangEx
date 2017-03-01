@@ -48,6 +48,7 @@ protected:
     std::string generateID(const MatchFinder::MatchResult result, const clang::NamedDecl *dec, ClangNode::NodeType type,
                            clang::SourceLocation loc);
     std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
+    std::string generateLabel(const MatchFinder::MatchResult result, const clang::NamedDecl *dec);
     std::string generateClassName(std::string qualifiedName);
     std::string generateLineNumber(const MatchFinder::MatchResult result, clang::SourceLocation loc);
     std::string generateMangledName(const MatchFinder::MatchResult result, const clang::NamedDecl *dec, bool &success);
