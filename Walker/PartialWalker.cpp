@@ -174,7 +174,7 @@ void PartialWalker::manageClasses(const MatchFinder::MatchResult result,
     //Get the filename.
     string filename = generateFileName(result, labelDecl->getInnerLocStart(), true);
     string declID = generateID(result, labelDecl, ClangNode::convertToNodeType(labelDecl->getKind()));
-    string declLabel = generateLabel(labelDecl, ClangNode::convertToNodeType(labelDecl->getKind()));
+    string declLabel = generateLabel(result, labelDecl);
 
     //Get the class.
     CXXRecordDecl* record = extractClass(decl->getQualifier());

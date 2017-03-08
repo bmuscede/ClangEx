@@ -254,7 +254,7 @@ void BlobWalker::performAddClassCall(const MatchFinder::MatchResult result, cons
     CXXRecordDecl* classDecl = extractClass(decl->getQualifier());
     if (classDecl != nullptr && !exclusions.cClass) {
         string declID = generateID(result, decl, type);
-        string declLabel = generateLabel(decl, ClangNode::convertToNodeType(decl->getKind()));
+        string declLabel = generateLabel(result, decl);
         addClassCall(result, classDecl, declID, declLabel);
     }
 }

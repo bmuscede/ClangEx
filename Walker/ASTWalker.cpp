@@ -145,13 +145,16 @@ string ASTWalker::generateID(const MatchFinder::MatchResult result, const NamedD
                              const ClangNode::NodeType type, const SourceLocation loc){
     //Starts by generating fields.
     string filename = generateFileName(result, loc, true);
-    string qualifiedName = generateLabel(dec, type);
+    string qualifiedName = generateLabel(result, dec);
     string ID;
 
     //Checks how we generate.
     Decl::Kind curKind = dec->getKind();
     bool success = false;
     switch(curKind){
+        case Decl::Kind::CXXMethod:
+        case Decl::Kind::Field:
+        case Decl::Kind::ParmVar:
         case Decl::Kind::Function:
         case Decl::Kind::Var:
             ID = generateMangledName(result, dec, success);
@@ -234,14 +237,14 @@ string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
         }
     }
 
-    //Removes all invalid symbols.
-    label = removeInvalidSymbols(label);
     return label;
 }
 
 string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const NamedDecl* curDecl){
     string name = curDecl->getNameAsString();
     bool getParent = true;
+    bool recurse = false;
+    const NamedDecl* originalDecl = curDecl;
 
     //Get the parent.
     auto parent = result.Context->getParents(*curDecl);
@@ -255,13 +258,33 @@ string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const Nam
         //Get the current decl as named.
         curDecl = parent[0].get<clang::NamedDecl>();
         if (curDecl) {
-            name = curDecl->getNameAsString() + "::" + name;
+            name = generateLabel(result, curDecl) + "::" + name;
+            recurse = true;
+            getParent = false;
+            continue;
         }
 
         parent = result.Context->getParents(parent[0]);
     }
 
-    return removeInvalidSymbols(name);
+    //Sees if no true qualified name was used.
+    Decl::Kind kind = originalDecl->getKind();
+    if (!recurse) {
+        if (kind == Decl::Function || kind == Decl::CXXMethod){
+            name = originalDecl->getQualifiedNameAsString();
+        } else {
+            //We need to get the parent function.
+            const DeclContext *parentContext = originalDecl->getParentFunctionOrMethod();
+
+            //If we have nullptr, get the parent function.
+            if (parentContext != nullptr) {
+                string parentQualName = generateLabel(result, static_cast<const FunctionDecl *>(parentContext));
+                name = parentQualName + "::" + originalDecl->getNameAsString();
+            }
+        }
+    }
+
+    return name;
 }
 
 string ASTWalker::generateClassName(string qualifiedName){
@@ -302,7 +325,32 @@ string ASTWalker::generateMangledName(const MatchFinder::MatchResult result, con
     raw_string_ostream stream(mangledName);
 
     //Check how we mangle.
-    mangleContext->mangleName(dec, stream);
+    auto funcDec = dec->getAsFunction();
+    switch (dec->getKind()){
+        case Decl::Kind::Field:
+        case Decl::Kind::ParmVar:
+            if (funcDec == nullptr) {
+                success = false;
+                delete mangleContext;
+                return dec->getQualifiedNameAsString();
+            }
+            mangleContext->mangleName(funcDec, stream);
+            break;
+
+        case Decl::Kind::Var:
+        case Decl::Kind::Function:
+            mangleContext->mangleName(dec,stream);
+            break;
+
+        case Decl::Kind::CXXMethod:
+            mangleContext->mangleCXXName(dec, stream);
+            break;
+
+        default:
+            success = false;
+            delete mangleContext;
+            return dec->getQualifiedNameAsString();
+    }
     stream.flush();
 
     success = true;
