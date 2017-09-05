@@ -55,7 +55,7 @@ int main(int argc, const char **argv) {
         for (int i = 0; i < genArgC; i++)
             delete[] genArgV[i];
         delete[] genArgV;
-        delete clangPrint; //SOMEHOW CAUSES A SEGFAULT?!
+        delete clangPrint;
         return 1;
     }
 

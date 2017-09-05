@@ -113,7 +113,7 @@ void MinimalPrinter::printFileSearch() {
 
 void MinimalPrinter::killProgressBar(){
     //Kills the progress bar.
-    if (!progBarKilled) {
+    if (!progBarKilled && bar) {
         progressbar_finish(bar);
         progBarKilled = true;
     }
