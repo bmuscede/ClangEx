@@ -1,0 +1,707 @@
+#include <iostream>
+#include <unistd.h>
+#include <pwd.h>
+#include <vector>
+#include <sstream>
+#include <map>
+#include <boost/algorithm/string/regex.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
+#include <boost/make_shared.hpp>
+#include "ClangDriver.h"
+
+using namespace std;
+using namespace boost::filesystem;
+namespace po = boost::program_options;
+
+bool processCommand(string line);
+
+/** Commands */
+const static string HELP_ARG = "help";
+const static string ABOUT_ARG = "about";
+const static string EXIT_ARG = "quit";
+const static string GEN_ARG = "generate";
+const static string OUT_ARG = "output";
+const static string ADD_ARG = "add";
+const static string REMOVE_ARG = "remove";
+const static string LIST_ARG = "list";
+const static string ENABLE_ARG = "enable";
+const static string DISABLE_ARG = "disable";
+const static string SCRIPT_ARG = "script";
+
+/** Const Strings */
+const string HELP_STRING = "Commands that can be used:\n"
+        "help           : Prints help information.\n"
+        "about          : Prints about information.\n"
+        "quit(!)        : Quits the program.\n"
+        "add            : Adds files to be processed.\n"
+        "remove         : Removes files from queue.\n"
+        "list           : Lists the current tool state.\n"
+        "enable         : Enables a collection of language features.\n"
+        "disable        : Disables a collection of language features.\n"
+        "generate       : Runs ClangEx on loaded files.\n"
+        "output         : Outputs generated TA graphs to disk.\n"
+        "script         : Runs a script that handles program commands.\n\n"
+        "For more help type \"help [argument name]\" for more details.";
+const string ABOUT_STRING = "ClangEx - The Fast C/C++ Extractor\n"
+        "University of Waterloo, Copyright 2017\n"
+        "Licensed under GNU Public License v3\n\n"
+        "This program is distributed in the hope that it will be useful,\n"
+        "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+        "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+        "GNU General Public License for more details.\n\n"
+        "----------------------------------------------------\n\n"
+        "ClangEx is a Clang-based fact extractor designed for extracting program\n"
+        "details from C/C++ source code. ClangEx is able to deal with\n"
+        "basic C/C++ language features like functions, variables, classes,\n"
+        "and other items. You can also run scripts to automate the extraction\n"
+        "from source code.\n";
+
+/** Command Handlers */
+struct ClangExHandler {
+    ClangExHandler(const std::string& name = {}, const po::options_description& desc = {})
+            : name(name), desc(boost::make_shared<po::options_description>(desc)) {}
+
+    ClangExHandler& operator=(const ClangExHandler& other) = default;
+
+    boost::shared_ptr<po::options_description> desc;
+
+private:
+    std::string name;
+};
+
+static map<string, ClangExHandler> helpInfo;
+static map<string, string> helpString;
+
+/** Program Files */
+bool changed = false;
+ClangDriver driver;
+
+bool promptForAction(string promptText){
+    string result;
+
+    bool loop = true;
+    while (loop) {
+        cout << promptText;
+        getline(cin, result);
+
+        //Checks the value.
+        if (result.compare("Y") == 0 || result.compare("y") == 0){
+            loop = false;
+        } else if (result.compare("N") == 0 || result.compare("n") == 0){
+            return false;
+        } else {
+            cout << "Invalid entry. Please type \'Y\' or \'N\'!" << endl;
+        }
+    }
+
+    return true;
+}
+
+vector<string> tokenizeBySpace(string line){
+    vector<string> result;
+    istringstream iss(line);
+    for(std::string s; iss >> s;)
+        result.push_back(s);
+
+    return result;
+}
+
+char** createArgv(vector<string> tokens){
+    //First, create the array.
+    char** tokenC = new char*[(int) tokens.size()];
+    for (int i = 0; i < tokens.size(); i++){
+        tokenC[i] = new char[(int) tokens.at(i).size() + 1];
+        strcpy(tokenC[i], tokens.at(i).c_str());
+    }
+
+    return tokenC;
+}
+
+void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, string>* helpString){
+    stringstream ss;
+
+    //First, generate the help information for about.
+    (*helpString)[ABOUT_ARG] = string("About Help\nUsage: " + ABOUT_ARG + "\n" "Prints information about the program including\n"
+            "license information and program details.\n");
+
+    //Next, generate the help information for exit.
+    (*helpString)[EXIT_ARG] = string("Quit Help\nUsage: " + EXIT_ARG + "(!)\n" "Quits the program and returns back"
+            " to the terminal.\nTyping " + EXIT_ARG + "will only quit if there are no items left to be processed.\n"
+                                             "Typing " + EXIT_ARG + "! will quit the program automatically without any warning.\n");
+
+    //Generate the help for add.
+    (*helpMap)[ADD_ARG] = ClangExHandler(ADD_ARG, po::options_description("Options"));
+    helpMap->at(ADD_ARG).desc->add_options()
+            ("help,h", "Print help message for add.")
+            ("source,s", po::value<std::vector<std::string>>(), "A file or directory to add to the current graph.");
+    ss.str(string());
+    ss << *helpMap->at(ADD_ARG).desc;
+    (*helpString)[ADD_ARG] = string("Add Help\nUsage: " + ADD_ARG + " source\nAdds files or directories to process."
+            "By adding directories, Rex will recursively\nsearch for source files starting from the root. For"
+            " files\nyou can specify any file you want and Rex will add it to the project.\n\n" + ss.str());
+
+    //Generate the help for remove.
+    (*helpMap)[REMOVE_ARG] = ClangExHandler(REMOVE_ARG, po::options_description("Options"));
+    helpMap->at(REMOVE_ARG).desc->add_options()
+            ("help,h", "Print help message for add.")
+            ("regex,r", po::value<string>(), "Regular expression to process.")
+            ("source,s", po::value<std::vector<std::string>>(), "A file or directory to remove from the current graph.");
+    ss.str(string());
+    ss << *helpMap->at(REMOVE_ARG).desc;
+    (*helpString)[REMOVE_ARG] = string("Remove Help\nUsage: " + REMOVE_ARG + " source\nRemoves files or directories "
+            "from the processing queue. By removing directories, Rex will recursively\nsearch for files in the queue"
+            " that can be removed. Individual files can also be removed\ntoo. Only files that are in the queue to"
+            " begin with can be removed.\n\n" + ss.str());
+
+    //Generates the help for script.
+    (*helpMap)[SCRIPT_ARG] = ClangExHandler(SCRIPT_ARG, po::options_description("Options"));
+    helpMap->at(SCRIPT_ARG).desc->add_options()
+            ("help,h", "Print help message for list.")
+            ("script,s", po::value<std::string>(), "The script file to run.");
+    ss.str(string());
+    ss << *helpMap->at(SCRIPT_ARG).desc;
+    (*helpString)[SCRIPT_ARG] = string("Script Help\nUsage: " + SCRIPT_ARG + " script\nRuns a script that can "
+            "handle any of the commands in this program automatically.\nThe script will terminate when it reaches"
+            " the end of the script or hits quit.\n\n" + ss.str());
+
+    //Generates the help for list.
+    (*helpMap)[LIST_ARG] = ClangExHandler(LIST_ARG, po::options_description("Options"));
+    helpMap->at(LIST_ARG).desc->add_options()
+            ("help,h", "Print help message for list.")
+            ("num-graphs,g", "Prints the number of graphs already generated.")
+            ("files,f", "Lists all the files for the current input.")
+            ("toggle,t", "Lists the language features enabled/disabled.");
+    ss.str(string());
+    ss << *helpMap->at(LIST_ARG).desc;
+    (*helpString)[LIST_ARG] = string("List Help\nUsage: " + LIST_ARG + " [options]\nLists information about the "
+            "current state of Rex. This includes the number\nof graphs currently generated and all the files\nbeing"
+            " processed for the next graph.\nOnly files that are in the queue are listed.\n\n" + ss.str());
+
+    //Next, generate the help information for enable.
+    (*helpString)[ENABLE_ARG] = string("Enable Help\nUsage: " + ENABLE_ARG + " [LANGUAGE_FEATURES...]\n"
+            "Enables language features that will be outputted when ClangEx is run.\nThese features will be enabled until"
+            "disabled or the program is exited.\nCurrent language features available:\n" + driver.getLanguageString());
+
+    //Next, generate the help information for disable.
+    (*helpString)[DISABLE_ARG] = string("Disable Help\nUsage: " + DISABLE_ARG + " [LANGUAGE_FEATURES...]\n"
+            "Disables language features that will not be outputted when ClangEx is run.\nThese features will be disabled until"
+            "enabled.\nCurrent language features available:\n" + driver.getLanguageString());
+
+    //Generate the help for generate.
+    (*helpMap)[GEN_ARG] = ClangExHandler(GEN_ARG, po::options_description("Options"));
+    helpMap->at(GEN_ARG).desc->add_options()
+            ("help,h", "Print help message for generate.")
+            ("blob,b", "Runs ClangEx in blob mode.")
+            ("verbose,v", "Enables verbose output.")
+            ("initial,i", po::value<string>(), "An initial TA file to load in to merge.");
+    ss.str(string());
+    ss << *helpMap->at(GEN_ARG).desc;
+    (*helpString)[GEN_ARG] = string("Generate Help\nUsage: " + GEN_ARG + " [options]\nGenerates a graph based on the supplied"
+            " C/C++ source files.\nYou must have at least 1 source file in the queue for the graph to be generated.\n"
+            "Additionally, in the root directory, there must a \"compile_commands.json\" file.\n\n" + ss.str());
+
+    //Generate the help for output.
+    (*helpMap)[OUT_ARG] = ClangExHandler(OUT_ARG, po::options_description("Options"));
+    helpMap->at(OUT_ARG).desc->add_options()
+            ("help,h", "Print help message for output.")
+            ("select,s", po::value<string>(), "Only outputs select graphs based on their number.")
+            ("outputFile", po::value<std::vector<std::string>>(), "The base file name to save.");
+    ss.str(string());
+    ss << *helpMap->at(OUT_ARG).desc;
+    (*helpString)[OUT_ARG] = string("Output Help\nUsage: " + OUT_ARG + " [options] outputFile\nOutputs the generated"
+            " graphs to a tuple-attribute (TA) file based on the\nClangEx schema. These models can then be used"
+            " by other programs.\n\n" + ss.str());
+}
+
+void printHeader(){
+    cout << " _____ _                   _____\n/  __ \\ |                 |  ___|\n| /  \\/ | __ _ _ __   __ _| |____  "
+            "__\n| |   | |/ _` | '_ \\ / _` |  __\\ \\/ /\n| \\__/\\ | (_| | | | | (_| | |___>  <\n \\____/_|\\__,_|_| "
+            "|_|\\__, \\____/_/\\_\\\n                      __/ |\n                     |___/" << endl;
+    cout << "       The Fast C/C++ Extractor" << endl << endl;
+    cout << "Type \'help\' for more information." << endl;
+}
+
+void processHelp(string line, map<string, string> messages){
+    auto tokens = tokenizeBySpace(line);
+
+    //Check if the line is empty.
+    if (tokens.size() == 1){
+        cout << HELP_STRING << endl;
+    } else if (tokens.size() == 2){
+        //Check if the key exists.
+        if (messages.find(tokens.at(1)) == messages.end()){
+            cerr << "The token \"" + tokens.at(1) + "\" is not a valid command!" << endl << endl
+                 << HELP_STRING << endl;
+        } else {
+            cout << messages.at(tokens.at(1));
+        }
+    } else {
+        cerr << "Error: The help command must be either typed as \"help\" or as \"help [argument name]\"" << endl;
+    }
+}
+
+void processAbout(){
+    cout << ABOUT_STRING;
+}
+
+bool processQuit(string line){
+    //Checks for the ! at the end.
+    if (line.at(line.size() - 1) == '!' || changed == false) return false;
+
+    //Ask the user if they want to act.
+    bool result = promptForAction("There are still items to be processed. Are you sure you want to quit (Y/N): ");
+    return !result;
+}
+
+void processAdd(string line){
+    //Tokenize by space.
+    vector<string> tokens = tokenizeBySpace(line);
+
+    //Next, we check for errors.
+    if (tokens.size() == 1) {
+        cerr << "Error: You must include at least one file or directory to process." << endl;
+        return;
+    }
+
+    //Next, we loop through to add these files.
+    for (int i = 1; i < tokens.size(); i++){
+        path curPath = tokens.at((unsigned int) i);
+
+        //Check if the element exists.
+        if (!exists(curPath)){
+            bool result = promptForAction("Warning: File does not exist!\nDo you still want to add it (Y/N): ");
+            if (!result) continue;
+        }
+
+        int numAdded = driver.addByPath(curPath);
+
+        //Checks whether the system is a directory.
+        if (is_directory(curPath)){
+            cout << numAdded << " source files were added from the directory " << curPath.filename() << "!" << endl;
+        } else {
+            cout << "Added C++ file " << curPath.filename() << "!" << endl;
+        }
+    }
+}
+
+//TODO: Remove a directory causes a segfault.
+void processRemove(string line, po::options_description desc){
+    //Tokenize by space.
+    vector<string> tokens = tokenizeBySpace(line);
+
+    //Generates the arguments.
+    char** argv = createArgv(tokens);
+    int argc = (int) tokens.size();
+
+    //Processes the command line args.
+    po::positional_options_description positionalOptions;
+    positionalOptions.add("source", -1);
+
+    po::variables_map vm;
+    bool regex = false;
+    try {
+        po::store(po::parse_command_line(argc, (const char *const *) argv, desc), vm);
+
+        if (vm.count("regex")){
+            regex = true;
+        }
+
+        //Check for processing errors.
+        if (vm.count("source") && vm.count("regex")){
+            throw po::error("The --source and --regex options cannot be used together!");
+        }
+        if (!vm.count("source") && !regex) {
+            throw po::error("You must include at least one file or directory to remove from.");
+        }
+    } catch(po::error& e) {
+        cerr << "Error: " << e.what() << endl;
+        cerr << desc;
+        return;
+    }
+
+
+    //Checks what operation to perform.
+    if (!regex){
+        vector<string> removeFiles = vm["source"].as<vector<string>>();
+
+        //Next, we loop through to remove files.
+        for (int i = 1; i < removeFiles.size(); i++){
+            path curPath = removeFiles.at((unsigned int) i);
+
+            int numRemoved = driver.removeByPath(curPath);
+            if (!is_directory(curPath) && numRemoved == 0){
+                cerr << "The file " << curPath.filename() << " is not in the list." << endl;
+            } else if (is_directory(curPath)){
+                cout << numRemoved << " files have been removed for directory " << curPath.filename() << "!" << endl;
+            } else {
+                cout << "The file " << curPath.filename() << " has been removed!" << endl;
+            }
+        }
+    } else {
+        string regexString = vm["regex"].as<std::string>();
+
+        //Simply remove by regex.
+        int numRemoved = driver.removeByRegex(regexString);
+        if (!numRemoved){
+            cerr << "The regular expression " << regexString << " did not match any files." << endl;
+        } else {
+            cout << "The regular expression " << regexString << " removed " << numRemoved << " file(s)." << endl;
+        }
+    }
+}
+
+void processList(string line, po::options_description desc){
+    bool listAll = true;
+    bool listGraphs = false;
+    bool listFiles = false;
+    bool listToggle = false;
+
+    //First we tokenize.
+    vector<string> tokens = tokenizeBySpace(line);
+
+    //Next, we split into arguments.
+    char** argv = createArgv(tokens);
+    int argc = (int) tokens.size();
+
+    po::variables_map vm;
+    try {
+        po::store(po::parse_command_line(argc, (const char *const *) argv, desc), vm);
+
+        //Checks if help was enabled.
+        if (vm.count("help")) {
+            cout << "Usage: list [options]" << endl << desc;
+            return;
+        }
+
+        //Sets up what's getting listed.
+        if (vm.count("num-graphs")){
+            listAll = false;
+            listGraphs = true;
+        }
+        if (vm.count("files")){
+            listAll = false;
+            listFiles = true;
+        }
+        if (vm.count("toggle")){
+            listAll = false;
+            listToggle = true;
+        }
+    } catch(po::error& e) {
+        cerr << "Error: " << e.what() << endl;
+        cerr << desc;
+        return;
+    }
+
+    string listItem = "";
+    if (listAll){
+        listItem = driver.printStatus(true, true, true);
+    } else {
+        listItem = driver.printStatus(listFiles, listGraphs, listToggle);
+    }
+    cout << listItem;
+}
+
+void processEnable(string line){
+    //First we tokenize.
+    vector<string> tokens = tokenizeBySpace(line);
+
+    //Check the size.
+    if (tokens.size() == 1){
+        cerr << "Error: You must specify at least one language feature to enable.\nAvailable language features:\n"
+             << driver.getLanguageString();
+        return;
+    }
+
+    //Handles each.
+    for (int i = 1; i < tokens.size(); i++){
+        bool succ = driver.enableFeature(tokens.at(i));
+
+        if (!succ){
+            cerr << "Error: The token " << tokens.at(i) << " is not a valid language feature. Ignored..." << endl;
+        }
+    }
+}
+
+void processDisable(string line){
+    //First we tokenize.
+    vector<string> tokens = tokenizeBySpace(line);
+
+    //Check the size.
+    if (tokens.size() == 1){
+        cerr << "Error: You must specify at least one language feature to disable.\nAvailable language features:\n"
+             << driver.getLanguageString();
+        return;
+    }
+
+    //Handles each.
+    for (int i = 1; i < tokens.size(); i++){
+        bool succ = driver.disableFeature(tokens.at(i));
+
+        if (!succ){
+            cerr << "Error: The token " << tokens.at(i) << " is not a valid language feature. Ignored..." << endl;
+        }
+    }
+}
+
+void processGenerate(string line, po::options_description desc){
+    //Generates the arguments.
+    vector<string> tokens = tokenizeBySpace(line);
+    char** argv = createArgv(tokens);
+    int argc = (int) tokens.size();
+
+    bool blobMode = false;
+    string mergeFile = "";
+    bool verboseMode = false;
+    po::variables_map vm;
+    try {
+        po::store(po::parse_command_line(argc, (const char *const *) argv, desc), vm);
+
+        //Checks if help was enabled.
+        if (vm.count("help")) {
+            cout << "Usage: generate [options]" << endl << desc;
+            return;
+        }
+
+        //Sets up what's getting listed.
+        if (vm.count("blob")){
+            blobMode = true;
+        }
+        if (vm.count("initial")){
+            mergeFile = vm["initial"].as<string>();
+        }
+        if (vm.count("verbose")){
+            verboseMode = true;
+        }
+    } catch(po::error& e) {
+        cerr << "Error: " << e.what() << endl;
+        cerr << desc;
+        return;
+    }
+
+    //Checks whether we can generate.
+    int numFiles = driver.getNumFiles();
+    if (numFiles == 0) {
+        cerr << "No files are in the queue to be processed. Add some before you continue." << endl;
+        return;
+    }
+
+    //Next, tells ClangEx to generate them.
+    cout << "Processing " << numFiles << " file(s)..." << endl << "This may take some time!" << endl << endl;
+    bool success = driver.processAllFiles(blobMode, mergeFile, verboseMode);
+
+    //Checks the success of the operation.
+    if (success) cout << "ClangEx contribution graph was created successfully!" << endl
+                      << "Graph number is #" << driver.getNumGraphs() - 1 << "." << endl;
+}
+
+void processOutput(string line, po::options_description desc){
+    //Generates the arguments.
+    vector<string> tokens = tokenizeBySpace(line);
+    char** argv = createArgv(tokens);
+    int argc = (int) tokens.size();
+
+    string outputValues = string();;
+    vector<int> outputIndex;
+
+    //Processes the command line args.
+    po::positional_options_description positionalOptions;
+    positionalOptions.add("outputFile", 1);
+
+    po::variables_map vm;
+    try {
+        po::store(po::command_line_parser(argc, (const char* const*) argv).options(desc)
+                          .positional(positionalOptions).run(), vm);
+        po::notify(vm);
+
+        //Checks if help was enabled.
+        if (vm.count("help")){
+            cout << "Usage: output [options] OutputName" << endl << desc;
+            return;
+        }
+
+        //Check the number of graphs.
+        if (driver.getNumGraphs() == 0){
+            cerr << "Error: There are no graphs to output!" << endl;
+            return;
+        }
+
+        //Checks if the user specified an output directory.
+        if (!vm.count("outputFile")){
+            throw po::error("You must specify an output base name!");
+        }
+
+        //Checks if selective output was enabled.
+        if (vm.count("select")){
+            outputValues = vm["select"].as<string>();
+
+            //Now, parses the values.
+            stringstream ss(outputValues);
+            int i;
+            while (ss >> i){
+                outputIndex.push_back(i);
+            }
+
+            //Check for validity.
+            if (outputIndex.size() == 0){
+                throw po::error("Format the --select argument as 1,2,3,5.");
+            }
+        }
+
+        po::notify(vm);
+    } catch(po::error& e) {
+        cerr << "Error: " << e.what() << endl;
+        cerr << desc;
+        return;
+    }
+
+    vector<string> outputVec = vm["outputFile"].as<vector<string>>();
+    string output = outputVec.at(0);
+    bool success = false;
+
+    //Now, outputs the graphs.
+    if (outputValues.compare(string()) == 0){
+        //We output all the graphs.
+        if (driver.getNumGraphs() == 1){
+            success = driver.outputIndividualModel(0, output);
+        } else {
+            success = driver.outputAllModels(output);
+        }
+    } else {
+        //We selectively output the graphs.
+        for (int indexNum : outputIndex){
+            if (indexNum < 0 || indexNum >= driver.getNumGraphs()){
+                cerr << "Error: There are only " << driver.getNumGraphs()
+                     << " graphs! " << indexNum << " is out of bounds." << endl;
+                return;
+            }
+
+            success = driver.outputIndividualModel(indexNum, output);
+        }
+    }
+
+    if (!success) {
+        cerr << "There was an error outputting all graphs to TA models." << endl;
+    } else {
+        cout << "Contribution networks created successfully." << endl;
+    }
+}
+
+void processScript(string line, po::options_description desc){
+    //First we tokenize.
+    vector<string> tokens = tokenizeBySpace(line);
+
+    //Generates the arguments.
+    char** argv = createArgv(tokens);
+    int argc = (int) tokens.size();
+
+    //Processes the command line args.
+    po::positional_options_description positionalOptions;
+    positionalOptions.add("script", 1);
+
+    po::variables_map vm;
+    string filename = "";
+    try {
+        po::store(po::command_line_parser(argc, (const char* const*) argv).options(desc)
+                          .positional(positionalOptions).run(), vm);
+        po::notify(vm);
+
+        if (vm.count("help")) {
+            cout << "Usage: script [script]" << endl << desc;
+            return;
+        }
+
+        if (!vm.count("script")) throw po::error("No script file was supplied!");
+        filename = vm["script"].as<string>();
+    } catch(po::error& e) {
+        cerr << "Error: " << e.what() << endl;
+        cerr << desc;
+        return;
+    }
+
+    //Process the filename.
+    std::ifstream scriptFile;
+    scriptFile.open(filename);
+
+    //Loop until we hit eof.
+    string curLine;
+    bool continueLoop = true;
+    while(!scriptFile.eof() && continueLoop) {
+        getline(scriptFile, curLine);
+        continueLoop = !processCommand(curLine);
+    }
+
+    scriptFile.close();
+    if (!continueLoop){
+        _exit(1);
+    }
+}
+
+bool processCommand(string line){
+    if (line.compare("") == 0) return true;
+
+    //Checks the commands
+    if (!line.compare(0, HELP_ARG.size(), HELP_ARG)) {
+        processHelp(line, helpString);
+    } else if (!line.compare(0, ABOUT_ARG.size(), ABOUT_ARG)){
+        processAbout();
+    } else if (!line.compare(0, EXIT_ARG.size(), EXIT_ARG)) {
+        return processQuit(line);
+    } else if (!line.compare(0, ADD_ARG.size(), ADD_ARG)) {
+        processAdd(line);
+    } else if (!line.compare(0, REMOVE_ARG.size(), REMOVE_ARG)) {
+        processRemove(line, *(helpInfo.at(REMOVE_ARG).desc.get()));
+    } else if (!line.compare(0, LIST_ARG.size(), LIST_ARG)) {
+        processList(line, *(helpInfo.at(LIST_ARG).desc.get()));
+    } else if (!line.compare(0, ENABLE_ARG.size(), ENABLE_ARG)){
+        processEnable(line);
+    } else if (!line.compare(0, DISABLE_ARG.size(), DISABLE_ARG)){
+        processDisable(line);
+    } else if (!line.compare(0, GEN_ARG.size(), GEN_ARG)) {
+        processGenerate(line, *(helpInfo.at(GEN_ARG).desc.get()));
+    } else if (!line.compare(0, OUT_ARG.size(), OUT_ARG)) {
+        processOutput(line, *(helpInfo.at(OUT_ARG).desc.get()));
+    } else if (!line.compare(0, SCRIPT_ARG.size(), SCRIPT_ARG)) {
+        processScript(line, *(helpInfo.at(SCRIPT_ARG).desc.get()));
+    } else {
+        cerr << "No such command: " << line << "\nType \'help\' for more information." << endl;
+    }
+
+    return true;
+}
+
+int main(int argc, const char **argv){
+    //Starts by printing the header.
+    printHeader();
+
+    //Checks if we have arguments.
+    if (argc > 1){
+        cerr << "Run " << argv[0] << " with no arguments!" << endl;
+        return 1;
+    }
+
+    //Gets the username.
+    string username;
+    try {
+        struct passwd *pass;
+        pass = getpwuid(getuid());
+        username = pass->pw_name;
+    } catch(exception& e){
+        //If the lookup fails.
+        username = "user";
+    }
+
+    //Initializes the help system.
+    generateCommandSystem(&helpInfo, &helpString);
+
+    //Initiates main loop.
+    string line;
+    bool contLoop = true;
+    while(contLoop){
+        cout << username << " > ";
+        getline(cin, line);
+
+        //Processes the command.
+        contLoop = processCommand(line);
+    }
+}

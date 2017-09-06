@@ -4,7 +4,6 @@
 
 #include <iostream>
 #include "PartialWalker.h"
-#include "../File/ClangArgParse.h"
 
 using namespace std;
 using namespace clang;
@@ -12,7 +11,7 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-PartialWalker::PartialWalker(bool md5, Printer* print, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
+PartialWalker::PartialWalker(bool md5, Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
         ASTWalker(exclusions, md5, print, graph){ }
 
 PartialWalker::~PartialWalker() { }

@@ -4,11 +4,10 @@
 
 #include <iostream>
 #include "BlobWalker.h"
-#include "../File/ClangArgParse.h"
 
 using namespace std;
 
-BlobWalker::BlobWalker(bool md5, Printer* print, ClangArgParse::ClangExclude exclusions, TAGraph* graph) :
+BlobWalker::BlobWalker(bool md5, Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
         ASTWalker(exclusions, md5, print, graph){ }
 
 BlobWalker::~BlobWalker(){ }

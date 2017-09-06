@@ -5,11 +5,12 @@
 #ifndef CLANGEX_FULLASTWALKER_H
 #define CLANGEX_FULLASTWALKER_H
 
+#include "../Driver/ClangDriver.h"
 #include "ASTWalker.h"
 
 class PartialWalker : public ASTWalker {
 public:
-    PartialWalker(bool md5, Printer* print, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
+    PartialWalker(bool md5, Printer* print, ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
                TAGraph* graph = new TAGraph());
     virtual ~PartialWalker();
 

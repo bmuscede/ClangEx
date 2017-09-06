@@ -16,7 +16,6 @@ MinimalPrinter::MinimalPrinter() {
 
     numSteps = 0;
     currentStep = 0;
-    searchingForFiles = false;
     progBarKilled = false;
 }
 
@@ -42,22 +41,6 @@ void MinimalPrinter::printFileName(std::string fileName){
 }
 
 void MinimalPrinter::printFileNameDone() {}
-
-void MinimalPrinter::printFileSearchStart(std::string startDir) {
-    printFileSearch();
-}
-
-void MinimalPrinter::printFileSearch(std::string fileName){
-    printFileSearch();
-}
-
-void MinimalPrinter::printFileSearchDone() {
-    cout << "done!" << endl << endl;
-}
-
-void MinimalPrinter::printGenTA(std::string fileName){
-    incrementProgressBar();
-}
 
 void MinimalPrinter::printGenTADone(std::string fileName, bool success){
     killProgressBar();
@@ -93,21 +76,11 @@ bool MinimalPrinter::printProcessFailure() {
 
 void MinimalPrinter::printResolveRefDone(int resolved, int unresolved) {}
 
-void MinimalPrinter::printResolvePathDone() {}
-
 void MinimalPrinter::incrementProgressBar() {
     if (currentStep <= numSteps && !progBarKilled){
         //Increment it.
         progressbar_inc(bar);
         currentStep++;
-    }
-}
-
-void MinimalPrinter::printFileSearch() {
-    //Check if we're searching for files.
-    if (!searchingForFiles) {
-        cout << "Searching for files...";
-        searchingForFiles = true;
     }
 }
 

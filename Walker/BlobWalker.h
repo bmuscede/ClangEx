@@ -5,11 +5,12 @@
 #ifndef CLANGEX_MINIMALWALKER_H
 #define CLANGEX_MINIMALWALKER_H
 
+#include "../Driver/ClangDriver.h"
 #include "ASTWalker.h"
 
 class BlobWalker : public ASTWalker {
 public:
-    BlobWalker(bool md5, Printer* print, ClangArgParse::ClangExclude exclusions = ClangArgParse::ClangExclude(),
+    BlobWalker(bool md5, Printer* print, ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
                   TAGraph* graph = new TAGraph());
     virtual ~BlobWalker();
 

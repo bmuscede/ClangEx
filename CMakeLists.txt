@@ -6,7 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 cmake_minimum_required(VERSION 2.8.4)
 project(ClangEx)
 
-find_package(Boost 1.58 COMPONENTS system filesystem REQUIRED)
+find_package(Boost 1.58 COMPONENTS system filesystem program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 set(LLVM_PATH /home/bmuscede/Applications/LLVM-Build)
@@ -20,11 +20,33 @@ add_definitions(
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -std=c++11")
 
-set(SOURCE_FILES main.cpp Walker/ASTWalker.cpp Walker/ASTWalker.h Graph/TAGraph.cpp Graph/TAGraph.h Graph/ClangNode.cpp
-        Graph/ClangNode.h Graph/ClangEdge.cpp Graph/ClangEdge.h File/FileParse.cpp File/FileParse.h File/ClangArgParse.cpp
-        File/ClangArgParse.h Walker/PartialWalker.cpp Walker/PartialWalker.h Walker/BlobWalker.cpp Walker/BlobWalker.h
-        TupleAttribute/TAProcessor.cpp TupleAttribute/TAProcessor.h Printer/VerbosePrinter.cpp Printer/VerbosePrinter.h
-        Printer/MinimalPrinter.cpp Printer/MinimalPrinter.h Printer/Printer.cpp Printer/Printer.h Printer/ProgressBar.c
+set(SOURCE_FILES
+        Driver/main.cpp
+        Driver/ClangDriver.cpp
+        Driver/ClangDriver.h
+        Walker/ASTWalker.cpp
+        Walker/ASTWalker.h
+        Graph/TAGraph.cpp
+        Graph/TAGraph.h
+        Graph/ClangNode.cpp
+        Graph/ClangNode.h
+        Graph/ClangEdge.cpp
+        Graph/ClangEdge.h
+        File/FileParse.cpp
+        File/FileParse.h
+        Walker/PartialWalker.cpp
+        Walker/PartialWalker.h
+        Walker/BlobWalker.cpp
+        Walker/BlobWalker.h
+        TupleAttribute/TAProcessor.cpp
+        TupleAttribute/TAProcessor.h
+        Printer/VerbosePrinter.cpp
+        Printer/VerbosePrinter.h
+        Printer/MinimalPrinter.cpp
+        Printer/MinimalPrinter.h
+        Printer/Printer.cpp
+        Printer/Printer.h
+        Printer/ProgressBar.c
         Printer/ProgressBar.h)
 add_executable(ClangEx ${SOURCE_FILES})
 

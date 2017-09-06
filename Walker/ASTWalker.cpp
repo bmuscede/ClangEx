@@ -8,7 +8,6 @@
 #include <openssl/md5.h>
 #include "ASTWalker.h"
 #include "clang/AST/Mangle.h"
-#include "../File/ClangArgParse.h"
 #include "../Graph/ClangNode.h"
 
 using namespace std;
@@ -21,24 +20,8 @@ ASTWalker::~ASTWalker() {
     delete graph;
 }
 
-void ASTWalker::buildGraph(string fileName) {
-    //First, runs the graph builder process.
-    string tupleAttribute = graph->generateTAFormat();
-
-    //Next, writes to disk.
-    ofstream taFile;
-    taFile.open(fileName.c_str());
-
-    //Check if the file is opened.
-    if (!taFile.is_open()){
-        clangPrinter->printGenTADone(fileName, false);
-        return;
-    }
-
-    taFile << tupleAttribute;
-    taFile.close();
-
-    clangPrinter->printGenTADone(fileName, true);
+TAGraph* ASTWalker::getGraph(){
+    return graph;
 }
 
 void ASTWalker::resolveExternalReferences() {
@@ -95,7 +78,7 @@ string ASTWalker::generateMD5(string text){
     return string(mdString);
 }
 
-ASTWalker::ASTWalker(ClangArgParse::ClangExclude ex, bool md5, Printer *print, TAGraph* existing = new TAGraph()) :
+ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, bool md5, Printer *print, TAGraph* existing = new TAGraph()) :
         clangPrinter(print){
     //Sets the current file name to blank.
     curFileName = "";

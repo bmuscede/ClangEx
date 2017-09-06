@@ -14,8 +14,8 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "../Graph/TAGraph.h"
+#include "../Driver/ClangDriver.h"
 #include "../File/FileParse.h"
-#include "../File/ClangArgParse.h"
 #include "../Printer/Printer.h"
 
 using namespace clang::ast_matchers;
@@ -27,7 +27,7 @@ public:
     virtual void run(const MatchFinder::MatchResult &result) = 0;
     virtual void generateASTMatches(MatchFinder *finder) = 0;
 
-    void buildGraph(std::string fileName);
+    TAGraph* getGraph();
 
     void resolveExternalReferences();
     void resolveFiles();
@@ -35,9 +35,9 @@ public:
     static std::string generateMD5(std::string text);
 
 protected:
-    ClangArgParse::ClangExclude exclusions;
+    ClangDriver::ClangExclude exclusions;
 
-    ASTWalker(ClangArgParse::ClangExclude ex, bool md5, Printer* print, TAGraph* existing);
+    ASTWalker(ClangDriver::ClangExclude ex, bool md5, Printer* print, TAGraph* existing);
 
     /** Item Qualifiers */
     std::string generateFileName(const MatchFinder::MatchResult result,

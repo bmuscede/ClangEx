@@ -83,9 +83,4 @@ void Printer::printErrorTAProcessGraph() {
     cout << "Please supply an initialized TA graph object!" << endl;
 }
 
-void Printer::printErrorNoFiles() {
-    cout << "Error: No files passed along to ClangEx!" << endl;
-    cout << "Be sure to check that your directory contains source code files." << endl;
-}
-
 Printer::Printer() { }
