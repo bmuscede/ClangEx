@@ -343,6 +343,8 @@ void processAdd(string line){
         int numAdded = driver.addByPath(curPath);
 
         //Checks whether the system is a directory.
+        changed = true;
+        changed = true;
         if (is_directory(curPath)){
             cout << numAdded << " source files were added from the directory " << curPath.filename() << "!" << endl;
         } else {
@@ -419,6 +421,8 @@ void processRemove(string line, po::options_description desc){
             cout << "The regular expression " << regexString << " removed " << numRemoved << " file(s)." << endl;
         }
     }
+
+    changed = true;
 }
 
 /**
@@ -579,8 +583,11 @@ void processGenerate(string line, po::options_description desc){
     bool success = driver.processAllFiles(blobMode, mergeFile, verboseMode);
 
     //Checks the success of the operation.
-    if (success) cout << "ClangEx contribution graph was created successfully!" << endl
-                      << "Graph number is #" << driver.getNumGraphs() - 1 << "." << endl;
+    if (success) {
+        cout << "ClangEx contribution graph was created successfully!" << endl
+             << "Graph number is #" << driver.getNumGraphs() - 1 << "." << endl;
+        changed = true;
+    }
 }
 
 /**
@@ -677,6 +684,7 @@ void processOutput(string line, po::options_description desc){
         cerr << "There was an error outputting all graphs to TA models." << endl;
     } else {
         cout << "Contribution networks created successfully." << endl;
+        changed = false;
     }
 }
 
