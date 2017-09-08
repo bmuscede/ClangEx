@@ -1,12 +1,9 @@
-set(CMAKE_C_COMPILER "/usr/local/bin/clang")
-set(CMAKE_CXX_COMPILER "/usr/local/bin/clang++")
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 3.9)
 project(ClangEx)
 
-find_package(Boost 1.58 COMPONENTS system filesystem program_options REQUIRED)
+find_package(Boost 1.62 COMPONENTS system filesystem serialization regex program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 set(LLVM_PATH /home/bmuscede/Applications/LLVM-Build)

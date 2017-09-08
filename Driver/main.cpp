@@ -1,9 +1,35 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// main.cpp
+//
+// Created By: Bryan J Muscedere
+// Date: 10/09/16.
+//
+// Driver source code for the ClangEx program. Handles
+// commands and passes it off to the ClangDriver to
+// translate it into a ClangEx action. Also handles
+// errors gracefully.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include <fstream>
 #include <iostream>
-#include <unistd.h>
 #include <pwd.h>
+#include <zconf.h>
 #include <vector>
-#include <sstream>
-#include <map>
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
@@ -14,6 +40,7 @@ using namespace std;
 using namespace boost::filesystem;
 namespace po = boost::program_options;
 
+/** Forward Declaration */
 bool processCommand(string line);
 
 /** Commands */
@@ -69,7 +96,6 @@ struct ClangExHandler {
 private:
     std::string name;
 };
-
 static map<string, ClangExHandler> helpInfo;
 static map<string, string> helpString;
 
@@ -77,6 +103,11 @@ static map<string, string> helpString;
 bool changed = false;
 ClangDriver driver;
 
+/**
+ * Prompts the user for a yes or no response.
+ * @param promptText The text to prompt the user for.
+ * @return Whether they said yes or no.
+ */
 bool promptForAction(string promptText){
     string result;
 
@@ -98,6 +129,11 @@ bool promptForAction(string promptText){
     return true;
 }
 
+/**
+ * Takes a line and splits it into a vector by the ' ' character.
+ * @param line The line to tokenize.
+ * @return The vector with the tokens.
+ */
 vector<string> tokenizeBySpace(string line){
     vector<string> result;
     istringstream iss(line);
@@ -107,6 +143,11 @@ vector<string> tokenizeBySpace(string line){
     return result;
 }
 
+/**
+ * Creates an argv array for use with command processing.
+ * @param tokens The tokens to create.
+ * @return The created char** array.
+ */
 char** createArgv(vector<string> tokens){
     //First, create the array.
     char** tokenC = new char*[(int) tokens.size()];
@@ -118,6 +159,11 @@ char** createArgv(vector<string> tokens){
     return tokenC;
 }
 
+/**
+ * Generates the maps for use with command processing.
+ * @param helpMap The map of command line options.
+ * @param helpString The map with help text.
+ */
 void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, string>* helpString){
     stringstream ss;
 
@@ -145,7 +191,7 @@ void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, str
     (*helpMap)[REMOVE_ARG] = ClangExHandler(REMOVE_ARG, po::options_description("Options"));
     helpMap->at(REMOVE_ARG).desc->add_options()
             ("help,h", "Print help message for add.")
-            ("regex,r", po::value<string>(), "Regular expression to process.")
+            ("regex,r", po::value<std::string>(), "Regular expression to process.")
             ("source,s", po::value<std::vector<std::string>>(), "A file or directory to remove from the current graph.");
     ss.str(string());
     ss << *helpMap->at(REMOVE_ARG).desc;
@@ -194,7 +240,7 @@ void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, str
             ("help,h", "Print help message for generate.")
             ("blob,b", "Runs ClangEx in blob mode.")
             ("verbose,v", "Enables verbose output.")
-            ("initial,i", po::value<string>(), "An initial TA file to load in to merge.");
+            ("initial,i", po::value<std::string>(), "An initial TA file to load in to merge.");
     ss.str(string());
     ss << *helpMap->at(GEN_ARG).desc;
     (*helpString)[GEN_ARG] = string("Generate Help\nUsage: " + GEN_ARG + " [options]\nGenerates a graph based on the supplied"
@@ -205,7 +251,7 @@ void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, str
     (*helpMap)[OUT_ARG] = ClangExHandler(OUT_ARG, po::options_description("Options"));
     helpMap->at(OUT_ARG).desc->add_options()
             ("help,h", "Print help message for output.")
-            ("select,s", po::value<string>(), "Only outputs select graphs based on their number.")
+            ("select,s", po::value<std::string>(), "Only outputs select graphs based on their number.")
             ("outputFile", po::value<std::vector<std::string>>(), "The base file name to save.");
     ss.str(string());
     ss << *helpMap->at(OUT_ARG).desc;
@@ -214,6 +260,9 @@ void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, str
             " by other programs.\n\n" + ss.str());
 }
 
+/**
+ * Prints the header of the program.
+ */
 void printHeader(){
     cout << " _____ _                   _____\n/  __ \\ |                 |  ___|\n| /  \\/ | __ _ _ __   __ _| |____  "
             "__\n| |   | |/ _` | '_ \\ / _` |  __\\ \\/ /\n| \\__/\\ | (_| | | | | (_| | |___>  <\n \\____/_|\\__,_|_| "
@@ -222,6 +271,11 @@ void printHeader(){
     cout << "Type \'help\' for more information." << endl;
 }
 
+/**
+ * Processes the help option.
+ * @param line The command line in its entirety.
+ * @param messages All help messages.
+ */
 void processHelp(string line, map<string, string> messages){
     auto tokens = tokenizeBySpace(line);
 
@@ -241,10 +295,18 @@ void processHelp(string line, map<string, string> messages){
     }
 }
 
+/**
+ * Processes the about option.
+ */
 void processAbout(){
     cout << ABOUT_STRING;
 }
 
+/**
+ * Processes the quit option.
+ * @param line The line typed by the user. (Sees if ! was appended to quit.)
+ * @return Whether the user wants to quit or not.
+ */
 bool processQuit(string line){
     //Checks for the ! at the end.
     if (line.at(line.size() - 1) == '!' || changed == false) return false;
@@ -254,6 +316,10 @@ bool processQuit(string line){
     return !result;
 }
 
+/**
+ * Processes the add option. Adds files and directories.
+ * @param line The line entered by the user.
+ */
 void processAdd(string line){
     //Tokenize by space.
     vector<string> tokens = tokenizeBySpace(line);
@@ -285,7 +351,11 @@ void processAdd(string line){
     }
 }
 
-//TODO: Remove a directory causes a segfault.
+/**
+ * Processes the remove option. Removes files and directories based on source or regex.
+ * @param line The line entered.
+ * @param desc The configured program options for this.
+ */
 void processRemove(string line, po::options_description desc){
     //Tokenize by space.
     vector<string> tokens = tokenizeBySpace(line);
@@ -351,6 +421,11 @@ void processRemove(string line, po::options_description desc){
     }
 }
 
+/**
+ * Processes the list option. Shows the status of the program.
+ * @param line The line entered.
+ * @param desc The options configured.
+ */
 void processList(string line, po::options_description desc){
     bool listAll = true;
     bool listGraphs = false;
@@ -402,6 +477,10 @@ void processList(string line, po::options_description desc){
     cout << listItem;
 }
 
+/**
+ * Processes the enable option. Enables language features.
+ * @param line The line entered.
+ */
 void processEnable(string line){
     //First we tokenize.
     vector<string> tokens = tokenizeBySpace(line);
@@ -423,6 +502,10 @@ void processEnable(string line){
     }
 }
 
+/**
+ * Processes the disable option. Disables language features.
+ * @param line
+ */
 void processDisable(string line){
     //First we tokenize.
     vector<string> tokens = tokenizeBySpace(line);
@@ -444,6 +527,11 @@ void processDisable(string line){
     }
 }
 
+/**
+ * Processes the generate option. Generates a TA file for the user.
+ * @param line The line entered.
+ * @param desc The options configured.
+ */
 void processGenerate(string line, po::options_description desc){
     //Generates the arguments.
     vector<string> tokens = tokenizeBySpace(line);
@@ -468,7 +556,7 @@ void processGenerate(string line, po::options_description desc){
             blobMode = true;
         }
         if (vm.count("initial")){
-            mergeFile = vm["initial"].as<string>();
+            mergeFile = vm["initial"].as<std::string>();
         }
         if (vm.count("verbose")){
             verboseMode = true;
@@ -495,6 +583,11 @@ void processGenerate(string line, po::options_description desc){
                       << "Graph number is #" << driver.getNumGraphs() - 1 << "." << endl;
 }
 
+/**
+ * Processes the output option.
+ * @param line The line entered.
+ * @param desc The options configured.
+ */
 void processOutput(string line, po::options_description desc){
     //Generates the arguments.
     vector<string> tokens = tokenizeBySpace(line);
@@ -533,7 +626,7 @@ void processOutput(string line, po::options_description desc){
 
         //Checks if selective output was enabled.
         if (vm.count("select")){
-            outputValues = vm["select"].as<string>();
+            outputValues = vm["select"].as<std::string>();
 
             //Now, parses the values.
             stringstream ss(outputValues);
@@ -555,7 +648,7 @@ void processOutput(string line, po::options_description desc){
         return;
     }
 
-    vector<string> outputVec = vm["outputFile"].as<vector<string>>();
+    vector<string> outputVec = vm["outputFile"].as<std::vector<std::string>>();
     string output = outputVec.at(0);
     bool success = false;
 
@@ -587,6 +680,11 @@ void processOutput(string line, po::options_description desc){
     }
 }
 
+/**
+ * Processes the script option. Runs a script on the program.
+ * @param line The line entered.
+ * @param desc The program options.
+ */
 void processScript(string line, po::options_description desc){
     //First we tokenize.
     vector<string> tokens = tokenizeBySpace(line);
@@ -612,7 +710,7 @@ void processScript(string line, po::options_description desc){
         }
 
         if (!vm.count("script")) throw po::error("No script file was supplied!");
-        filename = vm["script"].as<string>();
+        filename = vm["script"].as<std::string>();
     } catch(po::error& e) {
         cerr << "Error: " << e.what() << endl;
         cerr << desc;
@@ -637,6 +735,11 @@ void processScript(string line, po::options_description desc){
     }
 }
 
+/**
+ * Processes an individual command.
+ * @param line The line entered.
+ * @return Whether the program is quit or not.
+ */
 bool processCommand(string line){
     if (line.compare("") == 0) return true;
 
@@ -670,6 +773,12 @@ bool processCommand(string line){
     return true;
 }
 
+/**
+ * The main method. Drives the entire program.
+ * @param argc The number of arguments.
+ * @param argv The arguments.
+ * @return Status code.
+ */
 int main(int argc, const char **argv){
     //Starts by printing the header.
     printHeader();

@@ -1,6 +1,28 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ClangDriver.cpp
 //
-// Created by bmuscede on 05/09/17.
+// Created By: Bryan J Muscedere
+// Date: 05/09/17.
 //
+// Driver that allows user commands to be converted into slome sort of
+// ClangEx action. Can add files, manage TA files, output files, and
+// run ClangEx on a desired source file. Ensures commands are handled gracefully
+
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <regex>
 #include "../Printer/MinimalPrinter.h"
@@ -20,6 +42,9 @@
 using namespace std;
 using namespace clang::tooling;
 
+/**
+ * Constructor. Simply configures C/C++ extensions.
+ */
 ClangDriver::ClangDriver() {
     //Sets the C, C++ extensions.
     ext.push_back(C_FILE_EXT);
@@ -27,8 +52,18 @@ ClangDriver::ClangDriver() {
     ext.push_back(CPLUSPLUS_FILE_EXT);
 }
 
+/**
+ * Destructor. Stub.
+ */
 ClangDriver::~ClangDriver() { }
 
+/**
+ * Prints the current status of ClangEx.
+ * @param files Whether files are outputted.
+ * @param ta Whether TA numbers are outputted.
+ * @param toggle Whether language features are outputted.
+ * @return String containing the results.
+ */
 string ClangDriver::printStatus(bool files, bool ta, bool toggle){
     string output = "";
 
@@ -71,18 +106,35 @@ string ClangDriver::printStatus(bool files, bool ta, bool toggle){
     return output;
 }
 
+/**
+ * Returns the language string.
+ * @return Indicates the supported languages.
+ */
 string ClangDriver::getLanguageString(){
     return langString;
 }
 
+/**
+ * Gets the number of graphs.
+ * @return The number of graphs.
+ */
 int ClangDriver::getNumGraphs(){
     return (int) graphs.size();
 }
 
+/**
+ * Gets the number of files.
+ * @return The number of files.
+ */
 int ClangDriver::getNumFiles(){
     return (int) files.size();
 }
 
+/**
+ * Enables a feature based on a string.
+ * @param feature The feature to enable.
+ * @return Whether a feature was enabled.
+ */
 bool ClangDriver::enableFeature(string feature){
     if (feature.compare("cSubSystem") == 0){
         toggle.cSubSystem = false;
@@ -107,6 +159,11 @@ bool ClangDriver::enableFeature(string feature){
     return true;
 }
 
+/**
+ * Disables a feature based on a string.
+ * @param feature The feature to disable.
+ * @return Whether a feature was disabled.
+ */
 bool ClangDriver::disableFeature(string feature){
     if (feature.compare("cSubSystem") == 0){
         toggle.cSubSystem = true;
@@ -131,6 +188,14 @@ bool ClangDriver::disableFeature(string feature){
     return true;
 }
 
+/**
+ * Main interface with ClangEx. Runs ClangEx on a set of
+ * input files that are specified by the user.
+ * @param blobMode Whether blob mode is enabled.
+ * @param mergeFile Whether the user wants to merge files.
+ * @param verboseMode Whether the user wants verbose output.
+ * @return The success of ClangEx.
+ */
 bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool verboseMode){
     bool success = true;
     llvm::cl::OptionCategory ClangExCategory("ClangEx Options");
@@ -442,6 +507,10 @@ int ClangDriver::removeDirectory(path directory){
     return numRemoved;
 }
 
+/**
+ * Gets all the enabled features.
+ * @return The enabled language features.
+ */
 vector<string> ClangDriver::getEnabled(){
     vector<string> enabled;
     if (!toggle.cClass){
@@ -472,6 +541,10 @@ vector<string> ClangDriver::getEnabled(){
     return enabled;
 }
 
+/**
+ * Gets all the disabled language features.
+ * @return The disabled langauge features.
+ */
 vector<string> ClangDriver::getDisabled(){
     vector<string> disabled;
     if (toggle.cClass){
@@ -502,6 +575,12 @@ vector<string> ClangDriver::getDisabled(){
     return disabled;
 }
 
+/**
+ * Outputs a TA file to a file.
+ * @param modelNum The number of the model.
+ * @param fileName The file name to output.
+ * @return Success or failure of the output.
+ */
 bool ClangDriver::outputTAString(int modelNum, string fileName){
     //First, runs the graph builder process.
     string tupleAttribute = graphs.at(modelNum)->generateTAFormat();
