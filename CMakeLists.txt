@@ -1,9 +1,9 @@
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.0)
 project(ClangEx)
 
-find_package(Boost 1.62 COMPONENTS system filesystem serialization regex program_options REQUIRED)
+find_package(Boost 1.58 COMPONENTS system filesystem serialization regex program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 set(LLVM_PATH /home/bmuscede/Applications/LLVM-Build)
@@ -15,7 +15,7 @@ add_definitions(
         -D__STDC_CONSTANT_MACROS
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 set(SOURCE_FILES
         Driver/main.cpp
@@ -114,7 +114,7 @@ target_link_libraries(ClangEx
         LLVMLanaiCodeGen
         LLVMLanaiAsmParser
         LLVMLanaiDesc
-        LLVMLanaiInstPrinter
+        #LLVMLanaiInstPrinter
         LLVMLanaiInfo
         LLVMHexagonDisassembler
         LLVMHexagonCodeGen

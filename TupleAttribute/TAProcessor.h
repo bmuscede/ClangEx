@@ -6,6 +6,7 @@
 #define CLANGEX_TAPROCESSOR_H
 
 #include <string>
+#include <set>
 #include "../Graph/TAGraph.h"
 
 class TAProcessor {
