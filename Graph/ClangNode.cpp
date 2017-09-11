@@ -184,11 +184,11 @@ string ClangNode::printSingleAttribute(string key, vector<string> value){
 }
 
 string ClangNode::printSetAttribute(string key, vector<string> value){
-    string attribute = key + " ( ";
+    string attribute = key + " = ( ";
 
     //Prints the value.
     for (int i = 0; i < value.size(); i++){
-        string curr = value.at(i);
+        string curr = "\"" + value.at(i) + "\"";
 
         //Get the attribute
         attribute += curr;

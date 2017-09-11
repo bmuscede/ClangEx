@@ -33,8 +33,6 @@ public:
     bool nodeExists(std::string ID);
     bool edgeExists(std::string IDOne, std::string IDTwo, ClangEdge::EdgeType type);
 
-    bool addSingularAttribute(std::string ID, std::string key, std::string value);
-    bool addSingularAttribute(std::string IDSrc, std::string IDDst, ClangEdge::EdgeType type, std::string key, std::string value);
     bool addAttribute(std::string ID, std::string key, std::string value);
     bool addAttribute(std::string IDSrc, std::string IDDst, ClangEdge::EdgeType type, std::string key, std::string value);
 

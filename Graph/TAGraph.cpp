@@ -46,6 +46,11 @@ bool TAGraph::addNode(ClangNode *node, bool assumeValid) {
 }
 
 bool TAGraph::addEdge(ClangEdge *edge, bool assumeValid) {
+    if (edge->getSrc()->getID().compare(edge->getDst()->getID()) == 0 && edge->getType() == ClangEdge::EdgeType::CONTAINS){
+        //TODO: Temporary fix. Not sure where this is coming from. Debug.
+        return false;
+    }
+
     //Check if the edge already exists.
     if (!assumeValid && edgeExists(edge->getSrc()->getID(), edge->getDst()->getID(), edge->getType())){
         return false;
@@ -134,27 +139,6 @@ bool TAGraph::edgeExists(string IDOne, string IDTwo, ClangEdge::EdgeType type) {
     return false;
 }
 
-bool TAGraph::addSingularAttribute(string ID, string key, string value){
-    //Get the ClangNode.
-    ClangNode* node = findNodeByID(ID);
-    if (node == nullptr) return false;
-
-    //Clears the vector and adds the attribute.
-    node->clearAttributes(key);
-    return node->addAttribute(key, value);
-}
-
-bool TAGraph::addSingularAttribute(string IDSrc, string IDDst, ClangEdge::EdgeType type, string key, string value){
-    //Get the ClangEdge.
-    ClangEdge* edge = findEdgeByIDs(IDSrc, IDDst, type);
-    if (edge == nullptr) return false;
-
-    //Clears the vector and adds the attribute.
-    edge->clearAttribute(key);
-    edge->addAttribute(key, value);
-    return true;
-}
-
 bool TAGraph::addAttribute(string ID, string key, string value){
     //Get the node.
     ClangNode* node = findNodeByID(ID);
@@ -206,32 +190,30 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
         vector<string> fileAttrVec = node->getAttribute(FILE_ATTRIBUTE);
         if (fileAttrVec.size() != 1) continue;
 
-        //First, get all the current edges for this attribute.
-        if (isPartOfContains(node)) continue;
+        for (string file : fileAttrVec) {
+            file = ASTWalker::generateMD5(file);
 
-        string file = fileAttrVec.at(0);
-        file = ASTWalker::generateMD5(file);
+            ClangNode *fileNode;
+            if (file.compare("") != 0) {
+                //Find the appropriate node.
+                vector<ClangNode *> fileVec = findNodeByName(file);
+                if (fileVec.size() != 0) {
+                    fileNode = fileVec.at(0);
 
-        ClangNode *fileNode;
-        if (file.compare("") != 0){
-            //Find the appropriate node.
-            vector<ClangNode*> fileVec = findNodeByName(file);
-            if (fileVec.size() != 0) {
-                fileNode = fileVec.at(0);
-
-                //We now look up the file node.
-                auto ptrSkip = fileSkip.find(file);
-                if (ptrSkip != fileSkip.end()){
-                    ClangNode* skip = ptrSkip->second;
-                    fileNode = skip;
+                    //We now look up the file node.
+                    auto ptrSkip = fileSkip.find(file);
+                    if (ptrSkip != fileSkip.end()) {
+                        ClangNode *skip = ptrSkip->second;
+                        fileNode = skip;
+                    }
+                } else {
+                    continue;
                 }
-            } else {
-                continue;
-            }
 
-            //Add it to the graph.
-            ClangEdge* edge = new ClangEdge(fileNode, node, ClangEdge::CONTAINS);
-            addEdge(edge);
+                //Add it to the graph.
+                ClangEdge *edge = new ClangEdge(fileNode, node, ClangEdge::REFERENCES);
+                addEdge(edge);
+            }
         }
     }
 }

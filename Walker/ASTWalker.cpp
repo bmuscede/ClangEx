@@ -211,7 +211,7 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const Fu
     graph->addNode(node);
 
     //Adds parameters.
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::FILE_ATTRIBUTE.attrName,
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 
@@ -230,19 +230,19 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const Fu
         AccessSpecifier spec = methDecl->getAccess();
 
         //Add these types of attributes.
-        graph->addSingularAttribute(node->getID(),
+        graph->addAttribute(node->getID(),
                                     ClangNode::FUNC_IS_ATTRIBUTE.staticName,
                                     std::to_string(isStatic));
-        graph->addSingularAttribute(node->getID(),
+        graph->addAttribute(node->getID(),
                                     ClangNode::FUNC_IS_ATTRIBUTE.constName,
                                     std::to_string(isConst));
-        graph->addSingularAttribute(node->getID(),
+        graph->addAttribute(node->getID(),
                                     ClangNode::FUNC_IS_ATTRIBUTE.volName,
                                     std::to_string(isVol));
-        graph->addSingularAttribute(node->getID(),
+        graph->addAttribute(node->getID(),
                                     ClangNode::FUNC_IS_ATTRIBUTE.varName,
                                     std::to_string(isVari));
-        graph->addSingularAttribute(node->getID(),
+        graph->addAttribute(node->getID(),
                                     ClangNode::VIS_ATTRIBUTE.attrName,
                                     ClangNode::VIS_ATTRIBUTE.processAccessSpec(spec));
     }
@@ -281,15 +281,15 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
     graph->addNode(node);
 
     //Process attributes.
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::FILE_ATTRIBUTE.attrName,
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 
     //Get the scope of the decl.
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::VAR_ATTRIBUTE.scopeName,
                                 scopeInfo);
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::VAR_ATTRIBUTE.staticName,
                                 staticInfo);
 }
@@ -321,10 +321,10 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRe
     graph->addNode(node);
 
     //Process attributes.
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::FILE_ATTRIBUTE.attrName,
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::BASE_ATTRIBUTE.attrName,
                                 std::to_string(numBases));
 
@@ -354,7 +354,7 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
     graph->addNode(node);
 
     //Process attributes.
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::FILE_ATTRIBUTE.attrName,
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 }
@@ -373,7 +373,7 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
     graph->addNode(node);
 
     //Process attributes.
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::FILE_ATTRIBUTE.attrName,
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 }
@@ -393,10 +393,10 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
     graph->addNode(node);
 
     //Process the attributes.
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::FILE_ATTRIBUTE.attrName,
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
-    graph->addSingularAttribute(node->getID(),
+    graph->addAttribute(node->getID(),
                                 ClangNode::STRUCT_ATTRIBUTE.anonymousName,
                                 ClangNode::STRUCT_ATTRIBUTE.processAnonymous(isAnonymous));
 }
