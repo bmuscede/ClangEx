@@ -16,9 +16,7 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-ASTWalker::~ASTWalker() {
-    delete graph;
-}
+ASTWalker::~ASTWalker() { }
 
 TAGraph* ASTWalker::getGraph(){
     return graph;
@@ -113,119 +111,24 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
     return newPath;
 }
 
-string ASTWalker::generateID(const MatchFinder::MatchResult result, const TagDecl* dec, ClangNode::NodeType type){
-    return generateID(result, dec, type, dec->getLocStart());
+string ASTWalker::generateID(const MatchFinder::MatchResult result, const NamedDecl *dec){
+    //Generates the ID.
+    string name = generateIDString(result, dec);
+    name = generateMD5(name);
+    return name;
 }
 
-string ASTWalker::generateID(const MatchFinder::MatchResult result, const DeclaratorDecl* dec, ClangNode::NodeType type){
-    return generateID(result, dec, type, dec->getLocStart());
-}
-
-string ASTWalker::generateID(const MatchFinder::MatchResult result, const NamedDecl *dec,
-                             const ClangNode::NodeType type, const SourceLocation loc){
-    //Starts by generating fields.
-    string filename = generateFileName(result, loc, true);
-    string qualifiedName = generateLabel(result, dec);
-    string ID;
-
-    //Checks how we generate.
-    Decl::Kind curKind = dec->getKind();
-    bool success = false;
-    switch(curKind){
-        case Decl::Kind::CXXMethod:
-        case Decl::Kind::Field:
-        case Decl::Kind::ParmVar:
-        case Decl::Kind::Function:
-        case Decl::Kind::Var:
-            ID = generateMangledName(result, dec, success);
-            if (success) break;
-        default:
-            ID = generateFileName(result, loc, true) + "[" + qualifiedName + "]";
-    }
-
-    //Convert to MD5.
-    ID = generateMD5(ID);
-    return ID;
-}
-
-string ASTWalker::generateLabel(const Decl* decl, ClangNode::NodeType type){
-    string label;
-
-    //Determines how we populate the string.
-    if (decl == nullptr) return string();
-    switch (type) {
-        case ClangNode::FUNCTION: {
-            auto funcDecl = decl->getAsFunction();
-            if (funcDecl == nullptr) return string();
-
-            label = funcDecl->getQualifiedNameAsString();
-
-            break;
-        }
-        case ClangNode::VARIABLE: {
-            const VarDecl *var = static_cast<const VarDecl *>(decl);
-            if (var == nullptr) return string();
-
-            label = var->getQualifiedNameAsString();
-
-            //We need to get the parent function.
-            const DeclContext *parentContext = var->getParentFunctionOrMethod();
-
-            //If we have nullptr, get the parent function.
-            if (parentContext != nullptr) {
-                string parentQualName = static_cast<const FunctionDecl *>(parentContext)->getQualifiedNameAsString();
-                label = parentQualName + "::" + label;
-            }
-            break;
-        }
-        case ClangNode::CLASS: {
-            auto classDecl = static_cast<const CXXRecordDecl *>(decl);
-            if (classDecl == nullptr) return string();
-
-            label = classDecl->getQualifiedNameAsString() + CLASS_PREPEND;
-            break;
-        }
-        case ClangNode::ENUM: {
-            auto enumDecl = static_cast<const EnumDecl *>(decl);
-            if (enumDecl == nullptr) return string();
-
-            label = enumDecl->getQualifiedNameAsString();
-            break;
-        }
-        case ClangNode::ENUM_CONST: {
-            auto enumDecl = static_cast<const EnumConstantDecl*>(decl);
-            if (enumDecl == nullptr) return string();
-
-            label = enumDecl->getQualifiedNameAsString();
-            break;
-        }
-        case ClangNode::UNION:
-        case ClangNode::STRUCT: {
-            auto recordDecl = static_cast<const RecordDecl*>(decl);
-            if (recordDecl == nullptr) return string();
-
-            label = recordDecl->getQualifiedNameAsString();
-            break;
-        }
-        default: {
-            label = string();
-        }
-    }
-
-    return label;
-}
-
-string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const NamedDecl* curDecl){
+string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const NamedDecl* curDecl) {
     string name = curDecl->getNameAsString();
     bool getParent = true;
     bool recurse = false;
-    const NamedDecl* originalDecl = curDecl;
+    const NamedDecl *originalDecl = curDecl;
 
     //Get the parent.
     auto parent = result.Context->getParents(*curDecl);
-    while(getParent){
+    while (getParent) {
         //Check if it's empty.
-        if (parent.empty()){
+        if (parent.empty()) {
             getParent = false;
             continue;
         }
@@ -245,7 +148,7 @@ string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const Nam
     //Sees if no true qualified name was used.
     Decl::Kind kind = originalDecl->getKind();
     if (!recurse) {
-        if (kind == Decl::Function || kind == Decl::CXXMethod){
+        if (kind == Decl::Function || kind == Decl::CXXMethod) {
             name = originalDecl->getQualifiedNameAsString();
         } else {
             //We need to get the parent function.
@@ -260,77 +163,6 @@ string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const Nam
     }
 
     return name;
-}
-
-string ASTWalker::generateClassName(string qualifiedName){
-    string cpyQual = qualifiedName;
-    string qualifier = "::";
-    vector<string> quals = vector<string>();
-
-    size_t pos = 0;
-    while ((pos = cpyQual.find(qualifier)) != std::string::npos) {
-        quals.push_back(cpyQual.substr(0, pos));
-        cpyQual.erase(0, pos + qualifier.length());
-    }
-    quals.push_back(cpyQual);
-
-    //Check if we have a class.
-    if (quals.size() == 1) return string();
-
-    return quals.at(quals.size() - 2);
-}
-
-string ASTWalker::generateLineNumber(const MatchFinder::MatchResult result, SourceLocation loc){
-    int lineNum = result.SourceManager->getSpellingLineNumber(loc);
-    return std::to_string(lineNum);
-}
-
-string ASTWalker::generateMangledName(const MatchFinder::MatchResult result, const NamedDecl *dec, bool &success){
-    auto mangleContext = result.Context->createMangleContext();
-
-    //Check whether we need to mangle.
-    if (!mangleContext->shouldMangleDeclName(dec)) {
-        success = false;
-        delete mangleContext;
-        return dec->getQualifiedNameAsString();
-    }
-
-    //Mangle the CXX name.
-    string mangledName;
-    raw_string_ostream stream(mangledName);
-
-    //Check how we mangle.
-    auto funcDec = dec->getAsFunction();
-    switch (dec->getKind()){
-        case Decl::Kind::Field:
-        case Decl::Kind::ParmVar:
-            if (funcDec == nullptr) {
-                success = false;
-                delete mangleContext;
-                return dec->getQualifiedNameAsString();
-            }
-            mangleContext->mangleName(funcDec, stream);
-            break;
-
-        case Decl::Kind::Var:
-        case Decl::Kind::Function:
-            mangleContext->mangleName(dec,stream);
-            break;
-
-        case Decl::Kind::CXXMethod:
-            mangleContext->mangleCXXName(dec, stream);
-            break;
-
-        default:
-            success = false;
-            delete mangleContext;
-            return dec->getQualifiedNameAsString();
-    }
-    stream.flush();
-
-    success = true;
-    delete mangleContext;
-    return mangledName;
 }
 
 bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const Decl *decl){
@@ -370,7 +202,7 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const Fu
     //Generate the fields for the node.
     string label = generateLabel(results, dec);
     string filename = generateFileName(results, dec->getInnerLocStart());
-    string ID = generateID(results, dec, ClangNode::FUNCTION);
+    string ID = generateID(results, dec);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
 
@@ -432,13 +264,13 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
     if (useField){
         label = generateLabel(results, fieldDec);
         filename = generateFileName(results, fieldDec->getInnerLocStart());
-        ID = generateID(results, fieldDec, ClangNode::VARIABLE);
+        ID = generateID(results, fieldDec);
         scopeInfo = ClangNode::VAR_ATTRIBUTE.getScope(fieldDec);
         staticInfo = ClangNode::VAR_ATTRIBUTE.getStatic(fieldDec);
     } else {
         label = generateLabel(results, varDec);
         filename = generateFileName(results, varDec->getInnerLocStart());
-        ID = generateID(results, varDec, ClangNode::VARIABLE);
+        ID = generateID(results, varDec);
         scopeInfo = ClangNode::VAR_ATTRIBUTE.getScope(varDec);
         staticInfo = ClangNode::VAR_ATTRIBUTE.getStatic(varDec);
     }
@@ -472,7 +304,7 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRe
 
     //Generate the fields for the node.
     string filename = (fName.compare("") == 0) ? generateFileName(results, classDecl->getInnerLocStart(), true) : fName;
-    string ID = generateID(results, classDecl, ClangNode::CLASS);
+    string ID = generateID(results, classDecl);
     string className = generateLabel(results, classDecl);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
@@ -513,7 +345,7 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
     //Generate the fields for the node.
     string filename = (spoofFilename.compare(string()) == 0) ?
                       generateFileName(result, enumDecl->getInnerLocStart()) : spoofFilename;
-    string ID = generateID(result, enumDecl, ClangNode::ENUM);
+    string ID = generateID(result, enumDecl);
     string enumName = generateLabel(result, enumDecl);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
@@ -532,7 +364,7 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
     //Generate the fields for the node.
     string filename = (filenameSpoof.compare(string()) == 0) ?
                       generateFileName(result, enumDecl->getLocStart()) : filenameSpoof;
-    string ID = generateID(result, enumDecl, ClangNode::ENUM_CONST, enumDecl->getLocStart());
+    string ID = generateID(result, enumDecl);
     string enumName = generateLabel(result, enumDecl);
     if (ID.compare("") == 0 || filename.compare("") == 0) return;
 
@@ -553,7 +385,7 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
 
     //With that, generates the ID, label, and filename.
     if (filename.compare("") == 0) generateFileName(result, structDecl->getInnerLocStart());
-    string ID = generateID(result, structDecl, ClangNode::STRUCT);
+    string ID = generateID(result, structDecl);
     string label = generateLabel(result, structDecl);
 
     //Next, generates the node.
@@ -572,9 +404,9 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
 void ASTWalker::addFunctionCall(const MatchFinder::MatchResult results, const DeclaratorDecl* caller,
                                 const FunctionDecl* callee){
     //Generate a label for the two functions.
-    string callerID = generateID(results, caller, ClangNode::FUNCTION);
+    string callerID = generateID(results, caller);
     string callerLabel = generateLabel(results, caller);
-    string calleeID = generateID(results, callee, ClangNode::FUNCTION);
+    string calleeID = generateID(results, callee);
     string calleeLabel = generateLabel(results, callee);
 
     processEdge(callerID, callerLabel, calleeID, calleeLabel, ClangEdge::CALLS);
@@ -588,16 +420,16 @@ void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const Dec
     string variableShortName;
 
     //Generate the information associated with the caller.
-    string callerID = generateID(result, caller, ClangNode::FUNCTION);
+    string callerID = generateID(result, caller);
     string callerLabel = generateLabel(result, caller);
 
     //Decide how we should process.
     if (fieldCallee == nullptr){
-        variableID = generateID(result, varCallee, ClangNode::VARIABLE);
+        variableID = generateID(result, varCallee);
         variableLabel = generateLabel(result, varCallee);
         variableShortName = varCallee->getName();
     } else {
-        variableID = generateID(result, fieldCallee, ClangNode::VARIABLE);
+        variableID = generateID(result, fieldCallee);
         variableLabel = generateLabel(result, fieldCallee);
         variableShortName = fieldCallee->getName();
     }
@@ -616,17 +448,17 @@ void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const Dec
 
 void ASTWalker::addVariableInsideCall(const MatchFinder::MatchResult result, const clang::FunctionDecl *functionParent,
                                       const clang::VarDecl *varChild, const clang::FieldDecl *fieldChild){
-    string functionID = generateID(result, functionParent, ClangNode::FUNCTION);
+    string functionID = generateID(result, functionParent);
     string functionLabel = generateLabel(result, functionParent);
     string varID;
     string varLabel;
 
     //Checks whether we have a field or var.
     if (fieldChild == nullptr){
-        varID = generateID(result, varChild, ClangNode::VARIABLE);
+        varID = generateID(result, varChild);
         varLabel = generateLabel(result, varChild);
     } else {
-        varID = generateID(result, fieldChild, ClangNode::VARIABLE);
+        varID = generateID(result, fieldChild);
         varLabel = generateLabel(result, fieldChild);
     }
 
@@ -635,7 +467,7 @@ void ASTWalker::addVariableInsideCall(const MatchFinder::MatchResult result, con
 
 void ASTWalker::addClassCall(const MatchFinder::MatchResult result, const CXXRecordDecl *classDecl, string declID,
                              string declLabel){
-    string classID = generateID(result, classDecl, ClangNode::CLASS);
+    string classID = generateID(result, classDecl);
     string classLabel = generateLabel(result, classDecl);
 
     processEdge(classID, classLabel, declID, declLabel, ClangEdge::CONTAINS);
@@ -643,8 +475,8 @@ void ASTWalker::addClassCall(const MatchFinder::MatchResult result, const CXXRec
 
 void ASTWalker::addClassInheritance(const MatchFinder::MatchResult result,
                                     const CXXRecordDecl *childClass, const CXXRecordDecl *parentClass) {
-    string classID = generateID(result, childClass, ClangNode::CLASS);
-    string baseID = generateID(result, parentClass, ClangNode::CLASS);
+    string classID = generateID(result, childClass);
+    string baseID = generateID(result, parentClass);
     string classLabel = generateLabel(result, childClass);
     string baseLabel = generateLabel(result, parentClass);
 
@@ -654,8 +486,8 @@ void ASTWalker::addClassInheritance(const MatchFinder::MatchResult result,
 void ASTWalker::addEnumConstantCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
                                     const clang::EnumConstantDecl *enumConstantDecl){
     //Gets the labels.
-    string enumID = generateID(result, enumDecl, ClangNode::ENUM);
-    string enumConstID = generateID(result, enumConstantDecl, ClangNode::ENUM_CONST, enumConstantDecl->getLocStart());
+    string enumID = generateID(result, enumDecl);
+    string enumConstID = generateID(result, enumConstantDecl);
     string enumLabel = generateLabel(result, enumDecl);
     string enumConstLabel = generateLabel(result, enumConstantDecl);
 
@@ -665,10 +497,10 @@ void ASTWalker::addEnumConstantCall(const MatchFinder::MatchResult result, const
 void ASTWalker::addEnumCall(const MatchFinder::MatchResult result, const EnumDecl *enumDecl, const VarDecl *varDecl,
                             const FieldDecl *fieldDecl){
     //Generate the labels.
-    string enumID = generateID(result, enumDecl, ClangNode::ENUM);
+    string enumID = generateID(result, enumDecl);
     string enumLabel = generateLabel(result, enumDecl);
     string refID = (fieldDecl == nullptr) ?
-                        generateID(result, varDecl, ClangNode::VARIABLE) : generateID(result, fieldDecl, ClangNode::VARIABLE);
+                        generateID(result, varDecl) : generateID(result, fieldDecl);
     string refLabel = (fieldDecl == nullptr) ?
                         generateLabel(result, varDecl) : generateLabel(result, fieldDecl);
 
@@ -678,9 +510,9 @@ void ASTWalker::addEnumCall(const MatchFinder::MatchResult result, const EnumDec
 void ASTWalker::addStructCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
                               const clang::DeclaratorDecl *itemDecl){
     //Generate the labels and ID.
-    string structID = generateID(result, structDecl, ClangNode::STRUCT);
+    string structID = generateID(result, structDecl);
     string structLabel = generateLabel(result, structDecl);
-    string refID = generateID(result, itemDecl, ClangNode::convertToNodeType(itemDecl->getKind()));
+    string refID = generateID(result, itemDecl);
     string refLabel = generateLabel(result, itemDecl);
 
     processEdge(structID, structLabel, refID, refLabel, ClangEdge::CONTAINS);
@@ -688,17 +520,17 @@ void ASTWalker::addStructCall(const MatchFinder::MatchResult result, const clang
 
 void ASTWalker::addStructUseCall(const MatchFinder::MatchResult result, const RecordDecl *structDecl,
                                  const VarDecl *varDecl, const FieldDecl *fieldDecl){
-    string structID = generateID(result, structDecl, ClangNode::STRUCT);
+    string structID = generateID(result, structDecl);
     string structLabel = generateLabel(result, structDecl);
 
     //Determine whether we are using a field or variable.
     string refID;
     string refLabel;
     if (fieldDecl == nullptr){
-        refID = generateID(result, fieldDecl, ClangNode::VARIABLE);
+        refID = generateID(result, fieldDecl);
         refLabel = generateLabel(result, fieldDecl);
     } else {
-        refID = generateID(result, varDecl, ClangNode::VARIABLE);
+        refID = generateID(result, varDecl);
         refLabel = generateLabel(result, varDecl);
     }
 
@@ -749,77 +581,64 @@ void ASTWalker::printFileName(string curFile){
     }
 }
 
-string ASTWalker::replaceLabel(string label, string init, string aft){
-    size_t index = 0;
-    while (true) {
-        //Locate the substring to replace.
-        index = label.find(init, index);
-        if (index == string::npos) break;
+string ASTWalker::generateIDString(const MatchFinder::MatchResult result, const NamedDecl *dec) {
+    //Gets the canonical decl.
+    dec = dyn_cast<NamedDecl>(dec->getCanonicalDecl());
+    string name = "";
 
-        //Make the replacement.
-        label.replace(index, init.size(), aft);
-
-        //Advance index forward so the next iteration doesn't pick it up as well.
-        index += aft.size();
+    //Generates a special name for function overloading.
+    if (isa<FunctionDecl>(dec) || isa<CXXMethodDecl>(dec)){
+        const FunctionDecl* cur = dec->getAsFunction();
+        name = cur->getReturnType().getAsString() + "-" + dec->getNameAsString();
+        for (int i = 0; i < cur->getNumParams(); i++){
+            name += "-" + cur->parameters().data()[i]->getType().getAsString();
+        }
+    } else {
+        name = dec->getNameAsString();
     }
 
-    return label;
-}
 
-string ASTWalker::removeInvalidIDSymbols(string label) {
-    replace(label.begin(), label.end(), ':', '-');
-    replace(label.begin(), label.end(), ' ', '_');
-    replace(label.begin(), label.end(), '(', '_');
-    replace(label.begin(), label.end(), ')', '_');
-    return removeInvalidSymbols(label);
-}
+    bool getParent = true;
+    bool recurse = false;
+    const NamedDecl* originalDecl = dec;
 
-string ASTWalker::removeInvalidSymbols(string label) {
-    //Check if we need to remove a symbol.
-    for (int i = 0; i < ANON_SIZE; i++){
-        string item = ANON_LIST[i];
-        if (label.find(item) != string::npos)
-            label = replaceLabel(label, item, ANON_REPLACE);
+    //Get the parent.
+    auto parent = result.Context->getParents(*dec);
+    while(getParent){
+        //Check if it's empty.
+        if (parent.empty()){
+            getParent = false;
+            continue;
+        }
 
-    }
-    replace(label.begin(), label.end(), '=', 'e');
+        //Get the current decl as named.
+        dec = parent[0].get<clang::NamedDecl>();
+        if (dec) {
+            name = generateIDString(result, dec) + "::" + name;
+            recurse = true;
+            getParent = false;
+            continue;
+        }
 
-    return label;
-}
-
-bool ASTWalker::canCollapse(vector<ClangNode*> node){
-    //Check the size.
-    if (node.size() != 2) return false;
-
-    //Next, perform the collapse check.
-    ClangNode* c1 = node.at(0);
-    ClangNode* c2 = node.at(1);
-    if (c1->getID().find("[" + c1->getName() + "]") != string::npos &&
-        c2->getID().find("[" + c2->getName() + "]") != string::npos){
-        //Collapse candidate is good.
-        collapseDuplicates(node);
-        return true;
+        parent = result.Context->getParents(parent[0]);
     }
 
-    return false;
-}
+    //Sees if no true qualified name was used.
+    Decl::Kind kind = originalDecl->getKind();
+    if (!recurse) {
+        if (kind != Decl::Function && kind == Decl::CXXMethod){
+            //We need to get the parent function.
+            const DeclContext *parentContext = originalDecl->getParentFunctionOrMethod();
 
-void ASTWalker::collapseDuplicates(vector<ClangNode*> duplicates){
-    ClangNode* master = duplicates.at(0);
-
-    //Starts at 1 and continues.
-    for (int i = 1; i < duplicates.size(); i++){
-        //Start by getting all the src edges.
-        vector<ClangEdge*> srcEdges = graph->findEdgesBySrcID(duplicates.at(i));
-        for (ClangEdge* edge : srcEdges) edge->setSrc(master);
-
-        //Get all the dst edges.
-        vector<ClangEdge*> dstEdges = graph->findEdgesByDstID(duplicates.at(i));
-        for (ClangEdge* edge : dstEdges) edge->setDst(master);
-
-        //Delete the node.
-        graph->removeNode(duplicates.at(i));
+            //If we have nullptr, get the parent function.
+            if (parentContext != nullptr) {
+                string parentQualName = generateIDString(result, static_cast<const FunctionDecl *>(parentContext));
+                name = parentQualName + "::" + originalDecl->getNameAsString();
+            }
+        }
     }
+
+    return name;
 }
 
 bool ASTWalker::isSource(std::string fileName){

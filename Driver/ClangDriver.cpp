@@ -314,6 +314,7 @@ bool ClangDriver::outputIndividualModel(int modelNum, string fileName){
         return false;
     }
 
+    deleteTAGraph(modelNum);
     return true;
 }
 
@@ -326,9 +327,11 @@ bool ClangDriver::outputAllModels(string baseFileName){
     bool succ = true;
 
     //Simply goes through and outputs.
-    for (int i = 0; i < getNumGraphs(); i++){
-        bool temp = outputIndividualModel(i, baseFileName + to_string(i));
+    int curNum = 0;
+    while(0 < getNumGraphs()){
+        bool temp = outputIndividualModel(0, baseFileName + to_string(curNum));
         if (!temp) succ = false;
+        curNum++;
     }
 
     return succ;
@@ -597,6 +600,17 @@ bool ClangDriver::outputTAString(int modelNum, string fileName){
     taFile.close();
 
     return true;
+}
+
+void ClangDriver::deleteTAGraph(int modelNum){
+    //Checks the bounds.
+    if (modelNum < 0 || modelNum > graphs.size()) return;
+
+    //Next, removes the item and deletes.
+    TAGraph* curGraph = graphs.at(modelNum);
+    graphs.erase(graphs.begin() + modelNum);
+
+    delete curGraph;
 }
 
 /**

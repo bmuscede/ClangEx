@@ -252,7 +252,7 @@ void BlobWalker::performAddClassCall(const MatchFinder::MatchResult result, cons
     //Checks if we can add a class reference.
     CXXRecordDecl* classDecl = extractClass(decl->getQualifier());
     if (classDecl != nullptr && !exclusions.cClass) {
-        string declID = generateID(result, decl, type);
+        string declID = generateID(result, decl);
         string declLabel = generateLabel(result, decl);
         addClassCall(result, classDecl, declID, declLabel);
     }

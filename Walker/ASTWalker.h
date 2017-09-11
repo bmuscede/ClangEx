@@ -42,16 +42,8 @@ protected:
     /** Item Qualifiers */
     std::string generateFileName(const MatchFinder::MatchResult result,
                                  clang::SourceLocation loc, bool suppressOutput = false);
-    std::string generateID(const MatchFinder::MatchResult result, const clang::TagDecl* dec, ClangNode::NodeType type);
-    std::string generateID(const MatchFinder::MatchResult result, const clang::DeclaratorDecl *decl,
-                           ClangNode::NodeType type);
-    std::string generateID(const MatchFinder::MatchResult result, const clang::NamedDecl *dec, ClangNode::NodeType type,
-                           clang::SourceLocation loc);
-    std::string generateLabel(const clang::Decl* decl, ClangNode::NodeType type);
+    std::string generateID(const MatchFinder::MatchResult result, const clang::NamedDecl *dec);
     std::string generateLabel(const MatchFinder::MatchResult result, const clang::NamedDecl *dec);
-    std::string generateClassName(std::string qualifiedName);
-    std::string generateLineNumber(const MatchFinder::MatchResult result, clang::SourceLocation loc);
-    std::string generateMangledName(const MatchFinder::MatchResult result, const clang::NamedDecl *dec, bool &success);
 
     /** Protected Helper Methods */
     bool isInSystemHeader(const MatchFinder::MatchResult &result, const clang::Decl *decl);
@@ -97,7 +89,6 @@ private:
     const std::string FILE_EXT[7] = {".C", ".cc", ".cpp", ".CPP", ".c++", ".cp", ".cxx"};
     const std::string ANON_REPLACE = "Anonymous";
     const static int MD5_LENGTH = 33;
-    const std::string CLASS_PREPEND = "-class";
 
     std::string curFileName;
     FileParse fileParser;
@@ -110,12 +101,7 @@ private:
 
     void printFileName(std::string curFile);
 
-    std::string replaceLabel(std::string label, std::string init, std::string aft);
-    std::string removeInvalidIDSymbols(std::string label);
-    std::string removeInvalidSymbols(std::string label);
-
-    bool canCollapse(std::vector<ClangNode*> nodes);
-    void collapseDuplicates(std::vector<ClangNode*> duplicates);
+    std::string generateIDString(const MatchFinder::MatchResult result, const clang::NamedDecl* dec);
 
     bool isSource(std::string fileName);
 };

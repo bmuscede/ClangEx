@@ -111,6 +111,7 @@ private:
 
     /** Output Helper Method */
     bool outputTAString(int modelNum, std::string fileName);
+    void deleteTAGraph(int modelNum);
 
     /** Argument Helpers */
     char** prepareArgs(int *argc);
