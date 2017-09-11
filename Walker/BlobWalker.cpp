@@ -7,8 +7,8 @@
 
 using namespace std;
 
-BlobWalker::BlobWalker(bool md5, Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
-        ASTWalker(exclusions, md5, print, graph){ }
+BlobWalker::BlobWalker(Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
+        ASTWalker(exclusions, print, graph){ }
 
 BlobWalker::~BlobWalker(){ }
 

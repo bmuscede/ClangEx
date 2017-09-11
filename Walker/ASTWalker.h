@@ -37,7 +37,7 @@ public:
 protected:
     ClangDriver::ClangExclude exclusions;
 
-    ASTWalker(ClangDriver::ClangExclude ex, bool md5, Printer* print, TAGraph* existing);
+    ASTWalker(ClangDriver::ClangExclude ex, Printer* print, TAGraph* existing);
 
     /** Item Qualifiers */
     std::string generateFileName(const MatchFinder::MatchResult result,
@@ -101,7 +101,6 @@ private:
 
     std::string curFileName;
     FileParse fileParser;
-    bool md5Flag;
     TAGraph* graph;
     Printer *clangPrinter;
 

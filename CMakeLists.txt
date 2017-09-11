@@ -6,7 +6,7 @@ project(ClangEx)
 find_package(Boost 1.58 COMPONENTS system filesystem serialization regex program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
-set(LLVM_PATH /home/bmuscede/Applications/LLVM-Build)
+set(LLVM_PATH /home/bmuscede/Applications/Clang/llvm-build)
 link_directories(${LLVM_PATH}/lib)
 include_directories(${LLVM_PATH}/include)
 
@@ -66,12 +66,13 @@ target_link_libraries(ClangEx
         LLVMLTO
         LLVMPasses
         LLVMObjCARCOpts
+        LLVMMIRParser
         LLVMSymbolize
         LLVMDebugInfoPDB
         LLVMDebugInfoDWARF
-        LLVMMIRParser
         LLVMCoverage
         LLVMTableGen
+        LLVMDlltoolDriver
         LLVMOrcJIT
         LLVMXCoreDisassembler
         LLVMXCoreCodeGen
@@ -114,13 +115,14 @@ target_link_libraries(ClangEx
         LLVMLanaiCodeGen
         LLVMLanaiAsmParser
         LLVMLanaiDesc
-        #LLVMLanaiInstPrinter
+        LLVMLanaiAsmPrinter
         LLVMLanaiInfo
         LLVMHexagonDisassembler
         LLVMHexagonCodeGen
         LLVMHexagonAsmParser
         LLVMHexagonDesc
         LLVMHexagonInfo
+        LLVMBPFDisassembler
         LLVMBPFCodeGen
         LLVMBPFDesc
         LLVMBPFInfo
@@ -131,6 +133,7 @@ target_link_libraries(ClangEx
         LLVMARMDesc
         LLVMARMInfo
         LLVMARMAsmPrinter
+        LLVMARMUtils
         LLVMAMDGPUDisassembler
         LLVMAMDGPUCodeGen
         LLVMAMDGPUAsmParser
@@ -140,7 +143,6 @@ target_link_libraries(ClangEx
         LLVMAMDGPUUtils
         LLVMAArch64Disassembler
         LLVMAArch64CodeGen
-        LLVMGlobalISel
         LLVMAArch64AsmParser
         LLVMAArch64Desc
         LLVMAArch64Info
@@ -149,9 +151,12 @@ target_link_libraries(ClangEx
         LLVMObjectYAML
         LLVMLibDriver
         LLVMOption
+        LLVMWindowsManifest
+        LLVMFuzzMutate
         LLVMX86Disassembler
         LLVMX86AsmParser
         LLVMX86CodeGen
+        LLVMGlobalISel
         LLVMSelectionDAG
         LLVMAsmPrinter
         LLVMDebugInfoCodeView
@@ -168,24 +173,25 @@ target_link_libraries(ClangEx
         LLVMRuntimeDyld
         LLVMCodeGen
         LLVMTarget
-        LLVMBitWriter
         LLVMCoroutines
         LLVMipo
         LLVMInstrumentation
         LLVMVectorize
         LLVMScalarOpts
-        LLVMObject
-        LLVMMCParser
-        LLVMMC
         LLVMLinker
         LLVMIRReader
-        LLVMBitReader
         LLVMAsmParser
         LLVMInstCombine
         LLVMTransformUtils
+        LLVMBitWriter
         LLVMAnalysis
         LLVMProfileData
+        LLVMObject
+        LLVMMCParser
+        LLVMMC
+        LLVMBitReader
         LLVMCore
+        LLVMBinaryFormat
         LLVMSupport
         LLVMDemangle
         )

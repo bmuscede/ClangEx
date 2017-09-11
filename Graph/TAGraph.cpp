@@ -199,7 +199,7 @@ string TAGraph::generateTAFormat() {
     return format;
 }
 
-void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip, bool md5Flag) {
+void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
     //Iterate through all our nodes and find the appropriate file.
     for (auto it = nodeList.begin(); it != nodeList.end(); it++) {
         ClangNode* node = it->second;
@@ -210,7 +210,7 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip, bool md5Flag) {
         if (isPartOfContains(node)) continue;
 
         string file = fileAttrVec.at(0);
-        if (md5Flag) file = ASTWalker::generateMD5(file);
+        file = ASTWalker::generateMD5(file);
 
         ClangNode *fileNode;
         if (file.compare("") != 0){

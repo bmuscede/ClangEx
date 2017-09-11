@@ -11,8 +11,8 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
-PartialWalker::PartialWalker(bool md5, Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
-        ASTWalker(exclusions, md5, print, graph){ }
+PartialWalker::PartialWalker(Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
+        ASTWalker(exclusions, print, graph){ }
 
 PartialWalker::~PartialWalker() { }
 

@@ -10,7 +10,7 @@
 
 class PartialWalker : public ASTWalker {
 public:
-    PartialWalker(bool md5, Printer* print, ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
+    PartialWalker(Printer* print, ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
                TAGraph* graph = new TAGraph());
     virtual ~PartialWalker();
 

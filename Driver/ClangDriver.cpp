@@ -249,17 +249,16 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool verboseM
     }
 
     ASTWalker* walker;
-    bool useMD5 = true; //TODO: Eventually, will always use MD5.
     if (blobMode){
         if (merge)
-            walker = new BlobWalker(useMD5, clangPrint, exclude, mergeGraph);
+            walker = new BlobWalker(clangPrint, exclude, mergeGraph);
         else
-            walker = new BlobWalker(useMD5, clangPrint, exclude);
+            walker = new BlobWalker(clangPrint, exclude);
     } else {
         if (merge)
-            walker = new PartialWalker(useMD5, clangPrint, exclude, mergeGraph);
+            walker = new PartialWalker(clangPrint, exclude, mergeGraph);
         else
-            walker = new PartialWalker(useMD5, clangPrint, exclude);
+            walker = new PartialWalker(clangPrint, exclude);
     }
 
     //Generates a matcher system.

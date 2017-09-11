@@ -39,7 +39,7 @@ public:
     bool addAttribute(std::string IDSrc, std::string IDDst, ClangEdge::EdgeType type, std::string key, std::string value);
 
     std::string generateTAFormat();
-    void addNodesToFile(std::map<std::string, ClangNode*> fileSkip, bool md5Flag);
+    void addNodesToFile(std::map<std::string, ClangNode*> fileSkip);
 
     bool isPartOfContains(ClangNode* node);
 

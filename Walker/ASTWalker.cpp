@@ -34,7 +34,7 @@ void ASTWalker::resolveFiles(){
     vector<ClangEdge*> fileEdges = vector<ClangEdge*>();
 
     //Gets all the associated clang nodes.
-    fileParser.processPaths(fileNodes, fileEdges, md5Flag);
+    fileParser.processPaths(fileNodes, fileEdges);
 
     //Adds them to the graph.
     for (ClangNode *file : fileNodes) {
@@ -56,7 +56,7 @@ void ASTWalker::resolveFiles(){
     }
 
     //Next, for each item in the graph, add it to a file.
-    graph->addNodesToFile(fileSkip, md5Flag);
+    graph->addNodesToFile(fileSkip);
 }
 
 string ASTWalker::generateMD5(string text){
@@ -78,7 +78,7 @@ string ASTWalker::generateMD5(string text){
     return string(mdString);
 }
 
-ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, bool md5, Printer *print, TAGraph* existing = new TAGraph()) :
+ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, Printer *print, TAGraph* existing = new TAGraph()) :
         clangPrinter(print){
     //Sets the current file name to blank.
     curFileName = "";
@@ -89,9 +89,6 @@ ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, bool md5, Printer *print, TAG
 
     //Sets up the exclusions.
     exclusions = ex;
-
-    //Sets the MD5 name generate flag.
-    md5Flag = md5;
 }
 
 string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
@@ -146,13 +143,8 @@ string ASTWalker::generateID(const MatchFinder::MatchResult result, const NamedD
             ID = generateFileName(result, loc, true) + "[" + qualifiedName + "]";
     }
 
-    //Check what flag we're operating on.
-    if (md5Flag){
-        ID = generateMD5(ID);
-    } else {
-        ID = removeInvalidIDSymbols(ID);
-    }
-
+    //Convert to MD5.
+    ID = generateMD5(ID);
     return ID;
 }
 

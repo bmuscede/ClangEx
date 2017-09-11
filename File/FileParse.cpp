@@ -22,15 +22,14 @@ void FileParse::addPath(string path) {
     paths.push_back(path);
 }
 
-void FileParse::processPaths(vector<ClangNode*>& nodes, vector<ClangEdge*>& edges, bool md5) {
+void FileParse::processPaths(vector<ClangNode*>& nodes, vector<ClangEdge*>& edges) {
     //Iterate through all the paths.
     for (int i = 0; i < paths.size(); i++){
-        processPath(paths.at(i), nodes, edges, md5);
+        processPath(paths.at(i), nodes, edges);
     }
 }
 
-void FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<ClangEdge*>& curContains,
-                                          bool md5) {
+void FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<ClangEdge*>& curContains) {
     //Start by iterating at each path element.
     vector<string> pathComponents = vector<string>();
     vector<string> pathLabels = vector<string>();
@@ -53,8 +52,7 @@ void FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<Cla
         ClangNode* currentNode;
 
         //Check if a path component exists.
-        int existsIndex = doesNodeExist((md5) ? ASTWalker::generateMD5(pathComponents.at(i)) : pathComponents.at(i)
-                , curPath);
+        int existsIndex = doesNodeExist(ASTWalker::generateMD5(pathComponents.at(i)), curPath);
         if (existsIndex == -1){
             //Determines the type of node.
             ClangNode::NodeType type;
@@ -65,7 +63,7 @@ void FileParse::processPath(string path, vector<ClangNode*>& curPath, vector<Cla
             }
 
             //Creates the node.
-            string current = (md5) ? ASTWalker::generateMD5(pathComponents.at(i)) : pathComponents.at(i);
+            string current = ASTWalker::generateMD5(pathComponents.at(i));
             currentNode = new ClangNode(current, pathLabels.at(i), type);
             curPath.push_back(currentNode);
         } else {

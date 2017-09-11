@@ -10,7 +10,7 @@
 
 class BlobWalker : public ASTWalker {
 public:
-    BlobWalker(bool md5, Printer* print, ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
+    BlobWalker(Printer* print, ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
                   TAGraph* graph = new TAGraph());
     virtual ~BlobWalker();
 
