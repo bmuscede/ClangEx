@@ -16,10 +16,11 @@ $INHERIT	cStruct			cLang
 $INHERIT	cUnion			cLang
 
 //Relationships
-contain		cRoot		cRoot
-call		cFunction	cFunction
-reference	cAsgNds		cAsgNds
-inherits	cClass		cClass
+contain		cRoot			cRoot
+call		cFunction		cFunction
+reference	cAsgNds			cAsgNds
+inherit		cClass			cClass
+fContain	cArchitecturalNds	cAsgNds
 
 SCHEME ATTRIBUTE :
 $ENTITY {
@@ -55,12 +56,13 @@ cArchitecturalNds {
 
 cSubSystem {
 	class_style = 4
-	color = (0.0 0.0 1.0)
+	color = (1.0 1.0 1.0)
+	labelcolor = (0.0 0.0 0.0)
 }
 
 cFile {
 	class_style = 2
-	color = (0.9 0.9 0.9)
+	color = (1.0 0.04 1.0)
 	labelcolor = (0.0 0.0 0.0)
 }
 
@@ -103,4 +105,3 @@ cEnumConst {
 (reference) {
 	access
 }
-

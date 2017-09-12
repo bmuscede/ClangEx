@@ -101,7 +101,7 @@ private:
     } AccessStruct;
 
 public:
-    enum EdgeType {CALLS, REFERENCES, CONTAINS, INHERITS};
+    enum EdgeType {CALLS, REFERENCES, CONTAINS, INHERITS, FILE_CONTAIN};
     static std::string getTypeString(EdgeType type);
     static ClangEdge::EdgeType getTypeEdge(std::string name);
 

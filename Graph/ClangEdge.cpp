@@ -18,6 +18,8 @@ string ClangEdge::getTypeString(EdgeType type) {
         return "reference";
     } else if (type == INHERITS){
         return "inherit";
+    } else if (type == FILE_CONTAIN){
+        return "fContain";
     }
 
     //Default if the type isn't defined.
@@ -34,6 +36,8 @@ ClangEdge::EdgeType ClangEdge::getTypeEdge(string name){
         return REFERENCES;
     } else if (name.compare("inherit") == 0){
         return INHERITS;
+    } else if (name.compare("fContain") == 0){
+        return FILE_CONTAIN;
     }
 
     //Default if the type isn't defined.

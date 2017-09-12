@@ -101,7 +101,7 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
 
     //Use boost to get the absolute path.
     boost::filesystem::path fN = boost::filesystem::path(fileName);
-    string newPath = fN.normalize().string();
+    string newPath = canonical(fN.normalize()).string();
 
     //Adds the file path.
     fileParser.addPath(newPath);

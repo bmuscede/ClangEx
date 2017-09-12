@@ -191,13 +191,11 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
         if (fileAttrVec.size() != 1) continue;
 
         for (string file : fileAttrVec) {
-            file = ASTWalker::generateMD5(file);
-
-            ClangNode *fileNode;
+            ClangNode* fileNode;
             if (file.compare("") != 0) {
                 //Find the appropriate node.
-                vector<ClangNode *> fileVec = findNodeByName(file);
-                if (fileVec.size() != 0) {
+                vector<ClangNode*> fileVec = findNodeByName(file);
+                if (fileVec.size() > 0) {
                     fileNode = fileVec.at(0);
 
                     //We now look up the file node.
@@ -211,7 +209,7 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
                 }
 
                 //Add it to the graph.
-                ClangEdge *edge = new ClangEdge(fileNode, node, ClangEdge::REFERENCES);
+                ClangEdge *edge = new ClangEdge(fileNode, node, ClangEdge::FILE_CONTAIN);
                 addEdge(edge);
             }
         }
