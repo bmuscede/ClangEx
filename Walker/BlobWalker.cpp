@@ -18,6 +18,9 @@ void BlobWalker::run(const MatchFinder::MatchResult &result) {
         //Get whether we have a system header.
         if (isInSystemHeader(result, functionDecl)) return;
 
+        //Gets the canonical decl.
+        functionDecl = functionDecl->getCanonicalDecl();
+
         //Adds a function decl.
         addFunctionDecl(result, functionDecl);
 
@@ -224,20 +227,19 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
         finder->addMatcher(recordDecl(isStruct()).bind(types[STRUCT_DECL]), this);
 
         //Builds up struct.
-        finder->addMatcher(varDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
+        /*finder->addMatcher(varDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
                                    .bind(types[STRUCT_REF_ITEM]), this);
         finder->addMatcher(fieldDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
                                    .bind(types[STRUCT_REF_ITEM]), this);
         finder->addMatcher(functionDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
-                                   .bind(types[STRUCT_REF_ITEM]), this);
+                                   .bind(types[STRUCT_REF_ITEM]), this);*/
         //TODO: Add more items.
 
         //Builds the struct reference.
-        //TODO: This doesn't work!
-        finder->addMatcher(varDecl(hasType(recordDecl().bind(types[STRUCT_DECL])))
+        /*finder->addMatcher(varDecl(hasType(recordDecl().bind(types[STRUCT_DECL])))
                                    .bind(types[VAR_BOUND_STRUCT]), this);
         finder->addMatcher(fieldDecl(hasType(recordDecl().bind(types[STRUCT_DECL])))
-                                   .bind(types[FIELD_BOUND_STRUCT]), this);
+                                   .bind(types[FIELD_BOUND_STRUCT]), this);*/
     }
 
     //Union methods.
@@ -250,10 +252,40 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
 void BlobWalker::performAddClassCall(const MatchFinder::MatchResult result, const DeclaratorDecl *decl,
                                     ClangNode::NodeType type){
     //Checks if we can add a class reference.
-    CXXRecordDecl* classDecl = extractClass(decl->getQualifier());
-    if (classDecl != nullptr && !exclusions.cClass) {
+    if (!exclusions.cClass) {
         string declID = generateID(result, decl);
         string declLabel = generateLabel(result, decl);
-        addClassCall(result, classDecl, declID, declLabel);
+
+        //Use the manual walker system.
+        bool getParent = true;
+        const CXXRecordDecl* classDecl;
+
+        //Get the parent.
+        auto parent = result.Context->getParents(*decl);
+        while (getParent) {
+            //Check if it's empty.
+            if (parent.empty()) {
+                getParent = false;
+                continue;
+            }
+
+            //Get the current decl as named.
+            classDecl = parent[0].get<clang::CXXRecordDecl>();
+            if (classDecl) {
+                addClassCall(result, classDecl, declID, declLabel);
+                return;
+
+            }
+
+            parent = result.Context->getParents(parent[0]);
+        }
+
+        //Checks if we can add a class reference (secondary attempt).
+        classDecl = extractClass(decl->getQualifier());
+        if (classDecl != nullptr && !exclusions.cClass) {
+            string declID = generateID(result, decl);
+            string declLabel = generateLabel(result, decl);
+            addClassCall(result, classDecl, declID, declLabel);
+        }
     }
 }

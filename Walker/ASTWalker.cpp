@@ -120,6 +120,12 @@ string ASTWalker::generateID(const MatchFinder::MatchResult result, const NamedD
 
 string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const NamedDecl* curDecl) {
     string name = curDecl->getNameAsString();
+    if (isa<RecordDecl>(curDecl) && (dyn_cast<RecordDecl>(curDecl)->isStruct()
+                                 || dyn_cast<RecordDecl>(curDecl)->isUnion())
+                                 && isAnonymousRecord(curDecl->getQualifiedNameAsString())) {
+        name = ANON_REPLACE + "-" + generateLineNumber(result, curDecl->getSourceRange().getBegin());
+    }
+
     bool getParent = true;
     bool recurse = false;
     const NamedDecl *originalDecl = curDecl;
@@ -380,11 +386,10 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
 
 void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl, string filename){
     //Checks whether the function is anonymous.
-    string qualifiedName = structDecl->getQualifiedNameAsString();
-    bool isAnonymous = structDecl->isInAnonymousNamespace();
+    bool isAnonymous = isAnonymousRecord(structDecl->getQualifiedNameAsString());
 
     //With that, generates the ID, label, and filename.
-    if (filename.compare("") == 0) generateFileName(result, structDecl->getInnerLocStart());
+    string fileName = generateFileName(result, structDecl->getInnerLocStart());
     string ID = generateID(result, structDecl);
     string label = generateLabel(result, structDecl);
 
@@ -543,14 +548,11 @@ void ASTWalker::addStructUseCall(const MatchFinder::MatchResult result, const Re
 void ASTWalker::processEdge(string srcID, string srcLabel, string dstID, string dstLabel, ClangEdge::EdgeType type,
                             vector<pair<string, string>> attributes){
     //Looks up the nodes by label.
-    vector<ClangNode*> sourceNode = graph->findNodeByName(srcLabel);
-    vector<ClangNode*> destNode = graph->findNodeByName(dstLabel);
-
-    int srcNum = 0;
-    int dstNum = 0;
+    ClangNode* sourceNode = graph->findNodeByID(srcID);
+    ClangNode* destNode = graph->findNodeByID(dstID);
 
     //Now processes the nodes.
-    if (sourceNode.size() == 0 || destNode.size() == 0){
+    if (!sourceNode || !destNode){
         graph->addUnresolvedRef(srcLabel, dstLabel, type);
 
         //Iterate through our vector and add.
@@ -560,7 +562,7 @@ void ASTWalker::processEdge(string srcID, string srcLabel, string dstID, string 
         }
     } else {
         //Add the edge.
-        ClangEdge* edge = new ClangEdge(sourceNode.at(srcNum), destNode.at(dstNum), type);
+        ClangEdge* edge = new ClangEdge(sourceNode, destNode, type);
         graph->addEdge(edge);
 
         //Iterate through our vector and add.
@@ -586,12 +588,21 @@ string ASTWalker::generateIDString(const MatchFinder::MatchResult result, const 
     dec = dyn_cast<NamedDecl>(dec->getCanonicalDecl());
     string name = "";
 
-    //Generates a special name for function overloading.
     if (isa<FunctionDecl>(dec) || isa<CXXMethodDecl>(dec)){
+        //Generates a special name for function overloading.
         const FunctionDecl* cur = dec->getAsFunction();
         name = cur->getReturnType().getAsString() + "-" + dec->getNameAsString();
         for (int i = 0; i < cur->getNumParams(); i++){
             name += "-" + cur->parameters().data()[i]->getType().getAsString();
+        }
+    } else if (isa<RecordDecl>(dec) && (dyn_cast<RecordDecl>(dec)->isStruct() || dyn_cast<RecordDecl>(dec)->isUnion())) {
+        //Generates a special name for structs and unions (especially anonymous ones).
+        const RecordDecl* cur = dyn_cast<RecordDecl>(dec);
+        if (isAnonymousRecord(cur->getQualifiedNameAsString())){
+            name = ANON_REPLACE + "-" + generateLineNumber(result, cur->getSourceRange().getBegin()) + "-" +
+                    generateFileName(result, cur->getSourceRange().getBegin());
+        } else {
+            name = dec->getNameAsString();
         }
     } else {
         name = dec->getNameAsString();
@@ -641,6 +652,11 @@ string ASTWalker::generateIDString(const MatchFinder::MatchResult result, const 
     return name;
 }
 
+string ASTWalker::generateLineNumber(const MatchFinder::MatchResult result, SourceLocation loc){
+    int lineNum = result.SourceManager->getSpellingLineNumber(loc);
+    return std::to_string(lineNum);
+}
+
 bool ASTWalker::isSource(std::string fileName){
     //Iterate through looking.
     for (string item : FILE_EXT){
@@ -648,6 +664,15 @@ bool ASTWalker::isSource(std::string fileName){
         bool curr = std::equal(item.rbegin(), item.rend(), fileName.rbegin());
 
         if (curr) return true;
+    }
+
+    return false;
+}
+
+bool ASTWalker::isAnonymousRecord(string qualName){
+    //Iterate through the anonymous names.
+    for (int i = 0; i < ANON_LIST->length(); i++){
+        if (ANON_LIST[i].compare(qualName) == 0) return true;
     }
 
     return false;

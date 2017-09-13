@@ -39,8 +39,6 @@ public:
     std::string generateTAFormat();
     void addNodesToFile(std::map<std::string, ClangNode*> fileSkip);
 
-    bool isPartOfContains(ClangNode* node);
-
     void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
     void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
     void resolveExternalReferences(bool silent = false);
@@ -49,6 +47,7 @@ public:
     std::vector<ClangEdge*> getEdges();
 
     void removeNode(ClangNode* node, bool unsafe = true);
+    void removeEdge(ClangEdge* edge);
 
     static const std::string FILE_ATTRIBUTE;
 

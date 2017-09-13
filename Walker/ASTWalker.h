@@ -102,8 +102,11 @@ private:
     void printFileName(std::string curFile);
 
     std::string generateIDString(const MatchFinder::MatchResult result, const clang::NamedDecl* dec);
+    std::string generateLineNumber(const MatchFinder::MatchResult result, const SourceLocation loc);
 
     bool isSource(std::string fileName);
+
+    bool isAnonymousRecord(std::string qualName);
 };
 
 
