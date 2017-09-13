@@ -91,7 +91,7 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
 
         //Adds the structure.
         addStructDecl(result, structDecl, generateFileName(result, itemDecl->getInnerLocStart()));
-        addStructCall(result, structDecl, itemDecl);
+        //addStructCall(result, structDecl, itemDecl);
     }
 }
 

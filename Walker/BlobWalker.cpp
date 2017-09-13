@@ -146,25 +146,52 @@ void BlobWalker::run(const MatchFinder::MatchResult &result) {
         //Checks if the expression is in the system header.
         if (isInSystemHeader(result, itemDecl) || isInSystemHeader(result, structDecl)) return;
 
-        addStructCall(result, structDecl, itemDecl);
+        addRecordCall(result, structDecl, itemDecl);
     } else if (const VarDecl *varStruct = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_BOUND_STRUCT])){
         //Get the struct being referenced.
-        auto *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DECL]);
+        auto *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_REF_DECL]);
 
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, varStruct) || isInSystemHeader(result, structDecl)) return;
 
-        cout << "trigger" << endl;
-        addStructUseCall(result, structDecl, varStruct);
+        addRecordUseCall(result, structDecl, varStruct);
     } else if (const FieldDecl *fieldStruct = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_BOUND_STRUCT])){
         //Get the struct being referenced.
-        auto *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_DECL]);
+        auto *structDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[STRUCT_REF_DECL]);
 
         //Get whether this call expression is in the system header.
         if (isInSystemHeader(result, fieldStruct) || isInSystemHeader(result, structDecl)) return;
 
-        cout << "trigger" << endl;
-        addStructUseCall(result, structDecl, nullptr, fieldStruct);
+        addRecordUseCall(result, structDecl, nullptr, fieldStruct);
+    } else if (const RecordDecl *unionDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[UNION_DECL])){
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, unionDecl)) return;
+
+        addUnionDecl(result, unionDecl);
+    } else if (const DeclaratorDecl *itemDecl = result.Nodes.getNodeAs<clang::DeclaratorDecl>(types[STRUCT_REF_ITEM])){
+        //Get the union being referenced.
+        auto *unionDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[UNION_REF]);
+
+        //Checks if the expression is in the system header.
+        if (isInSystemHeader(result, itemDecl) || isInSystemHeader(result, unionDecl)) return;
+
+        addRecordCall(result, unionDecl, itemDecl);
+    } else if (const VarDecl *varStruct = result.Nodes.getNodeAs<clang::VarDecl>(types[VAR_BOUND_UNION])){
+        //Get the struct being referenced.
+        auto *unionDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[UNION_REF_DECL]);
+
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, varStruct) || isInSystemHeader(result, unionDecl)) return;
+
+        addRecordUseCall(result, unionDecl, varStruct);
+    } else if (const FieldDecl *fieldStruct = result.Nodes.getNodeAs<clang::FieldDecl>(types[FIELD_BOUND_UNION])){
+        //Get the struct being referenced.
+        auto *unionDecl = result.Nodes.getNodeAs<clang::RecordDecl>(types[UNION_REF_DECL]);
+
+        //Get whether this call expression is in the system header.
+        if (isInSystemHeader(result, fieldStruct) || isInSystemHeader(result, unionDecl)) return;
+
+        addRecordUseCall(result, unionDecl, nullptr, fieldStruct);
     }
 }
 
@@ -227,24 +254,38 @@ void BlobWalker::generateASTMatches(MatchFinder *finder){
         finder->addMatcher(recordDecl(isStruct()).bind(types[STRUCT_DECL]), this);
 
         //Builds up struct.
-        /*finder->addMatcher(varDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
+        finder->addMatcher(varDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
                                    .bind(types[STRUCT_REF_ITEM]), this);
         finder->addMatcher(fieldDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
                                    .bind(types[STRUCT_REF_ITEM]), this);
         finder->addMatcher(functionDecl(hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF])))
-                                   .bind(types[STRUCT_REF_ITEM]), this);*/
-        //TODO: Add more items.
+                                   .bind(types[STRUCT_REF_ITEM]), this);
 
         //Builds the struct reference.
-        /*finder->addMatcher(varDecl(hasType(recordDecl().bind(types[STRUCT_DECL])))
-                                   .bind(types[VAR_BOUND_STRUCT]), this);
-        finder->addMatcher(fieldDecl(hasType(recordDecl().bind(types[STRUCT_DECL])))
-                                   .bind(types[FIELD_BOUND_STRUCT]), this);*/
+        finder->addMatcher(varDecl(hasType(elaboratedType(namesType(recordType(hasDeclaration(recordDecl(isStruct())
+                           .bind(types[STRUCT_REF_DECL]))))))).bind(types[VAR_BOUND_STRUCT]), this);
+        finder->addMatcher(fieldDecl(hasType(elaboratedType(namesType(recordType(hasDeclaration(recordDecl(isStruct())
+                           .bind(types[STRUCT_REF_DECL]))))))).bind(types[FIELD_BOUND_STRUCT]), this);
     }
 
     //Union methods.
     if (!exclusions.cUnion){
-        //TODO: Implement unions.
+        //Builds the union definition.
+        finder->addMatcher(recordDecl(isUnion()).bind(types[UNION_DECL]), this);
+
+        //Builds up union.
+        finder->addMatcher(varDecl(hasAncestor(recordDecl(isUnion()).bind(types[UNION_REF])))
+                                   .bind(types[UNION_REF_ITEM]), this);
+        finder->addMatcher(fieldDecl(hasAncestor(recordDecl(isUnion()).bind(types[UNION_REF])))
+                                   .bind(types[UNION_REF_ITEM]), this);
+        finder->addMatcher(functionDecl(hasAncestor(recordDecl(isUnion()).bind(types[UNION_REF])))
+                                   .bind(types[UNION_REF_ITEM]), this);
+
+        //Builds the struct reference.
+        finder->addMatcher(varDecl(hasType(elaboratedType(namesType(recordType(hasDeclaration(recordDecl(isUnion())
+                           .bind(types[UNION_REF_DECL]))))))).bind(types[VAR_BOUND_UNION]), this);
+        finder->addMatcher(fieldDecl(hasType(elaboratedType(namesType(recordType(hasDeclaration(recordDecl(isUnion())
+                           .bind(types[UNION_REF_DECL]))))))).bind(types[FIELD_BOUND_UNION]), this);
     }
 }
 
@@ -283,8 +324,8 @@ void BlobWalker::performAddClassCall(const MatchFinder::MatchResult result, cons
         //Checks if we can add a class reference (secondary attempt).
         classDecl = extractClass(decl->getQualifier());
         if (classDecl != nullptr && !exclusions.cClass) {
-            string declID = generateID(result, decl);
-            string declLabel = generateLabel(result, decl);
+            declID = generateID(result, decl);
+            declLabel = generateLabel(result, decl);
             addClassCall(result, classDecl, declID, declLabel);
         }
     }

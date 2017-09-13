@@ -406,6 +406,28 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
                                 ClangNode::STRUCT_ATTRIBUTE.processAnonymous(isAnonymous));
 }
 
+void ASTWalker::addUnionDecl(const MatchFinder::MatchResult result, const RecordDecl *unionDecl, string filename){
+    //Checks whether the function is anonymous.
+    bool isAnonymous = isAnonymousRecord(unionDecl->getQualifiedNameAsString());
+
+    //With that, generates the ID, label, and filename.
+    string fileName = generateFileName(result, unionDecl->getInnerLocStart());
+    string ID = generateID(result, unionDecl);
+    string label = generateLabel(result, unionDecl);
+
+    //Next, generates the node.
+    ClangNode* node = new ClangNode(ID, label, ClangNode::UNION);
+    graph->addNode(node);
+
+    //Process the attributes.
+    graph->addAttribute(node->getID(),
+                        ClangNode::FILE_ATTRIBUTE.attrName,
+                        ClangNode::FILE_ATTRIBUTE.processFileName(filename));
+    graph->addAttribute(node->getID(),
+                        ClangNode::STRUCT_ATTRIBUTE.anonymousName,
+                        ClangNode::STRUCT_ATTRIBUTE.processAnonymous(isAnonymous));
+}
+
 void ASTWalker::addFunctionCall(const MatchFinder::MatchResult results, const DeclaratorDecl* caller,
                                 const FunctionDecl* callee){
     //Generate a label for the two functions.
@@ -512,34 +534,34 @@ void ASTWalker::addEnumCall(const MatchFinder::MatchResult result, const EnumDec
     processEdge(enumID, enumLabel, refID, refLabel, ClangEdge::REFERENCES);
 }
 
-void ASTWalker::addStructCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
+void ASTWalker::addRecordCall(const MatchFinder::MatchResult result, const clang::RecordDecl *recordDecl,
                               const clang::DeclaratorDecl *itemDecl){
     //Generate the labels and ID.
-    string structID = generateID(result, structDecl);
-    string structLabel = generateLabel(result, structDecl);
+    string recordID = generateID(result, recordDecl);
+    string recordLabel = generateLabel(result, recordDecl);
     string refID = generateID(result, itemDecl);
     string refLabel = generateLabel(result, itemDecl);
 
-    processEdge(structID, structLabel, refID, refLabel, ClangEdge::CONTAINS);
+    processEdge(recordID, recordLabel, refID, refLabel, ClangEdge::CONTAINS);
 }
 
-void ASTWalker::addStructUseCall(const MatchFinder::MatchResult result, const RecordDecl *structDecl,
+void ASTWalker::addRecordUseCall(const MatchFinder::MatchResult result, const RecordDecl *recordDecl,
                                  const VarDecl *varDecl, const FieldDecl *fieldDecl){
-    string structID = generateID(result, structDecl);
-    string structLabel = generateLabel(result, structDecl);
+    string recordID = generateID(result, recordDecl);
+    string recordLabel = generateLabel(result, recordDecl);
 
     //Determine whether we are using a field or variable.
     string refID;
     string refLabel;
     if (fieldDecl == nullptr){
-        refID = generateID(result, fieldDecl);
-        refLabel = generateLabel(result, fieldDecl);
-    } else {
         refID = generateID(result, varDecl);
         refLabel = generateLabel(result, varDecl);
+    } else {
+        refID = generateID(result, fieldDecl);
+        refLabel = generateLabel(result, fieldDecl);
     }
 
-    processEdge(structID, structLabel, refID, refLabel, ClangEdge::REFERENCES);
+    processEdge(recordID, recordLabel, refID, refLabel, ClangEdge::REFERENCES);
 }
 /********************************************************************************************************************/
 // END AST TO GRAPH PARAMETERS

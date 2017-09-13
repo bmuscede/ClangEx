@@ -61,6 +61,7 @@ protected:
     void addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl,
                              std::string filenameSpoof = std::string());
     void addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl, std::string filename = "");
+    void addUnionDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *unionDecl, std::string filename = "");
 
     /** Relation Insertion Functions */
     void addFunctionCall(const MatchFinder::MatchResult results, const clang::DeclaratorDecl* caller,
@@ -77,9 +78,9 @@ protected:
                              const clang::EnumConstantDecl *enumConstantDecl);
     void addEnumCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
                      const clang::VarDecl *varDecl, const clang::FieldDecl *fieldDecl = nullptr);
-    void addStructCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
+    void addRecordCall(const MatchFinder::MatchResult result, const clang::RecordDecl *recordDecl,
                        const clang::DeclaratorDecl *itemDecl);
-    void addStructUseCall(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl,
+    void addRecordUseCall(const MatchFinder::MatchResult result, const clang::RecordDecl *recordDecl,
                           const clang::VarDecl *varDecl, const clang::FieldDecl *fieldDecl = nullptr);
 /********************************************************************************************************************/
 
