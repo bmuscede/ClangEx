@@ -1,14 +1,43 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Printer.cpp
 //
-// Created by bmuscede on 24/02/17.
+// Created By: Bryan J Muscedere
+// Date: 24/02/17.
 //
+// Abstract method that implements a printer system for ClangEx.
+// Defines methods that both the minimal and verbose printer must
+// have for them to function.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
 #include "Printer.h"
 
 using namespace std;
 
+/**
+ * Default Destructor.
+ */
 Printer::~Printer() {}
 
+/**
+ * Method that notifies the user on a processing error.
+ * @return The user's repsonse if they want to continue or not.
+ */
 bool Printer::printProcessFailure() {
     cout << "Compilation finished but errors were detected." << endl;
 
@@ -33,11 +62,21 @@ bool Printer::printProcessFailure() {
     return true;
 }
 
+/**
+ * Error message for if an error is encountered when processing a TA file.
+ * @param lineNum The line number.
+ * @param message The error message.
+ */
 void Printer::printErrorTAProcess(int lineNum, std::string message) {
     cout << "Invalid input on line " << lineNum << "." << endl;
     cout << message << endl;
 }
 
+/**
+ * Error message for if an error is encountered when processing a TA file.
+ * @param type The type of error.
+ * @param name The name of the entity.
+ */
 void Printer::printErrorTAProcess(Printer::ProcessStatusError type, string name){
     cout << "TA file does not have a ";
 
@@ -63,24 +102,41 @@ void Printer::printErrorTAProcess(Printer::ProcessStatusError type, string name)
     }
 }
 
+/**
+ * Error message for if the TA structure created is malformed.
+ */
 void Printer::printErrorTAProcessMalformed() {
     cout << "The TA structure in memory is malformed." << endl;
     cout << "Please check the relation attributes in the TA file!" << endl;
 }
 
+/**
+ * Error that is printed if there is an error reading a TA file.
+ * @param fileName The filename for the TA file.
+ */
 void Printer::printErrorTAProcessRead(std::string fileName){
     cout << "The TA file " << fileName << " does not exist!" << endl;
     cout << "Exiting program..." << endl;
 }
 
+/**
+ * Error that is printed if there is an error writing a TA file.
+ * @param fileName The filename for the TA file.
+ */
 void Printer::printErrorTAProcessWrite(std::string fileName){
     cout << "The TA file " << fileName << " could not be written!" << endl;
     cout << "Exiting program..." << endl;
 }
 
+/**
+ * Error that is printed if a TA graph is invalid.
+ */
 void Printer::printErrorTAProcessGraph() {
     cout << "Invalid TA graph object supplied." << endl;
     cout << "Please supply an initialized TA graph object!" << endl;
 }
 
+/**
+ * Default Constructor.
+ */
 Printer::Printer() { }

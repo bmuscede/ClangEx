@@ -1,6 +1,28 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// PartialWalker.cpp
 //
-// Created by bmuscede on 06/12/16.
+// Created By: Bryan J Muscedere
+// Date: 06/12/16.
 //
+// Walks through the Clang AST in a class-based formation. Only looks at the current
+// referenced class and ignores ALL header files.. Allows for variables, fields, enums,
+// classes, etc. Can possibly create an incomplete model since header files are ignored.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
 #include "PartialWalker.h"
@@ -11,11 +33,24 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
+/**
+ * Default Constructor.
+ * @param print The printer to use.
+ * @param exclusions The exclusions to use.
+ * @param graph The TA Graph to use. Usually starts blank.
+ */
 PartialWalker::PartialWalker(Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
         ASTWalker(exclusions, print, graph){ }
 
+/**
+ * Default Destructor.
+ */
 PartialWalker::~PartialWalker() { }
 
+/**
+ * Runs the AST matcher system. Looks for the match type and then acts on it.
+ * @param result The result that triggers this function.
+ */
 void PartialWalker::run(const MatchFinder::MatchResult &result) {
     //Look for the AST matcher being triggered.
     if (const FunctionDecl *functionDecl = result.Nodes.getNodeAs<clang::FunctionDecl>(types[FUNC_DEC])) {
@@ -95,6 +130,10 @@ void PartialWalker::run(const MatchFinder::MatchResult &result) {
     }
 }
 
+/**
+ * Generates the AST matchers that will trigger the run function.
+ * @param finder The match finder that will store these triggers.
+ */
 void PartialWalker::generateASTMatches(MatchFinder *finder) {
     //Function methods.
     if (!exclusions.cFunction){
@@ -160,6 +199,13 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
     }
 }
 
+/**
+ * Adds the class for the decl being added.
+ * @param result The result for the match.
+ * @param decl The decl being added.
+ * @param type The type of the node.
+ * @param innerDecl The inner decl of the type.
+ */
 void PartialWalker::manageClasses(const MatchFinder::MatchResult result,
                                   const clang::DeclaratorDecl *decl, ClangNode::NodeType type,
                                   const clang::DeclaratorDecl *innerDecl){
@@ -186,6 +232,12 @@ void PartialWalker::manageClasses(const MatchFinder::MatchResult result,
     addClassCall(result, record, declID, declLabel);
 }
 
+/**
+ * Adds all enum constants for a given enum.
+ * @param result The match result.
+ * @param enumDecl The enum being added.
+ * @param filename The filename for the enum.
+ */
 void PartialWalker::addEnumConstants(const MatchFinder::MatchResult result, const EnumDecl *enumDecl,
                                      string filename){
     //Iterate through the values in the enum.

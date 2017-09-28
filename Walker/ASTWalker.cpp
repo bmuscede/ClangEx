@@ -1,6 +1,29 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ASTWalker.h
 //
-// Created by bmuscede on 05/11/16.
+// Created By: Bryan J Muscedere
+// Date: 05/11/16.
 //
+// Parent class that supports the other two walkers. Provides methods
+// that add each of the AST elements. Also provides information for
+// ID and name generation. Basically, this method is a catch-all for
+// operations.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <fstream>
 #include <iostream>
@@ -16,16 +39,29 @@ using namespace clang::tooling;
 using namespace clang::ast_matchers;
 using namespace llvm;
 
+/**
+ * Default Destructor
+ */
 ASTWalker::~ASTWalker() { }
 
+/**
+ * Gets the graph for the current AST.
+ * @return The graph currenly being used.
+ */
 TAGraph* ASTWalker::getGraph(){
     return graph;
 }
 
+/**
+ * Resolves external references inside the graph. By default, does this silently.
+ */
 void ASTWalker::resolveExternalReferences() {
     graph->resolveExternalReferences(false);
 }
 
+/**
+ * Resolves all files that were encountered in processing the AST.
+ */
 void ASTWalker::resolveFiles(){
     bool assumeValid = true;
     vector<ClangNode*> fileNodes = vector<ClangNode*>();
@@ -57,6 +93,11 @@ void ASTWalker::resolveFiles(){
     graph->addNodesToFile(fileSkip);
 }
 
+/**
+ * Generates an MD5 hash of the current string.
+ * @param text The string to convert.
+ * @return The MD5 of the current string.
+ */
 string ASTWalker::generateMD5(string text){
     //Creates a digest buffer.
     unsigned char digest[MD5_DIGEST_LENGTH];
@@ -76,6 +117,12 @@ string ASTWalker::generateMD5(string text){
     return string(mdString);
 }
 
+/**
+ * Constructor. Sets fields used by the other two walkers.
+ * @param ex The AST elements to exclude.
+ * @param print The printer to use.
+ * @param existing The existing TA graph (if any).
+ */
 ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, Printer *print, TAGraph* existing = new TAGraph()) :
         clangPrinter(print){
     //Sets the current file name to blank.
@@ -89,6 +136,13 @@ ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, Printer *print, TAGraph* exis
     exclusions = ex;
 }
 
+/**
+ * Generates a file name from a given source location.
+ * @param result The match result.
+ * @param loc The source location of the item.
+ * @param suppressFileOutput Whether we print the file being processed or not.
+ * @return The filename.
+ */
 string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
                                    SourceLocation loc, bool suppressFileOutput){
     //Gets the file name.
@@ -111,6 +165,12 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
     return newPath;
 }
 
+/**
+ * Generates an ID of a declaration.
+ * @param result The match result.
+ * @param dec The declaration.
+ * @return The ID of the declaration.
+ */
 string ASTWalker::generateID(const MatchFinder::MatchResult result, const NamedDecl *dec){
     //Generates the ID.
     string name = generateIDString(result, dec);
@@ -171,6 +231,12 @@ string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const Nam
     return name;
 }
 
+/**
+ * Whether or not a declaration is in a system header.
+ * @param result The match result.
+ * @param decl The decl.
+ * @return A boolean indicating whether the declaration is or not.
+ */
 bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const Decl *decl){
     if (decl == nullptr) return false;
     bool isIn;
@@ -195,6 +261,11 @@ bool ASTWalker::isInSystemHeader(const MatchFinder::MatchResult &result, const D
     return isIn;
 }
 
+/**
+ * Extracts the CXXRecordDecl from a NestedNameSpecifier.
+ * @param name The NestedNameSpecifier
+ * @return A CXXRecordDecl or nullptr on failure.
+ */
 CXXRecordDecl* ASTWalker::extractClass(NestedNameSpecifier* name){
     //Checks if the qualifier is null.
     if (name == nullptr || name->getAsType() == nullptr) return nullptr;
@@ -204,6 +275,11 @@ CXXRecordDecl* ASTWalker::extractClass(NestedNameSpecifier* name){
 /********************************************************************************************************************/
 // START AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/
+/**
+ * Adds a function decl to the graph.
+ * @param results The match result.
+ * @param dec The function decl to add.
+ */
 void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const FunctionDecl *dec) {
     //Generate the fields for the node.
     string label = generateLabel(results, dec);
@@ -254,6 +330,12 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const Fu
     }
 }
 
+/**
+ * Adds a variable decl (or field decl) to the graph.
+ * @param results The match result.
+ * @param varDec The var decl to add.
+ * @param fieldDec The field decl to add.
+ */
 void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
                                 const VarDecl *varDec, const FieldDecl *fieldDec){
     string label;
@@ -300,6 +382,12 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
                                 staticInfo);
 }
 
+/**
+ * Adds a class decl to the graph.
+ * @param results The match result.
+ * @param classDecl The class decl to add.
+ * @param fName The name of the file.
+ */
 void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRecordDecl *classDecl, string fName){
     //Get the definition.
     auto def = classDecl->getDefinition();
@@ -347,6 +435,12 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRe
     }
 }
 
+/**
+ * Adds an enum decl to the graph.
+ * @param result The match result.
+ * @param enumDecl The enum decl to add.
+ * @param spoofFilename A potential false filename to add it under.
+ */
 void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDecl *enumDecl, string spoofFilename){
     //Generate the fields for the node.
     string filename = (spoofFilename.compare(string()) == 0) ?
@@ -365,6 +459,12 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 }
 
+/**
+ * Adds an enum constant to the graph.
+ * @param result The match result.
+ * @param enumDecl The enum decl to add.
+ * @param filenameSpoof A potential false filename to add it under.
+ */
 void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const clang::EnumConstantDecl *enumDecl,
                                     string filenameSpoof){
     //Generate the fields for the node.
@@ -384,6 +484,12 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
                                 ClangNode::FILE_ATTRIBUTE.processFileName(filename));
 }
 
+/**
+ * Adds a struct decl to the graph.
+ * @param result The match result.
+ * @param structDecl The struct decl to add.
+ * @param filename A spoof filename to add it under.
+ */
 void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang::RecordDecl *structDecl, string filename){
     //Checks whether the function is anonymous.
     bool isAnonymous = isAnonymousRecord(structDecl->getQualifiedNameAsString());
@@ -406,6 +512,12 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
                                 ClangNode::STRUCT_ATTRIBUTE.processAnonymous(isAnonymous));
 }
 
+/**
+ * Adds a union decl to the graph.
+ * @param result The match result.
+ * @param unionDecl The union decl to add.
+ * @param filename A spoof filename to add it under.
+ */
 void ASTWalker::addUnionDecl(const MatchFinder::MatchResult result, const RecordDecl *unionDecl, string filename){
     //Checks whether the function is anonymous.
     bool isAnonymous = isAnonymousRecord(unionDecl->getQualifiedNameAsString());
@@ -428,6 +540,12 @@ void ASTWalker::addUnionDecl(const MatchFinder::MatchResult result, const Record
                         ClangNode::STRUCT_ATTRIBUTE.processAnonymous(isAnonymous));
 }
 
+/**
+ * Adds a function call to the graph.
+ * @param results The match result.
+ * @param caller The caller.
+ * @param callee The callee.
+ */
 void ASTWalker::addFunctionCall(const MatchFinder::MatchResult results, const DeclaratorDecl* caller,
                                 const FunctionDecl* callee){
     //Generate a label for the two functions.
@@ -439,6 +557,14 @@ void ASTWalker::addFunctionCall(const MatchFinder::MatchResult results, const De
     processEdge(callerID, callerLabel, calleeID, calleeLabel, ClangEdge::CALLS);
 }
 
+/**
+ * Adds a variable call to the graph.
+ * @param result The match result.
+ * @param caller The caller.
+ * @param expr The expression that the call takes place in.
+ * @param varCallee The var callee.
+ * @param fieldCallee The field callee.
+ */
 void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const DeclaratorDecl *caller,
                                 const Expr* expr, const VarDecl *varCallee,
                                 const FieldDecl *fieldCallee){
@@ -473,6 +599,13 @@ void ASTWalker::addVariableCall(const MatchFinder::MatchResult result, const Dec
     processEdge(callerID, callerLabel, variableID, variableLabel, ClangEdge::REFERENCES, attributes);
 }
 
+/**
+ * Adds a variable inside call.
+ * @param result The match result.
+ * @param functionParent The function parent.
+ * @param varChild The variable child.
+ * @param fieldChild The field child.
+ */
 void ASTWalker::addVariableInsideCall(const MatchFinder::MatchResult result, const clang::FunctionDecl *functionParent,
                                       const clang::VarDecl *varChild, const clang::FieldDecl *fieldChild){
     string functionID = generateID(result, functionParent);
@@ -492,6 +625,13 @@ void ASTWalker::addVariableInsideCall(const MatchFinder::MatchResult result, con
     processEdge(functionID, functionLabel, varID, varLabel, ClangEdge::CONTAINS);
 }
 
+/**
+ * Adds a class call from a class to a decl.
+ * @param result The match result.
+ * @param classDecl The class decl.
+ * @param declID The ID of the decl.
+ * @param declLabel The label of the decl.
+ */
 void ASTWalker::addClassCall(const MatchFinder::MatchResult result, const CXXRecordDecl *classDecl, string declID,
                              string declLabel){
     string classID = generateID(result, classDecl);
@@ -500,6 +640,12 @@ void ASTWalker::addClassCall(const MatchFinder::MatchResult result, const CXXRec
     processEdge(classID, classLabel, declID, declLabel, ClangEdge::CONTAINS);
 }
 
+/**
+ * Adds a class inheritance call.
+ * @param result The match result.
+ * @param childClass The child class.
+ * @param parentClass The parent class.
+ */
 void ASTWalker::addClassInheritance(const MatchFinder::MatchResult result,
                                     const CXXRecordDecl *childClass, const CXXRecordDecl *parentClass) {
     string classID = generateID(result, childClass);
@@ -510,6 +656,12 @@ void ASTWalker::addClassInheritance(const MatchFinder::MatchResult result,
     processEdge(classID, classLabel, baseID, baseLabel, ClangEdge::INHERITS);
 }
 
+/**
+ * Adds an enum constant to the graph.
+ * @param result The match result.
+ * @param enumDecl The enum being added.
+ * @param enumConstantDecl The enum constant.
+ */
 void ASTWalker::addEnumConstantCall(const MatchFinder::MatchResult result, const clang::EnumDecl *enumDecl,
                                     const clang::EnumConstantDecl *enumConstantDecl){
     //Gets the labels.
@@ -521,6 +673,13 @@ void ASTWalker::addEnumConstantCall(const MatchFinder::MatchResult result, const
     processEdge(enumID, enumLabel, enumConstID, enumConstLabel, ClangEdge::CONTAINS);
 }
 
+/**
+ * Adds an enum call to the graph.
+ * @param result The match result.
+ * @param enumDecl The enum decl being added.
+ * @param varDecl The var decl.
+ * @param fieldDecl The field decl.
+ */
 void ASTWalker::addEnumCall(const MatchFinder::MatchResult result, const EnumDecl *enumDecl, const VarDecl *varDecl,
                             const FieldDecl *fieldDecl){
     //Generate the labels.
@@ -534,6 +693,12 @@ void ASTWalker::addEnumCall(const MatchFinder::MatchResult result, const EnumDec
     processEdge(enumID, enumLabel, refID, refLabel, ClangEdge::REFERENCES);
 }
 
+/**
+ * Adds a record call from one record to a declaration.
+ * @param result The match result.
+ * @param recordDecl The record decl.
+ * @param itemDecl The item decl.
+ */
 void ASTWalker::addRecordCall(const MatchFinder::MatchResult result, const clang::RecordDecl *recordDecl,
                               const clang::DeclaratorDecl *itemDecl){
     //Generate the labels and ID.
@@ -545,6 +710,13 @@ void ASTWalker::addRecordCall(const MatchFinder::MatchResult result, const clang
     processEdge(recordID, recordLabel, refID, refLabel, ClangEdge::CONTAINS);
 }
 
+/**
+ * Adds the usage of a record.
+ * @param result The match result.
+ * @param recordDecl The record decl.
+ * @param varDecl The var decl.
+ * @param fieldDecl The field decl.
+ */
 void ASTWalker::addRecordUseCall(const MatchFinder::MatchResult result, const RecordDecl *recordDecl,
                                  const VarDecl *varDecl, const FieldDecl *fieldDecl){
     string recordID = generateID(result, recordDecl);
@@ -567,6 +739,15 @@ void ASTWalker::addRecordUseCall(const MatchFinder::MatchResult result, const Re
 // END AST TO GRAPH PARAMETERS
 /********************************************************************************************************************/
 
+/**
+ * Processes the edge. This is a generic method.
+ * @param srcID The source ID.
+ * @param srcLabel The source label.
+ * @param dstID The destination ID.
+ * @param dstLabel The destination label.
+ * @param type The edge type.
+ * @param attributes A collection of attributes.
+ */
 void ASTWalker::processEdge(string srcID, string srcLabel, string dstID, string dstLabel, ClangEdge::EdgeType type,
                             vector<pair<string, string>> attributes){
     //Looks up the nodes by label.
@@ -595,6 +776,10 @@ void ASTWalker::processEdge(string srcID, string srcLabel, string dstID, string 
     }
 }
 
+/**
+ * Prints the currently processed filename.
+ * @param curFile The current file being processed.
+ */
 void ASTWalker::printFileName(string curFile){
     if (curFile.compare(curFileName) != 0){
         //Ensure we're only outputting a source file.
@@ -605,6 +790,12 @@ void ASTWalker::printFileName(string curFile){
     }
 }
 
+/**
+ * Generates an ID string for a given decl.
+ * @param result The match result.
+ * @param dec The decl.
+ * @return ID string.
+ */
 string ASTWalker::generateIDString(const MatchFinder::MatchResult result, const NamedDecl *dec) {
     //Gets the canonical decl.
     dec = dyn_cast<NamedDecl>(dec->getCanonicalDecl());
@@ -674,11 +865,22 @@ string ASTWalker::generateIDString(const MatchFinder::MatchResult result, const 
     return name;
 }
 
+/**
+ * Generates the line number for the current source location.
+ * @param result The match result.
+ * @param loc The source location.
+ * @return The line number.
+ */
 string ASTWalker::generateLineNumber(const MatchFinder::MatchResult result, SourceLocation loc){
     int lineNum = result.SourceManager->getSpellingLineNumber(loc);
     return std::to_string(lineNum);
 }
 
+/**
+ * Checks if the item currently is a source file.
+ * @param fileName The file name.
+ * @return Whether it is a source file.
+ */
 bool ASTWalker::isSource(std::string fileName){
     //Iterate through looking.
     for (string item : FILE_EXT){
@@ -691,6 +893,11 @@ bool ASTWalker::isSource(std::string fileName){
     return false;
 }
 
+/**
+ * Checks whether the record is anonymous.
+ * @param qualName The qualified name.
+ * @return Whether it is an anonymous record.
+ */
 bool ASTWalker::isAnonymousRecord(string qualName){
     //Iterate through the anonymous names.
     for (int i = 0; i < ANON_LIST->length(); i++){

@@ -4,10 +4,10 @@
 // Created By: Bryan J Muscedere
 // Date: 05/09/17.
 //
-// Driver that allows user commands to be converted into slome sort of
+// Driver that allows user commands to be converted into some sort of
 // ClangEx action. Can add files, manage TA files, output files, and
 // run ClangEx on a desired source file. Ensures commands are handled gracefully
-
+//
 // Copyright (C) 2017, Bryan J. Muscedere
 //
 // This program is free software: you can redistribute it and/or modify
@@ -602,6 +602,10 @@ bool ClangDriver::outputTAString(int modelNum, string fileName){
     return true;
 }
 
+/**
+ * Deletes a TA graph based on the TA number.
+ * @param modelNum The number to delete.
+ */
 void ClangDriver::deleteTAGraph(int modelNum){
     //Checks the bounds.
     if (modelNum < 0 || modelNum > graphs.size()) return;

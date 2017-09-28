@@ -1,14 +1,41 @@
-/**
-* \file
-* \author Trevor Fountain
-* \author Johannes Buchner
-* \author Erik Garrison
-* \date 2010-2014
-* \copyright BSD 3-Clause
-*
-* progressbar -- a C class (by convention) for displaying progress
-* on the command line (to stderr).
-*/
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ProgressBar.c
+//
+// Created By: Trevor Fountain, Johannes Buchner, Erik Garrison
+// Date: 2014
+//
+// A C class that prints and displays a progress bar on the command line.
+// Displays that to stderr.
+//
+// Copyright (C) 2017, Trevor Fountain
+// Copyright (C) 2017, Johannes Buchner
+// Copyright (C) 2017, Erik Garrison
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//      this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//      this list of conditions and the following disclaimer in the documentation
+//      and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors
+//      may be used to endorse or promote products derived from this software
+//      without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+// SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+// IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <termcap.h>  /* tgetent, tgetnum */
 #include <assert.h>
@@ -102,6 +129,9 @@ void progressbar_inc(progressbar *bar)
     progressbar_update(bar, bar->value+1);
 }
 
+/*
+ * Writes a progress bar character to the screen.
+ */
 static void progressbar_write_char(FILE *file, const int ch, const size_t times) {
     size_t i;
     for (i = 0; i < times; ++i) {
@@ -109,10 +139,16 @@ static void progressbar_write_char(FILE *file, const int ch, const size_t times)
     }
 }
 
+/**
+ * Gets the max x and y of the progress bar.
+ */
 static int progressbar_max(int x, int y) {
     return x > y ? x : y;
 }
 
+/**
+ * Gets the width of the screen.
+ */
 static unsigned int get_screen_width(void) {
     char termbuf[2048];
     if (tgetent(termbuf, getenv("TERM")) >= 0) {
@@ -126,6 +162,9 @@ static int progressbar_bar_width(int screen_width, int label_length) {
     return progressbar_max(MINIMUM_BAR_WIDTH, screen_width - label_length - ETA_FORMAT_LENGTH - WHITESPACE_LENGTH);
 }
 
+/**
+ * Calculates the length of the label.
+ */
 static int progressbar_label_width(int screen_width, int label_length, int bar_width) {
     int eta_width = ETA_FORMAT_LENGTH;
 
@@ -137,6 +176,9 @@ static int progressbar_label_width(int screen_width, int label_length, int bar_w
     }
 }
 
+/**
+ * Prints the remaining seconds.
+ */
 static int progressbar_remaining_seconds(const progressbar* bar) {
     double offset = difftime(time(NULL), bar->start);
     if (bar->value > 0 && offset > 0) {
@@ -146,6 +188,9 @@ static int progressbar_remaining_seconds(const progressbar* bar) {
     }
 }
 
+/**
+ * Calculates the time components of the progress bar.
+ */
 static progressbar_time_components progressbar_calc_time_components(int seconds) {
     int hours = seconds / 3600;
     seconds -= hours * 3600;
@@ -156,6 +201,9 @@ static progressbar_time_components progressbar_calc_time_components(int seconds)
     return components;
 }
 
+/**
+ * Draws the progress bar.
+ */
 static void progressbar_draw(const progressbar *bar)
 {
     int screen_width = get_screen_width();

@@ -1,6 +1,29 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// TAProcessor.cpp
 //
-// Created by bmuscede on 22/12/16.
+// Created By: Bryan J Muscedere
+// Date:22/12/16.
 //
+// Processor system that is capable of reading and writing a TA file. Allows for
+// the conversion of a TA graph to TA file or from a TA file to TA graph. This is
+// primarily used for merging an already created TA file with newly processed source
+// code.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <fstream>
 #include <boost/algorithm/string/split.hpp>
@@ -9,30 +32,56 @@
 
 using namespace std;
 
-/*
- * Trim Operations
- * Taken From: http://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
+/**
+ * Left trim string.
+ * @param s The string to trim.
+ * @return The trimmed string.
  */
 static inline string &ltrim(string &s) {
     s.erase(s.begin(), find_if(s.begin(), s.end(),
                                     not1(ptr_fun<int, int>(isspace))));
     return s;
 }
+
+/**
+ * Right trim string.
+ * @param s The string to trim.
+ * @return The trimmed string.
+ */
 static inline string &rtrim(string &s) {
     s.erase(find_if(s.rbegin(), s.rend(),
                          not1(ptr_fun<int, int>(isspace))).base(), s.end());
     return s;
 }
+
+/**
+ * Overall trim string.
+ * @param s The string to trim.
+ * @return The trimmed string.
+ */
 static inline string &trim(string &s) {
     return ltrim(rtrim(s));
 }
 
+/**
+ * Constructor. Sets the entity flag name. By default, it is $INSTANCE.
+ * @param entityRelName The entity relationship name.
+ * @param print The ClangEx printer.
+ */
 TAProcessor::TAProcessor(string entityRelName, Printer* print) : clangPrinter(print) {
     this->entityString = entityRelName;
 }
 
+/**
+ * Default Destructor
+ */
 TAProcessor::~TAProcessor(){ }
 
+/**
+ * Reads the TA file from a given file name.
+ * @param fileName The file name to read from.
+ * @return Whether it was read successfully.
+ */
 bool TAProcessor::readTAFile(string fileName){
     //Starts by creating the file stream.
     ifstream modelStream(fileName);
@@ -50,6 +99,11 @@ bool TAProcessor::readTAFile(string fileName){
     return success;
 }
 
+/**
+ * Writes a TA file to a given file name.
+ * @param fileName The location to write to.
+ * @return Whether or not the file was written successfully.
+ */
 bool TAProcessor::writeTAFile(string fileName){
     //Open up a file pointer.
     ofstream taFile;
@@ -69,6 +123,11 @@ bool TAProcessor::writeTAFile(string fileName){
     return true;
 }
 
+/**
+ * Reads a TA graph.
+ * @param graph The graph to read.
+ * @return Whether the graph was read successfully.
+ */
 bool TAProcessor::readTAGraph(TAGraph* graph){
     if (graph == nullptr){
         clangPrinter->printErrorTAProcessGraph();
@@ -82,6 +141,10 @@ bool TAProcessor::readTAGraph(TAGraph* graph){
     return true;
 }
 
+/**
+ * Writes to a TA graph.
+ * @return The graph that was written.
+ */
 TAGraph* TAProcessor::writeTAGraph(){
     //Create a new graph.
     TAGraph* graph = new TAGraph();
@@ -95,6 +158,12 @@ TAGraph* TAProcessor::writeTAGraph(){
     return graph;
 }
 
+/**
+ * From a file, reads each line. This method decides how to proceed.
+ * @param modelStream The stream of the filename.
+ * @param fileName The filename being read from.
+ * @return Whether it was successful.
+ */
 bool TAProcessor::readGeneric(ifstream& modelStream, string fileName){
     bool running = true;
     bool tupleEncountered = false;
@@ -143,6 +212,12 @@ bool TAProcessor::readGeneric(ifstream& modelStream, string fileName){
     return false;
 }
 
+/**
+ * Reader that reads the schema section of the file.
+ * @param modelStream The model stream.
+ * @param lineNum The current line number.
+ * @return Whether or not it was successful.
+ */
 bool TAProcessor::readScheme(ifstream& modelStream, int* lineNum){
     string line;
 
@@ -171,6 +246,12 @@ bool TAProcessor::readScheme(ifstream& modelStream, int* lineNum){
     return true;
 }
 
+/**
+ * Reads the relation section from the TA file.
+ * @param modelStream The model stream.
+ * @param lineNum The current line number.
+ * @return Whether or not it was successful.
+ */
 bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     string line;
     bool blockComment = false;
@@ -230,6 +311,12 @@ bool TAProcessor::readRelations(ifstream& modelStream, int* lineNum){
     return true;
 }
 
+/**
+ * Reads the attributes from the TA file.
+ * @param modelStream The model stream.
+ * @param lineNum The current line number.
+ * @return Whether or not it was successful.
+ */
 bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
     string line;
     bool blockComment = false;
@@ -311,6 +398,11 @@ bool TAProcessor::readAttributes(ifstream& modelStream, int* lineNum){
     return true;
 }
 
+/**
+ * Writes relations to a TA graph.
+ * @param graph The graph to write to.
+ * @return Whether or not it was successful.
+ */
 bool TAProcessor::writeRelations(TAGraph* graph){
     //First, finds the instance relation.
     int pos = findRelEntry(entityString);
@@ -362,6 +454,11 @@ bool TAProcessor::writeRelations(TAGraph* graph){
     return true;
 }
 
+/**
+ * Writes attributes to a TA graph.
+ * @param graph The graph to write to.
+ * @return Whether or not it was successful.
+ */
 bool TAProcessor::writeAttributes(TAGraph* graph){
     //We simply go through and process them.
     for (auto attr : attributes){
@@ -414,6 +511,10 @@ bool TAProcessor::writeAttributes(TAGraph* graph){
     return true;
 }
 
+/**
+ * Generates a TA string based on this system's internal representation.
+ * @return The TA string.
+ */
 string TAProcessor::generateTAString(){
     string taString = "";
 
@@ -432,6 +533,10 @@ string TAProcessor::generateTAString(){
     return taString;
 }
 
+/**
+ * Generates the relation portion for the TA file.
+ * @return The relation string.
+ */
 string TAProcessor::generateRelationString(){
     string relString = "";
     relString += RELATION_FLAG + "\n";
@@ -450,6 +555,10 @@ string TAProcessor::generateRelationString(){
     return relString;
 }
 
+/**
+ * Generates the attribute portion for the TA file.
+ * @return The attribute string.
+ */
 string TAProcessor::generateAttributeString(){
     string attrString = "";
     attrString += ATTRIBUTE_FLAG + "\n";
@@ -474,6 +583,11 @@ string TAProcessor::generateAttributeString(){
     return attrString;
 }
 
+/**
+ * Generates attributes from a given set of KV pairs.
+ * @param attr The attribute KV pair map.
+ * @return The attribute string.
+ */
 string TAProcessor::generateAttributeStringFromKVs(vector<pair<string, vector<string>>> attr){
     string attrString = " { ";
 
@@ -495,6 +609,13 @@ string TAProcessor::generateAttributeStringFromKVs(vector<pair<string, vector<st
     return attrString;
 }
 
+/**
+ * Generates attributes from a given line.
+ * @param lineNum The line number.
+ * @param succ Whether or not it was successful.
+ * @param line The line to process.
+ * @return A vector of all KV pairs for the attribute.
+ */
 vector<pair<string, vector<string>>> TAProcessor::generateAttributes(int lineNum, bool& succ,
                                                                      std::vector<std::string> line){
     if (line.size() < 3){
@@ -592,6 +713,12 @@ vector<pair<string, vector<string>>> TAProcessor::generateAttributes(int lineNum
     return attrList;
 }
 
+/**
+ * Prepares a line for being processed.
+ * @param line The line to process.
+ * @param blockComment Whether or not a block comment was encountered.
+ * @return The tokenized string.
+ */
 vector<string> TAProcessor::prepareLine(string line, bool& blockComment){
     //Perform comment processing.
     line = removeStandardComment(line);
@@ -616,6 +743,11 @@ vector<string> TAProcessor::prepareLine(string line, bool& blockComment){
     return modified;
 }
 
+/**
+ * Removes a standard comment from a line.
+ * @param line The line to process.
+ * @return The string with the comment removed.
+ */
 string TAProcessor::removeStandardComment(string line){
     //Iterate through the string two characters at a time.
     for (int i = 0; i + 1 < line.size(); i++){
@@ -634,6 +766,12 @@ string TAProcessor::removeStandardComment(string line){
     return line;
 }
 
+/**
+ * Removes a block comment.
+ * @param line The line to process.
+ * @param blockComment Whether a block comment was encountered.
+ * @return The line without the block comment.
+ */
 string TAProcessor::removeBlockComment(string line, bool& blockComment){
     string newLine = "";
 
@@ -667,6 +805,11 @@ string TAProcessor::removeBlockComment(string line, bool& blockComment){
     return newLine;
 }
 
+/**
+ * Finds a relationship entry.
+ * @param name The name of the relationship.
+ * @return The index of the relationship.
+ */
 int TAProcessor::findRelEntry(string name){
     int i = 0;
 
@@ -680,6 +823,10 @@ int TAProcessor::findRelEntry(string name){
     return -1;
 }
 
+/**
+ * Creates a relationship entry in the system.
+ * @param name The name of the relationship.
+ */
 void TAProcessor::createRelEntry(string name){
     pair<string, set<pair<string, string>>> entry = pair<string, set<pair<string, string>>>();
     entry.first = name;
@@ -687,6 +834,11 @@ void TAProcessor::createRelEntry(string name){
     relations.push_back(entry);
 }
 
+/**
+ * Finds an attribute entry.
+ * @param attrName The name of the attribute.
+ * @return The index of the attribute.
+ */
 int TAProcessor::findAttrEntry(string attrName){
     int i = 0;
 
@@ -700,6 +852,13 @@ int TAProcessor::findAttrEntry(string attrName){
     return -1;
 }
 
+/**
+ * Finds an attribute entry.
+ * @param relName The relationship name.
+ * @param src The source name.
+ * @param dst The destination name.
+ * @return The index of the attribute
+ */
 int TAProcessor::findAttrEntry(string relName, string src, string dst){
     int i = 0;
 
@@ -718,6 +877,10 @@ int TAProcessor::findAttrEntry(string relName, string src, string dst){
     return -1;
 }
 
+/**
+ * Creates an attribute entry.
+ * @param attrName The name of the attribute.
+ */
 void TAProcessor::createAttrEntry(string attrName){
     //Create the pair object.
     pair<string, vector<pair<string, vector<string>>>> entry = pair<string, vector<pair<string, vector<string>>>>();
@@ -726,6 +889,12 @@ void TAProcessor::createAttrEntry(string attrName){
     attributes.push_back(entry);
 }
 
+/**
+ * Creates an attribute entry.
+ * @param relName The name of the attribute.
+ * @param src The source name.
+ * @param dst The destination name.
+ */
 void TAProcessor::createAttrEntry(string relName, string src, string dst){
     //Create the pair object.
     pair<vector<string>, vector<pair<string, vector<string>>>> entry =
@@ -737,6 +906,10 @@ void TAProcessor::createAttrEntry(string relName, string src, string dst){
     relAttributes.push_back(entry);
 }
 
+/**
+ * Processes a collection of ClangNodes and adds them.
+ * @param nodes The collection of ClangNodes.
+ */
 void TAProcessor::processNodes(vector<ClangNode*> nodes){
     //Sees if we have an entry for the current relation.
     int pos = findRelEntry(entityString);
@@ -782,6 +955,10 @@ void TAProcessor::processNodes(vector<ClangNode*> nodes){
     }
 }
 
+/**
+ * Processes a collection of edges and adds them.
+ * @param edges The edges to add.
+ */
 void TAProcessor::processEdges(vector<ClangEdge*> edges){
     //Iterate over the edges.
     for (auto curEdge : edges){

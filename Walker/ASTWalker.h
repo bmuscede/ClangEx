@@ -1,6 +1,29 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ASTWalker.h
 //
-// Created by bmuscede on 05/11/16.
+// Created By: Bryan J Muscedere
+// Date: 05/11/16.
 //
+// Parent class that supports the other two walkers. Provides methods
+// that add each of the AST elements. Also provides information for
+// ID and name generation. Basically, this method is a catch-all for
+// operations.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CLANGEX_ASTWALKER_H
 #define CLANGEX_ASTWALKER_H
@@ -22,21 +45,28 @@ using namespace clang::ast_matchers;
 
 class ASTWalker : public MatchFinder::MatchCallback {
 public:
+    /** Destructor */
     virtual ~ASTWalker();
 
+    /** Pure Virtual Methods */
     virtual void run(const MatchFinder::MatchResult &result) = 0;
     virtual void generateASTMatches(MatchFinder *finder) = 0;
 
+    /** Graph Operations */
     TAGraph* getGraph();
 
+    /** Resolution Operations */
     void resolveExternalReferences();
     void resolveFiles();
 
+    /** MD5 Operations */
     static std::string generateMD5(std::string text);
 
 protected:
+    /** Protected Variables */
     ClangDriver::ClangExclude exclusions;
 
+    /** Constructor */
     ASTWalker(ClangDriver::ClangExclude ex, Printer* print, TAGraph* existing);
 
     /** Item Qualifiers */
@@ -85,28 +115,29 @@ protected:
 /********************************************************************************************************************/
 
 private:
+    /** Private Const Variables */
     const static int ANON_SIZE = 4;
     const std::string ANON_LIST[ANON_SIZE] = {"(anonymous struct)", "(union struct)", "(anonymous)", "(anonymous union)"};
     const std::string FILE_EXT[7] = {".C", ".cc", ".cpp", ".CPP", ".c++", ".cp", ".cxx"};
     const std::string ANON_REPLACE = "Anonymous";
     const static int MD5_LENGTH = 33;
 
+    /** Private Variables */
     std::string curFileName;
     FileParse fileParser;
     TAGraph* graph;
     Printer *clangPrinter;
 
+    /** Edge Processor */
     void processEdge(std::string srcID, std::string srcLabel, std::string dstID, std::string dstLabel,
                      ClangEdge::EdgeType type, std::vector<std::pair<std::string, std::string>> attributes =
                      std::vector<std::pair<std::string, std::string>>());
 
+    /** Helper Methods */
     void printFileName(std::string curFile);
-
     std::string generateIDString(const MatchFinder::MatchResult result, const clang::NamedDecl* dec);
     std::string generateLineNumber(const MatchFinder::MatchResult result, const SourceLocation loc);
-
     bool isSource(std::string fileName);
-
     bool isAnonymousRecord(std::string qualName);
 };
 

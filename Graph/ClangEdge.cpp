@@ -1,13 +1,41 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ClangEdge.cpp
 //
-// Created by bmuscede on 05/11/16.
+// Created By: Bryan J Muscedere
+// Date: 05/11/16.
 //
+// Represents an edge in the TA graph system. Edges are elements of the AST that
+// are relationships between entities. Also contains a set of operations
+// for the attributes that each type of edge expects.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "ClangEdge.h"
 
 using namespace std;
 
+/** Edge Attribute Variables */
 ClangEdge::AccessStruct ClangEdge::ACCESS_ATTRIBUTE;
 
+/**
+ * Gets the string representation for a type.
+ * @param type The type to get the representation.
+ * @return The string representation.
+ */
 string ClangEdge::getTypeString(EdgeType type) {
     //Goes through and checks for type.
     if (type == CONTAINS){
@@ -26,6 +54,11 @@ string ClangEdge::getTypeString(EdgeType type) {
     return "cRef";
 }
 
+/**
+ * Gets the enum representation for the string.
+ * @param name The string to convert.
+ * @return The enum representation.
+ */
 ClangEdge::EdgeType ClangEdge::getTypeEdge(string name){
     //Goes through and checks for type.
     if (name.compare("contains") == 0){
@@ -44,6 +77,12 @@ ClangEdge::EdgeType ClangEdge::getTypeEdge(string name){
     return REFERENCES;
 }
 
+/**
+ * Constructor. Creates an edge with a source, destination, and edge type.
+ * @param src The source node.
+ * @param dst The destination node.
+ * @param type The edge type.
+ */
 ClangEdge::ClangEdge(ClangNode *src, ClangNode *dst, EdgeType type) {
     this->src = src;
     this->dst = dst;
@@ -53,28 +92,57 @@ ClangEdge::ClangEdge(ClangNode *src, ClangNode *dst, EdgeType type) {
     edgeAttributes = map<string, vector<string>>();
 }
 
+/**
+ * Default Destructor
+ */
 ClangEdge::~ClangEdge() { }
 
+/**
+ * Gets the source node.
+ * @return The source node.
+ */
 ClangNode* ClangEdge::getSrc() {
     return src;
 }
 
+/**
+ * Gets the destination node.
+ * @return The destination node.
+ */
 ClangNode* ClangEdge::getDst() {
     return dst;
 }
 
+/**
+ * Gets the type of the edge.
+ * @return The edge type.
+ */
 ClangEdge::EdgeType ClangEdge::getType(){
     return type;
 }
 
+/**
+ * Sets the source node.
+ * @param newSrc The new source node to add.
+ */
 void ClangEdge::setSrc(ClangNode* newSrc){
     src = newSrc;
 }
 
+/**
+ * Sets the desination node.
+ * @param newDst The new destination node to add.
+ */
 void ClangEdge::setDst(ClangNode* newDst){
     dst = newDst;
 }
 
+/**
+ * Adds an attribute.
+ * @param key The key to add.
+ * @param value The value to add.
+ * @return Returns whether the attribute was added.
+ */
 bool ClangEdge::addAttribute(string key, string value){
     //Add the attribute by key.
     edgeAttributes[key].push_back(value);
@@ -84,6 +152,11 @@ bool ClangEdge::addAttribute(string key, string value){
     return false;
 }
 
+/**
+ * Clears all attributes from the attribute list.
+ * @param key The key to clear.
+ * @return Returns whether the attribute was cleared.
+ */
 bool ClangEdge::clearAttribute(string key){
     //Check if the key has attributes.
     if (edgeAttributes[key].size() == 0) return false;
@@ -93,10 +166,21 @@ bool ClangEdge::clearAttribute(string key){
     return true;
 }
 
+/**
+ * Gets an attribute based on a key.
+ * @param key The key to add.
+ * @return Returns a list of all values for that key.
+ */
 vector<string> ClangEdge::getAttribute(string key) {
     return edgeAttributes[key];
 }
 
+/**
+ * Checks whether an attribute exists given a key and value.
+ * @param key The key to check.
+ * @param value The value to check.
+ * @return Whether the value exists or not.
+ */
 bool ClangEdge::doesAttributeExist(string key, string value) {
     //Check if the attribute key exists.
     vector<string> attr = edgeAttributes[key];
@@ -109,10 +193,27 @@ bool ClangEdge::doesAttributeExist(string key, string value) {
 
     return false;
 }
+
+/**
+ * Gets all attributes in the list.
+ * @return A map of all attributes.
+ */
+map<string, vector<string>> ClangEdge::getAttributes(){
+    return edgeAttributes;
+}
+
+/**
+ * Generates the relationship string for this edge.
+ * @return The relationship string.
+ */
 string ClangEdge::generateRelationship() {
     return getTypeString(type) + " " + src->getID() + " " + dst->getID();
 }
 
+/**
+ * Generates the attribute string for this edge.
+ * @return The attribute string.
+ */
 string ClangEdge::generateAttribute() {
     //Choose not to proceed.
     if (edgeAttributes.size() == 0) return "";
@@ -140,14 +241,22 @@ string ClangEdge::generateAttribute() {
     return attributeList;
 }
 
-map<string, vector<string>> ClangEdge::getAttributes(){
-    return edgeAttributes;
-}
-
+/**
+ * Helper method that prints a single attribute.
+ * @param key The key to print.
+ * @param value The value to print.
+ * @return The string for the attribute line.
+ */
 std::string ClangEdge::printSingleAttribute(string key, vector<string> value){
     return key + " = \"" + value.at(0) + "\"";
 }
 
+/**
+ * Helper method that prints multiple attributes.
+ * @param key The key to print.
+ * @param value The values to print.
+ * @return The string for the attribute line.
+ */
 std::string ClangEdge::printSetAttribute(string key, vector<string> value){
     string attribute = key + " = ( ";
 

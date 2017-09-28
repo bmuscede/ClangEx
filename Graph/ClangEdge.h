@@ -1,6 +1,28 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ClangEdge.h
 //
-// Created by bmuscede on 05/11/16.
+// Created By: Bryan J Muscedere
+// Date: 05/11/16.
 //
+// Represents an edge in the TA graph system. Edges are elements of the AST that
+// are relationships between entities. Also contains a set of operations
+// for the attributes that each type of edge expects.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CLANGEX_CLANGEDGE_H
 #define CLANGEX_CLANGEDGE_H
@@ -19,17 +41,20 @@ using namespace clang::ast_matchers;
 
 class ClangEdge {
 private:
-    /** ATTRIBUTE FLAGS */
+    /** Struct for Variable Reads/Writes */
     typedef struct {
         const std::string attrName = "access";
-
         const std::string READ_FLAG = "read";
         const std::string WRITE_FLAG = "write";
-
         const char* assignmentOperators[17] = {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=",
                                                "&=", "^=", "|=", "&", "|", "^", "~", "<<", ">>"};
         const char* incDecOperators[2] = {"++", "--"};
 
+        /**
+         * Gets the access type of variables. Can be either read or writes.
+         * @param expr The expression to investigate.
+         * @param varName The name of the variable to add.
+         */
         std::string getVariableAccess(const clang::Expr *expr,
                                       const std::string varName){
             //Generate the printing policy.
@@ -101,40 +126,46 @@ private:
     } AccessStruct;
 
 public:
+    /** Edge Type Members */
     enum EdgeType {CALLS, REFERENCES, CONTAINS, INHERITS, FILE_CONTAIN};
     static std::string getTypeString(EdgeType type);
     static ClangEdge::EdgeType getTypeEdge(std::string name);
 
+    /** Constructor/Destructor */
     ClangEdge(ClangNode* src, ClangNode* dst, EdgeType type);
     ~ClangEdge();
 
+    /** Getters */
     ClangNode* getSrc();
     ClangNode* getDst();
     ClangEdge::EdgeType getType();
 
+    /** Setters */
     void setSrc(ClangNode* newSrc);
     void setDst(ClangNode* newDst);
 
+    /** Attribute Getters/Setters */
     bool addAttribute(std::string key, std::string value);
     bool clearAttribute(std::string key);
     std::vector<std::string> getAttribute(std::string key);
-
     bool doesAttributeExist(std::string key, std::string value);
+    std::map<std::string, std::vector<std::string>> getAttributes();
 
+    /** TA Helper Methods */
     std::string generateRelationship();
     std::string generateAttribute();
 
-    std::map<std::string, std::vector<std::string>> getAttributes();
-
-    /** ATTRIBUTE VARS */
+    /** Attribute Variables */
     static AccessStruct ACCESS_ATTRIBUTE;
 
 private:
+    /** Member Variables */
     ClangNode* src;
     ClangNode* dst;
     EdgeType type;
     std::map<std::string, std::vector<std::string>> edgeAttributes;
 
+    /** TA Helper Helper Methods */
     std::string printSingleAttribute(std::string key, std::vector<std::string> value);
     std::string printSetAttribute(std::string key, std::vector<std::string> value);
 };
