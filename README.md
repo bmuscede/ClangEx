@@ -248,7 +248,7 @@ The name *blob* simply refers to the fact that for one source file being analyze
 
 ---
 
-The `--blob` or `-b` flag will tell `ClangEx` to use this anlysis mode. For this mode, don't worry if you see that ClangEx is analyzing a file more than once. This redundancy is due to the `#include`s in source files.
+For this mode, don't worry if you see that ClangEx is analyzing a file more than once. This redundancy is due to the `#include`s in source files.
 
 ## Current Issues
 Currently ClangEx has the following things that need to be fixed:
