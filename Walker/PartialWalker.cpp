@@ -39,8 +39,8 @@ using namespace llvm;
  * @param exclusions The exclusions to use.
  * @param graph The TA Graph to use. Usually starts blank.
  */
-PartialWalker::PartialWalker(Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
-        ASTWalker(exclusions, print, graph){ }
+PartialWalker::PartialWalker(Printer* print, bool lowMemory, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
+        ASTWalker(exclusions, lowMemory, print, graph){ }
 
 /**
  * Default Destructor.

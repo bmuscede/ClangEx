@@ -196,7 +196,7 @@ bool ClangDriver::disableFeature(string feature){
  * @param verboseMode Whether the user wants verbose output.
  * @return The success of ClangEx.
  */
-bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool verboseMode){
+bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool verboseMode, bool lowMemory){
     bool success = true;
     llvm::cl::OptionCategory ClangExCategory("ClangEx Options");
 
@@ -251,14 +251,14 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool verboseM
     ASTWalker* walker;
     if (blobMode){
         if (merge)
-            walker = new BlobWalker(clangPrint, exclude, mergeGraph);
+            walker = new BlobWalker(clangPrint, lowMemory, exclude, mergeGraph);
         else
-            walker = new BlobWalker(clangPrint, exclude);
+            walker = new BlobWalker(clangPrint, lowMemory, exclude);
     } else {
         if (merge)
-            walker = new PartialWalker(clangPrint, exclude, mergeGraph);
+            walker = new PartialWalker(clangPrint, lowMemory, exclude, mergeGraph);
         else
-            walker = new PartialWalker(clangPrint, exclude);
+            walker = new PartialWalker(clangPrint, lowMemory, exclude);
     }
 
     //Generates a matcher system.
@@ -274,14 +274,14 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool verboseM
 
     //Gets the code and checks for warnings.
     if (code != 0) {
-        cerr << "Warning: Compilation errors were detected." << endl;
+        cerr << "Error: Compilation errors were detected." << endl;
         success = false;
     }
 
     //Shifts the graphs.
     if (success) {
         walker->resolveExternalReferences();
-        walker->resolveFiles();
+        if (!lowMemory)walker->resolveFiles(); //TODO: This needs to be fixed.
 
         TAGraph *graph = walker->getGraph();
         graphs.push_back(graph);

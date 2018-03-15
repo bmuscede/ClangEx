@@ -32,6 +32,7 @@
 #include "ASTWalker.h"
 #include "clang/AST/Mangle.h"
 #include "../Graph/ClangNode.h"
+#include "../Graph/LowMemoryTAGraph.h"
 
 using namespace std;
 using namespace clang;
@@ -123,13 +124,18 @@ string ASTWalker::generateMD5(string text){
  * @param print The printer to use.
  * @param existing The existing TA graph (if any).
  */
-ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, Printer *print, TAGraph* existing = new TAGraph()) :
+ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, bool lowMemory, Printer *print, TAGraph* existing) :
         clangPrinter(print){
     //Sets the current file name to blank.
     curFileName = "";
 
     //Creates the graph system.
-    graph = existing;
+    if (existing == nullptr){
+        if (lowMemory == true) graph = new LowMemoryTAGraph();
+        else graph = new TAGraph();
+    } else {
+        graph = existing;
+    }
     graph->setPrinter(print);
 
     //Sets up the exclusions.
@@ -754,25 +760,23 @@ void ASTWalker::processEdge(string srcID, string srcLabel, string dstID, string 
     ClangNode* sourceNode = graph->findNodeByID(srcID);
     ClangNode* destNode = graph->findNodeByID(dstID);
 
-    //Now processes the nodes.
-    if (!sourceNode || !destNode){
-        graph->addUnresolvedRef(srcLabel, dstLabel, type);
-
-        //Iterate through our vector and add.
-        for (auto mapItem : attributes) {
-            //Add attributes.
-            graph->addUnresolvedRefAttr(srcLabel, dstLabel, mapItem.first, mapItem.second);
-        }
+    //Add the edge.
+    ClangEdge* edge;
+    if (sourceNode && destNode){
+        edge = new ClangEdge(sourceNode, destNode, type);
+    } else if (!sourceNode && destNode){
+        edge = new ClangEdge(srcID, destNode, type);
+    } else if (sourceNode && !destNode){
+        edge = new ClangEdge(sourceNode, dstID, type);
     } else {
-        //Add the edge.
-        ClangEdge* edge = new ClangEdge(sourceNode, destNode, type);
-        graph->addEdge(edge);
+        edge = new ClangEdge(srcID, dstID, type);
+    }
+    graph->addEdge(edge);
 
-        //Iterate through our vector and add.
-        for (auto mapItem : attributes) {
-            graph->addAttribute(edge->getSrc()->getID(), edge->getDst()->getID(), type,
-                                mapItem.first, mapItem.second);
-        }
+    //Iterate through our vector and add.
+    for (auto mapItem : attributes) {
+        graph->addAttribute(edge->getSrcID(), edge->getDstID(), type,
+                            mapItem.first, mapItem.second);
     }
 }
 

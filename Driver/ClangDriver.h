@@ -53,7 +53,7 @@ public:
     bool disableFeature(std::string feature);
 
     /** ClangEx Runner */
-    bool processAllFiles(bool blobMode, std::string mergeFile, bool verboseMode);
+    bool processAllFiles(bool blobMode, std::string mergeFile, bool verboseMode, bool lowMemory);
 
     /** Output Helpers */
     bool outputIndividualModel(int modelNum, std::string fileName = std::string());

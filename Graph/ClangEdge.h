@@ -64,6 +64,7 @@ private:
             //Gets the string.
             std::string TypeS;
             llvm::raw_string_ostream s(TypeS);
+            if (expr == nullptr) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
             expr->printPretty(s, nullptr, Policy);
 
             if (s.str().compare("") == 0) return ClangEdge::ACCESS_ATTRIBUTE.READ_FLAG;
@@ -133,12 +134,20 @@ public:
 
     /** Constructor/Destructor */
     ClangEdge(ClangNode* src, ClangNode* dst, EdgeType type);
+    ClangEdge(ClangNode* src, std::string dst, EdgeType type);
+    ClangEdge(std::string src, ClangNode* dst, EdgeType type);
+    ClangEdge(std::string src, std::string dst, EdgeType type);
     ~ClangEdge();
 
     /** Getters */
     ClangNode* getSrc();
     ClangNode* getDst();
+    std::string getSrcID();
+    std::string getDstID();
     ClangEdge::EdgeType getType();
+
+    /** Resolution System */
+    bool isResolved();
 
     /** Setters */
     void setSrc(ClangNode* newSrc);
@@ -162,7 +171,10 @@ private:
     /** Member Variables */
     ClangNode* src;
     ClangNode* dst;
+    std::string srcID;
+    std::string dstID;
     EdgeType type;
+    bool unresolved;
     std::map<std::string, std::vector<std::string>> edgeAttributes;
 
     /** TA Helper Helper Methods */

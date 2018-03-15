@@ -67,7 +67,7 @@ protected:
     ClangDriver::ClangExclude exclusions;
 
     /** Constructor */
-    ASTWalker(ClangDriver::ClangExclude ex, Printer* print, TAGraph* existing);
+    ASTWalker(ClangDriver::ClangExclude ex, bool lowMemory, Printer* print, TAGraph* existing = nullptr);
 
     /** Item Qualifiers */
     std::string generateFileName(const MatchFinder::MatchResult result,

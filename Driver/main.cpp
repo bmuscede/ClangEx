@@ -240,6 +240,7 @@ void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, str
             ("help,h", "Print help message for generate.")
             ("blob,b", "Runs ClangEx in blob mode.")
             ("verbose,v", "Enables verbose output.")
+            ("low,l", "Enables low-memory mode.")
             ("initial,i", po::value<std::string>(), "An initial TA file to load in to merge.");
     ss.str(string());
     ss << *helpMap->at(GEN_ARG).desc;
@@ -545,6 +546,7 @@ void processGenerate(string line, po::options_description desc){
     bool blobMode = false;
     string mergeFile = "";
     bool verboseMode = false;
+    bool lowMemory = false;
     po::variables_map vm;
     try {
         po::store(po::parse_command_line(argc, (const char *const *) argv, desc), vm);
@@ -565,6 +567,9 @@ void processGenerate(string line, po::options_description desc){
         if (vm.count("verbose")){
             verboseMode = true;
         }
+        if (vm.count("low")){
+            lowMemory = true;
+        }
     } catch(po::error& e) {
         cerr << "Error: " << e.what() << endl;
         cerr << desc;
@@ -580,7 +585,7 @@ void processGenerate(string line, po::options_description desc){
 
     //Next, tells ClangEx to generate them.
     cout << "Processing " << numFiles << " file(s)..." << endl << "This may take some time!" << endl << endl;
-    bool success = driver.processAllFiles(blobMode, mergeFile, verboseMode);
+    bool success = driver.processAllFiles(blobMode, mergeFile, verboseMode, lowMemory);
 
     //Checks the success of the operation.
     if (success) {

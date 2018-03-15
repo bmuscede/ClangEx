@@ -441,13 +441,18 @@ bool TAProcessor::writeRelations(TAGraph* graph){
             ClangNode* src = graph->findNodeByID(nodes.first);
             ClangNode* dst = graph->findNodeByID(nodes.second);
 
-            if (src == nullptr || dst == nullptr){
-                graph->addUnresolvedRef(nodes.first, nodes.second, type);
-                continue;
+            ClangEdge* edge;
+            if (src && dst) {
+                edge = new ClangEdge(src, dst, type);
+            } else if (!src && dst) {
+                edge = new ClangEdge(nodes.first, dst, type);
+            } else if (src && !dst) {
+                edge = new ClangEdge(src, nodes.second, type);
+            } else {
+                edge = new ClangEdge(nodes.first, nodes.second, type);
             }
 
-            //Creates a new edge.
-            ClangEdge* edge = new ClangEdge(src, dst, type);
+            graph->addEdge(edge);
         }
     }
 

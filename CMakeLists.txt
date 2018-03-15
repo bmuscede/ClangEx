@@ -56,7 +56,7 @@ set(SOURCE_FILES
         Printer/Printer.cpp
         Printer/Printer.h
         Printer/ProgressBar.c
-        Printer/ProgressBar.h)
+        Printer/ProgressBar.h Graph/LowMemoryTAGraph.cpp Graph/LowMemoryTAGraph.h)
 add_executable(ClangEx ${SOURCE_FILES})
 
 target_link_libraries(ClangEx
