@@ -6,18 +6,20 @@
 #define CLANGEX_LOWMEMORYTAGRAPH_H
 
 #include <string>
+#include "../Printer/Printer.h"
 #include "TAGraph.h"
 
 class LowMemoryTAGraph : public TAGraph {
 public:
     LowMemoryTAGraph();
+    LowMemoryTAGraph(std::string basePath, int curNum);
     ~LowMemoryTAGraph() override;
 
     bool addNode(ClangNode* node, bool assumeValid = false) override;
     bool addEdge(ClangEdge* edge, bool assumeValid = false) override;
 
     std::string generateTAFormat() override;
-    void resolveExternalReferences(bool silent = false) override;
+    void resolveExternalReferences(Printer* print, bool silent = false) override;
 
 private:
     const int PURGE_AMOUNT = 1000;

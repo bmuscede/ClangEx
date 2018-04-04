@@ -15,18 +15,30 @@ using namespace boost::filesystem;
 
 int LowMemoryTAGraph::currentNumber = 0;
 
+LowMemoryTAGraph::LowMemoryTAGraph(string basePath, int curNum) : TAGraph() {
+    fileNumber = curNum;
+
+    instanceFN = weakly_canonical(path(basePath + "/" + to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
+    relationFN = weakly_canonical(path(basePath + "/" + to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
+    mvRelationFN = weakly_canonical(path(basePath + "/" + to_string(fileNumber) + "-" + BASE_MV_RELATION_FN)).string();
+    attributeFN = weakly_canonical(path(basePath + "/" + to_string(fileNumber) + "-" + BASE_ATTRIBUTE_FN)).string();
+}
+
 LowMemoryTAGraph::LowMemoryTAGraph() : TAGraph() {
     fileNumber = LowMemoryTAGraph::currentNumber;
     LowMemoryTAGraph::currentNumber++;
 
-    instanceFN = to_string(fileNumber) + "." + BASE_INSTANCE_FN;
-    relationFN = to_string(fileNumber) + "." + BASE_RELATION_FN;
-    mvRelationFN = to_string(fileNumber) + "." + BASE_MV_RELATION_FN;
-    attributeFN = to_string(fileNumber) + "." + BASE_ATTRIBUTE_FN;
+    instanceFN = weakly_canonical(path(to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
+    relationFN = weakly_canonical(path(to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
+    mvRelationFN = weakly_canonical(path(to_string(fileNumber) + "-" + BASE_MV_RELATION_FN)).string();
+    attributeFN = weakly_canonical(path(to_string(fileNumber) + "-" + BASE_ATTRIBUTE_FN)).string();
 
     if (doesFileExist(instanceFN)) deleteFile(instanceFN);
     if (doesFileExist(relationFN)) deleteFile(relationFN);
     if (doesFileExist(attributeFN)) deleteFile(attributeFN);
+    ofstream{ instanceFN };
+    ofstream{ relationFN };
+    ofstream{ attributeFN };
 }
 
 LowMemoryTAGraph::~LowMemoryTAGraph() {
@@ -82,7 +94,7 @@ string LowMemoryTAGraph::generateTAFormat() {
     return format;
 }
 
-void LowMemoryTAGraph::resolveExternalReferences(bool silent) {
+void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
     //First, purge the current graph.
     purgeCurrentGraph();
 
@@ -94,6 +106,7 @@ void LowMemoryTAGraph::resolveExternalReferences(bool silent) {
     string curLine;
     while (getline(instances, curLine)){
         vector<string> lineSplit = tokenize(curLine);
+        if (lineSplit.size() != 3) continue;
 
         //Checks whether instance already exists.
         if (instanceMap.find(lineSplit.at(1)) == instanceMap.end()){
@@ -115,6 +128,7 @@ void LowMemoryTAGraph::resolveExternalReferences(bool silent) {
     if (!original.is_open() || !destination.is_open()) return;
     while(getline(original, curLine)){
         vector<string> lineSplit = tokenize(curLine);
+        if (lineSplit.size() != 3) continue;
 
         //Checks if the relation can be resolved.
         if (instanceMap.find(lineSplit.at(1)) == instanceMap.end() ||
@@ -266,23 +280,19 @@ void LowMemoryTAGraph::deleteFile(string fN) {
 
 void LowMemoryTAGraph::purgeCurrentGraph(){
     //Start by writing everything to disk.
-    ofstream instances(instanceFN, std::ios_base::app);
-    ofstream relations(relationFN, std::ios_base::app);
-    ofstream attributes(attributeFN, std::ios_base::app);
-
-    //Check if the files aren't open.
-    if (!instances.is_open() || !relations.is_open() || !attributes.is_open()){
-        return;
-    }
-
-    //Write to the files
+    ofstream instances(instanceFN, std::ios::out | std::ios::app);
+    if (!instances.is_open()) return;
     instances << generateInstances();
-    relations << generateRelationships();
-    attributes << generateAttributes();
-
-    //Close all.
     instances.close();
+
+    ofstream relations(relationFN, std::ios::out | std::ios::app);
+    if (!relations.is_open()) return;
+    relations << generateRelationships();
     relations.close();
+
+    ofstream attributes(attributeFN, std::ios::out | std::ios::app);
+    if (!attributes.is_open()) return;
+    attributes << generateAttributes();
     attributes.close();
 
     //Clear the graph.

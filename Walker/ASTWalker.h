@@ -55,19 +55,15 @@ public:
     /** Graph Operations */
     TAGraph* getGraph();
 
-    /** Resolution Operations */
-    void resolveExternalReferences();
-    void resolveFiles();
-
     /** MD5 Operations */
     static std::string generateMD5(std::string text);
 
 protected:
     /** Protected Variables */
-    ClangDriver::ClangExclude exclusions;
+    TAGraph::ClangExclude exclusions;
 
     /** Constructor */
-    ASTWalker(ClangDriver::ClangExclude ex, bool lowMemory, Printer* print, TAGraph* existing = nullptr);
+    ASTWalker(TAGraph::ClangExclude ex, bool lowMemory, Printer* print, TAGraph* existing = nullptr);
 
     /** Item Qualifiers */
     std::string generateFileName(const MatchFinder::MatchResult result,
@@ -124,7 +120,6 @@ private:
 
     /** Private Variables */
     std::string curFileName;
-    FileParse fileParser;
     TAGraph* graph;
     Printer *clangPrinter;
 

@@ -38,7 +38,7 @@ const string TAGraph::FILE_ATTRIBUTE = "filename";
  * Constructor. Creates all the member variables.
  * @param print The printer type to be used.
  */
-TAGraph::TAGraph(Printer* print) : clangPrinter(print) {
+TAGraph::TAGraph() {
     nodeList = unordered_map<string, ClangNode*>();
     nodeNameList = unordered_map<string, vector<string>>();
     edgeSrcList = unordered_map<string, vector<ClangEdge*>>();
@@ -57,15 +57,6 @@ TAGraph::~TAGraph() {
     for (auto it = edgeSrcList.begin(); it != edgeSrcList.end(); it++)
         for (ClangEdge* edge : it->second)
             delete edge;
-}
-
-/**
- * Sets the current printer.
- * @param newPrint The new printer to use.
- */
-void TAGraph::setPrinter(Printer* newPrint){
-    delete clangPrinter;
-    clangPrinter = newPrint;
 }
 
 /**
@@ -429,7 +420,7 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
  * Goes through the undefined edges and tries to resolve them. If not, deletes the reference.
  * @param silent Whether we output the results or not.
  */
-void TAGraph::resolveExternalReferences(bool silent) {
+void TAGraph::resolveExternalReferences(Printer* print, bool silent) {
     int resolved = 0;
     int unresolved = 0;
     vector<ClangEdge*> toRemove;
@@ -464,8 +455,43 @@ void TAGraph::resolveExternalReferences(bool silent) {
 
     //Afterwards, notify of success.
     if (!silent){
-        clangPrinter->printResolveRefDone(resolved, unresolved);
+        print->printResolveRefDone(resolved, unresolved);
     }
+}
+
+void TAGraph::resolveFiles(TAGraph::ClangExclude exclusions){
+    bool assumeValid = true;
+    vector<ClangNode*> fileNodes = vector<ClangNode*>();
+    vector<ClangEdge*> fileEdges = vector<ClangEdge*>();
+
+    //Gets all the associated clang nodes.
+    fileParser.processPaths(fileNodes, fileEdges);
+
+    //Adds them to the graph.
+    for (ClangNode *file : fileNodes) {
+        if ((file->getType() == ClangNode::NodeType::SUBSYSTEM && !exclusions.cSubSystem) ||
+            (file->getType() == ClangNode::NodeType::FILE && !exclusions.cFile)) {
+            addNode(file, assumeValid);
+        }
+    }
+
+    //Adds the edges to the graph.
+    map<string, ClangNode*> fileSkip;
+    for (ClangEdge *edge : fileEdges) {
+        //Surpasses.
+        if (exclusions.cFile && edge->getDst()->getType() == ClangNode::FILE){
+            fileSkip[edge->getDst()->getID()] = edge->getSrc();
+        } else {
+            addEdge(edge, assumeValid);
+        }
+    }
+
+    //Next, for each item in the graph, add it to a file.
+    addNodesToFile(fileSkip);
+}
+
+void TAGraph::addPath(string path){
+    fileParser.addPath(path);
 }
 
 void TAGraph::clearGraph(){

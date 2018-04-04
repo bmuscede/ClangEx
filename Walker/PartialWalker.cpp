@@ -39,7 +39,7 @@ using namespace llvm;
  * @param exclusions The exclusions to use.
  * @param graph The TA Graph to use. Usually starts blank.
  */
-PartialWalker::PartialWalker(Printer* print, bool lowMemory, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
+PartialWalker::PartialWalker(Printer* print, bool lowMemory, TAGraph::ClangExclude exclusions, TAGraph* graph) :
         ASTWalker(exclusions, lowMemory, print, graph){ }
 
 /**

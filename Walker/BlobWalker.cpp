@@ -35,7 +35,7 @@ using namespace std;
  * @param exclusions The exclusions to use.
  * @param graph The TA Graph to use. Usually starts blank.
  */
-BlobWalker::BlobWalker(Printer* print, bool lowMemory, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
+BlobWalker::BlobWalker(Printer* print, bool lowMemory, TAGraph::ClangExclude exclusions, TAGraph* graph) :
         ASTWalker(exclusions, lowMemory, print, graph){ }
 
 /**

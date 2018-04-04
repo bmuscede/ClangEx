@@ -33,16 +33,26 @@
 #include <unordered_map>
 #include "ClangNode.h"
 #include "ClangEdge.h"
-#include "../Printer/VerbosePrinter.h"
+#include "../Printer/Printer.h"
+#include "../File/FileParse.h"
 
 class TAGraph {
 public:
-    /** Constructor/Destructor */
-    TAGraph(Printer* print = new VerbosePrinter());
-    virtual ~TAGraph();
+    /** Toggle System */
+    typedef struct {
+        bool cSubSystem = false;
+        bool cFile = false;
+        bool cClass = false;
+        bool cFunction = false;
+        bool cVariable = false;
+        bool cEnum = false;
+        bool cStruct = false;
+        bool cUnion = false;
+    } ClangExclude;
 
-    /** Printer Settings */
-    void setPrinter(Printer* newPrint);
+    /** Constructor/Destructor */
+    TAGraph();
+    virtual ~TAGraph();
 
     /** Node/Edge Adders */
     virtual bool addNode(ClangNode* node, bool assumeValid = false);
@@ -79,7 +89,9 @@ public:
     void addNodesToFile(std::map<std::string, ClangNode*> fileSkip);
 
     /** Unresolved Operations */
-    virtual void resolveExternalReferences(bool silent = false);
+    virtual void resolveExternalReferences(Printer* print, bool silent = false);
+    void resolveFiles(ClangExclude exclusions);
+    void addPath(std::string path);
 
     static const std::string FILE_ATTRIBUTE;
 
@@ -102,8 +114,8 @@ protected:
     std::string generateAttributes();
 
 private:
-    /** Printer Settings */
-    Printer *clangPrinter;
+    /** Settings */
+    FileParse fileParser;
 
     /** TA Const Variables */
     std::string const TA_HEADER = "//Generated TA File";

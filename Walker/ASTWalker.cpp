@@ -54,47 +54,6 @@ TAGraph* ASTWalker::getGraph(){
 }
 
 /**
- * Resolves external references inside the graph. By default, does this silently.
- */
-void ASTWalker::resolveExternalReferences() {
-    graph->resolveExternalReferences(false);
-}
-
-/**
- * Resolves all files that were encountered in processing the AST.
- */
-void ASTWalker::resolveFiles(){
-    bool assumeValid = true;
-    vector<ClangNode*> fileNodes = vector<ClangNode*>();
-    vector<ClangEdge*> fileEdges = vector<ClangEdge*>();
-
-    //Gets all the associated clang nodes.
-    fileParser.processPaths(fileNodes, fileEdges);
-
-    //Adds them to the graph.
-    for (ClangNode *file : fileNodes) {
-        if ((file->getType() == ClangNode::NodeType::SUBSYSTEM && !exclusions.cSubSystem) ||
-                (file->getType() == ClangNode::NodeType::FILE && !exclusions.cFile)) {
-            graph->addNode(file, assumeValid);
-        }
-    }
-
-    //Adds the edges to the graph.
-    map<string, ClangNode*> fileSkip;
-    for (ClangEdge *edge : fileEdges) {
-        //Surpasses.
-        if (exclusions.cFile && edge->getDst()->getType() == ClangNode::FILE){
-            fileSkip[edge->getDst()->getID()] = edge->getSrc();
-        } else {
-            graph->addEdge(edge, assumeValid);
-        }
-    }
-
-    //Next, for each item in the graph, add it to a file.
-    graph->addNodesToFile(fileSkip);
-}
-
-/**
  * Generates an MD5 hash of the current string.
  * @param text The string to convert.
  * @return The MD5 of the current string.
@@ -124,7 +83,7 @@ string ASTWalker::generateMD5(string text){
  * @param print The printer to use.
  * @param existing The existing TA graph (if any).
  */
-ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, bool lowMemory, Printer *print, TAGraph* existing) :
+ASTWalker::ASTWalker(TAGraph::ClangExclude ex, bool lowMemory, Printer *print, TAGraph* existing) :
         clangPrinter(print){
     //Sets the current file name to blank.
     curFileName = "";
@@ -136,7 +95,6 @@ ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, bool lowMemory, Printer *prin
     } else {
         graph = existing;
     }
-    graph->setPrinter(print);
 
     //Sets up the exclusions.
     exclusions = ex;
@@ -164,7 +122,7 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
     string newPath = canonical(fN.normalize()).string();
 
     //Adds the file path.
-    fileParser.addPath(newPath);
+    graph->addPath(newPath);
 
     //Checks if we have a output suppression in place.
     if (!suppressFileOutput && newPath.compare("") != 0) printFileName(newPath);

@@ -53,7 +53,10 @@ public:
     bool disableFeature(std::string feature);
 
     /** ClangEx Runner */
-    bool processAllFiles(bool blobMode, std::string mergeFile, bool verboseMode, bool lowMemory);
+    bool processAllFiles(bool blobMode, std::string mergeFile, bool verboseMode, bool lowMemory,
+                         std::vector<std::string>* rFileList = nullptr, TAGraph::ClangExclude* rExclude = nullptr);
+    bool recoverCompact(std::string startDir);
+    bool recoverFull(std::string startDir);
 
     /** Output Helpers */
     bool outputIndividualModel(int modelNum, std::string fileName = std::string());
@@ -64,17 +67,6 @@ public:
     int removeByPath(path curPath);
     int removeByRegex(std::string regex);
 
-    /** Toggle System */
-    typedef struct {
-        bool cSubSystem = false;
-        bool cFile = false;
-        bool cClass = false;
-        bool cFunction = false;
-        bool cVariable = false;
-        bool cEnum = false;
-        bool cStruct = false;
-        bool cUnion = false;
-    } ClangExclude;
 private:
     /** Default Arguments */
     const std::string INSTANCE_FLAG = "$INSTANCE";
@@ -84,6 +76,7 @@ private:
     const std::string INCLUDE_DIR = "./include";
     const std::string INCLUDE_DIR_LOC = "--extra-arg=-I" + INCLUDE_DIR;
     const int BASE_LEN = 2;
+    const int FILE_SPLIT = 20;
 
     /** Private Variables */
     std::vector<TAGraph*> graphs;
@@ -92,7 +85,7 @@ private:
 
     /** Toggle System */
     std::string langString = "\tcSubSystem\n\tcFile\n\tcClass\n\tcFunction\n\tcVariable\n\tcEnum\n\tcStruct\n\tcUnion\n";
-    ClangExclude toggle;
+    TAGraph::ClangExclude toggle;
 
     /** C/C++ Extensions */
     const std::string C_FILE_EXT = ".c";
@@ -113,8 +106,14 @@ private:
     bool outputTAString(int modelNum, std::string fileName);
     void deleteTAGraph(int modelNum);
 
+    /** Recovery Helper */
+    std::vector<int> getLMGraphs(std::string startDir);
+    bool readSettings(std::string file, bool* verbose, std::vector<std::string>* files, bool* blobMode,
+                      TAGraph::ClangExclude* exclude);
+
     /** Argument Helpers */
-    char** prepareArgs(int *argc);
+    int extractIntegerWords(std::string str);
+    char** prepareArgs(int *argc, int start, int final);
 };
 
 

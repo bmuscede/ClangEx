@@ -34,7 +34,7 @@ class PartialWalker : public ASTWalker {
 public:
     /** Constructor and Destructor */
     explicit PartialWalker(Printer* print, bool lowMemory,
-                           ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
+                           TAGraph::ClangExclude exclusions = TAGraph::ClangExclude(),
                            TAGraph* graph = nullptr);
     ~PartialWalker() override;
 
