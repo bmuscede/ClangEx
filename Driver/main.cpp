@@ -562,9 +562,6 @@ void processGenerate(string line, po::options_description desc){
         if (vm.count("initial")){
             mergeFile = vm["initial"].as<std::string>();
         }
-        if (vm.count("verbose")){
-            verboseMode = true;
-        }
     } catch(po::error& e) {
         cerr << "Error: " << e.what() << endl;
         cerr << desc;
@@ -580,7 +577,7 @@ void processGenerate(string line, po::options_description desc){
 
     //Next, tells ClangEx to generate them.
     cout << "Processing " << numFiles << " file(s)..." << endl << "This may take some time!" << endl << endl;
-    bool success = driver.processAllFiles(blobMode, mergeFile, verboseMode);
+    bool success = driver.processAllFiles(blobMode, mergeFile);
 
     //Checks the success of the operation.
     if (success) {

@@ -51,12 +51,9 @@ set(SOURCE_FILES
         TupleAttribute/TAProcessor.h
         Printer/VerbosePrinter.cpp
         Printer/VerbosePrinter.h
-        Printer/MinimalPrinter.cpp
-        Printer/MinimalPrinter.h
         Printer/Printer.cpp
         Printer/Printer.h
-        Printer/ProgressBar.c
-        Printer/ProgressBar.h)
+        )
 add_executable(ClangEx ${SOURCE_FILES})
 
 target_link_libraries(ClangEx

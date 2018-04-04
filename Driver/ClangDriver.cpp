@@ -25,7 +25,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <regex>
-#include "../Printer/MinimalPrinter.h"
 #include "../Printer/VerbosePrinter.h"
 #include "../TupleAttribute/TAProcessor.h"
 #include "../Walker/ASTWalker.h"
@@ -37,7 +36,6 @@
 #include "clang/Tooling/Tooling.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include <llvm/Support/CommandLine.h>
-#include "ClangDriver.h"
 
 using namespace std;
 using namespace clang::tooling;
@@ -196,20 +194,12 @@ bool ClangDriver::disableFeature(string feature){
  * @param verboseMode Whether the user wants verbose output.
  * @return The success of ClangEx.
  */
-bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool verboseMode){
+bool ClangDriver::processAllFiles(bool blobMode, string mergeFile){
     bool success = true;
     llvm::cl::OptionCategory ClangExCategory("ClangEx Options");
 
     //Sets up the printer.
-    Printer* clangPrint;
-    if (verboseMode) {
-        clangPrint = new VerbosePrinter();
-    } else {
-        clangPrint = new MinimalPrinter();
-    }
-
-    //Get the number of files.
-    if (!verboseMode) static_cast<MinimalPrinter*>(clangPrint)->setNumSteps(getNumFiles() + 3);
+    Printer* clangPrint = new VerbosePrinter();
 
     //Creates the command line arguments.
     int argc = 0;
