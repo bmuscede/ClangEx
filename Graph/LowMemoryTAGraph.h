@@ -6,6 +6,7 @@
 #define CLANGEX_LOWMEMORYTAGRAPH_H
 
 #include <string>
+#include <boost/filesystem.hpp>
 #include "../Printer/Printer.h"
 #include "TAGraph.h"
 
@@ -19,7 +20,17 @@ public:
     bool addEdge(ClangEdge* edge, bool assumeValid = false) override;
 
     std::string generateTAFormat() override;
+    void resolveFiles(ClangExclude exclusions) override;
     void resolveExternalReferences(Printer* print, bool silent = false) override;
+
+    void addNodesToFile(std::map<std::string, ClangNode*> fileSkip) override;
+
+    void dumpCurrentFile(int fileNum, std::string file);
+    void dumpSettings(std::vector<boost::filesystem::path> files,
+                      TAGraph::ClangExclude exclude, bool blobMode);
+
+    static const std::string CUR_FILE_LOC;
+    static const std::string CUR_SETTING_LOC;
 
 private:
     const int PURGE_AMOUNT = 1000;
@@ -32,12 +43,17 @@ private:
     std::string relationFN;
     std::string mvRelationFN;
     std::string attributeFN;
+    std::string settingFN;
+    std::string curFileFN;
 
     static int currentNumber;
     int fileNumber;
+    bool purge;
 
     bool doesFileExist(std::string fN);
     void deleteFile(std::string fN);
+
+    void setPurgeStatus(bool purge);
 
     void purgeCurrentGraph();
     int getNumberEntities();

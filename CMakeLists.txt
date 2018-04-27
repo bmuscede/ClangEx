@@ -49,14 +49,11 @@ set(SOURCE_FILES
         Walker/BlobWalker.h
         TupleAttribute/TAProcessor.cpp
         TupleAttribute/TAProcessor.h
-        Printer/VerbosePrinter.cpp
-        Printer/VerbosePrinter.h
-        Printer/MinimalPrinter.cpp
-        Printer/MinimalPrinter.h
         Printer/Printer.cpp
         Printer/Printer.h
-        Printer/ProgressBar.c
-        Printer/ProgressBar.h Graph/LowMemoryTAGraph.cpp Graph/LowMemoryTAGraph.h)
+        Graph/LowMemoryTAGraph.cpp
+        Graph/LowMemoryTAGraph.h
+        )
 add_executable(ClangEx ${SOURCE_FILES})
 
 target_link_libraries(ClangEx

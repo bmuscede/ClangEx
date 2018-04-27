@@ -53,8 +53,7 @@ public:
     bool disableFeature(std::string feature);
 
     /** ClangEx Runner */
-    bool processAllFiles(bool blobMode, std::string mergeFile, bool verboseMode, bool lowMemory,
-                         std::vector<std::string>* rFileList = nullptr, TAGraph::ClangExclude* rExclude = nullptr);
+    bool processAllFiles(bool blobMode, std::string mergeFile, bool lowMemory, int startNum = 0);
     bool recoverCompact(std::string startDir);
     bool recoverFull(std::string startDir);
 
@@ -76,12 +75,13 @@ private:
     const std::string INCLUDE_DIR = "./include";
     const std::string INCLUDE_DIR_LOC = "--extra-arg=-I" + INCLUDE_DIR;
     const int BASE_LEN = 2;
-    const int FILE_SPLIT = 20;
+    const int FILE_SPLIT = 1;
 
     /** Private Variables */
     std::vector<TAGraph*> graphs;
     std::vector<path> files;
     std::vector<std::string> ext;
+    bool recoveryMode = false;
 
     /** Toggle System */
     std::string langString = "\tcSubSystem\n\tcFile\n\tcClass\n\tcFunction\n\tcVariable\n\tcEnum\n\tcStruct\n\tcUnion\n";
@@ -108,12 +108,16 @@ private:
 
     /** Recovery Helper */
     std::vector<int> getLMGraphs(std::string startDir);
-    bool readSettings(std::string file, bool* verbose, std::vector<std::string>* files, bool* blobMode,
+    bool readSettings(std::string file, std::vector<std::string>* files, bool* blobMode,
                       TAGraph::ClangExclude* exclude);
+    int readStartNum(std::string file);
 
     /** Argument Helpers */
     int extractIntegerWords(std::string str);
     char** prepareArgs(int *argc, int start, int final);
+
+    /** Low Memory System */
+    std::vector<std::string> splitList(std::string list);
 };
 
 

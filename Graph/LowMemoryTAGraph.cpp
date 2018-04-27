@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <sys/stat.h>
+#include <boost/algorithm/string.hpp>
 #include <cstdio>
 #include <boost/filesystem/operations.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -11,40 +12,58 @@
 #include "LowMemoryTAGraph.h"
 
 using namespace std;
-using namespace boost::filesystem;
+namespace bs = boost::filesystem;
 
 int LowMemoryTAGraph::currentNumber = 0;
+const string LowMemoryTAGraph::CUR_FILE_LOC = "curFile.txt";
+const string LowMemoryTAGraph::CUR_SETTING_LOC = "curSetting.txt";
 
 LowMemoryTAGraph::LowMemoryTAGraph(string basePath, int curNum) : TAGraph() {
+    purge = true;
     fileNumber = curNum;
 
-    instanceFN = weakly_canonical(path(basePath + "/" + to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
-    relationFN = weakly_canonical(path(basePath + "/" + to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
-    mvRelationFN = weakly_canonical(path(basePath + "/" + to_string(fileNumber) + "-" + BASE_MV_RELATION_FN)).string();
-    attributeFN = weakly_canonical(path(basePath + "/" + to_string(fileNumber) + "-" + BASE_ATTRIBUTE_FN)).string();
+    instanceFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
+    relationFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
+    mvRelationFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_MV_RELATION_FN)).string();
+    attributeFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_ATTRIBUTE_FN)).string();
+    settingFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_SETTING_LOC)).string();
+    curFileFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_FILE_LOC)).string();
 }
 
 LowMemoryTAGraph::LowMemoryTAGraph() : TAGraph() {
+    purge = true;
     fileNumber = LowMemoryTAGraph::currentNumber;
     LowMemoryTAGraph::currentNumber++;
 
-    instanceFN = weakly_canonical(path(to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
-    relationFN = weakly_canonical(path(to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
-    mvRelationFN = weakly_canonical(path(to_string(fileNumber) + "-" + BASE_MV_RELATION_FN)).string();
-    attributeFN = weakly_canonical(path(to_string(fileNumber) + "-" + BASE_ATTRIBUTE_FN)).string();
+    instanceFN = bs::weakly_canonical(bs::path(to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
+    relationFN = bs::weakly_canonical(bs::path(to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
+    mvRelationFN = bs::weakly_canonical(bs::path(to_string(fileNumber) + "-" + BASE_MV_RELATION_FN)).string();
+    attributeFN = bs::weakly_canonical(bs::path(to_string(fileNumber) + "-" + BASE_ATTRIBUTE_FN)).string();
+    settingFN = bs::weakly_canonical(bs::path(to_string(fileNumber) + "-" + CUR_SETTING_LOC)).string();
+    curFileFN = bs::weakly_canonical(bs::path(to_string(fileNumber) + "-" + CUR_FILE_LOC)).string();
 
     if (doesFileExist(instanceFN)) deleteFile(instanceFN);
     if (doesFileExist(relationFN)) deleteFile(relationFN);
     if (doesFileExist(attributeFN)) deleteFile(attributeFN);
-    ofstream{ instanceFN };
-    ofstream{ relationFN };
-    ofstream{ attributeFN };
+    std::ofstream f = std::ofstream{ instanceFN };
+    f.close();
+    f = ofstream{ relationFN };
+    f.close();
+    f = ofstream{ attributeFN };
+    f.close();
+    f = ofstream{ settingFN };
+    f.close();
+    f = ofstream{ curFileFN };
+    f.close();
+
 }
 
 LowMemoryTAGraph::~LowMemoryTAGraph() {
     if (doesFileExist(instanceFN)) deleteFile(instanceFN);
     if (doesFileExist(relationFN)) deleteFile(relationFN);
     if (doesFileExist(attributeFN)) deleteFile(attributeFN);
+    if (doesFileExist(settingFN)) deleteFile(settingFN);
+    if (doesFileExist(curFileFN)) deleteFile(curFileFN);
 }
 
 bool LowMemoryTAGraph::addNode(ClangNode* node, bool assumeValid){
@@ -94,6 +113,18 @@ string LowMemoryTAGraph::generateTAFormat() {
     return format;
 }
 
+void LowMemoryTAGraph::resolveFiles(ClangExclude exclusions){
+    //Disable purging.
+    setPurgeStatus(false);
+
+    //Recover files.
+    TAGraph::resolveFiles(exclusions);
+    setPurgeStatus(true);
+
+    //Purge the results.
+    purgeCurrentGraph();
+}
+
 void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
     //First, purge the current graph.
     purgeCurrentGraph();
@@ -117,8 +148,8 @@ void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
     deleteFile(instanceFN);
 
     //Next, resolves the relations.
-    path org = relationFN;
-    path dst = mvRelationFN;
+    bs::path org = relationFN;
+    bs::path dst = mvRelationFN;
     rename(org, dst);
 
     vector<string> removedRels;
@@ -269,6 +300,111 @@ void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
     outI.close();
 }
 
+void LowMemoryTAGraph::addNodesToFile(std::map<std::string, ClangNode*> fileSkip){
+    //Load in each attribute.
+    ifstream attributes(attributeFN);
+    if (!attributes.is_open()) return;
+
+    string current;
+    while (getline(attributes, current)){
+        boost::algorithm::trim(current);
+
+        //Check for a relation attribute.
+        if (current.at(0) == '(') continue;
+
+        //Get the name and attributes.
+        string name = current.substr(0, current.find(" { "));
+        string attrs = current.substr(current.find(" { ") + 3);
+        attrs.pop_back();
+        attrs.pop_back();
+
+        //Split by space.
+        vector<string> tokens;
+        boost::algorithm::split(tokens, attrs, boost::is_any_of(" "));
+
+        //Process the attributes.
+        string attrValue;
+        int pos = 0;
+        bool doNotCheck = false;
+        for (string curTok : tokens){
+            boost::algorithm::trim(curTok);
+
+            //Check the value of pos.
+            if (pos == 0){
+                if (curTok == FILE_ATTRIBUTE){
+                    doNotCheck = false;
+                } else {
+                    doNotCheck = true;
+                }
+            } else if (pos == 2 ) {
+                pos = -1;
+                if (doNotCheck == true) {
+                    pos = 0;
+                    continue;
+                }
+
+                //Add the file node.
+                string file = curTok;
+                ClangNode* fileNode;
+                if (file.compare("") != 0) {
+                    //Find the appropriate node.
+                    vector<ClangNode*> fileVec = findNodeByName(file);
+                    if (fileVec.size() > 0) {
+                        fileNode = fileVec.at(0);
+
+                        //We now look up the file node.
+                        auto ptrSkip = fileSkip.find(file);
+                        if (ptrSkip != fileSkip.end()) {
+                            ClangNode *skip = ptrSkip->second;
+                            fileNode = skip;
+                        }
+                    } else {
+                        continue;
+                    }
+
+                    //Add it to the graph.
+                    ClangEdge *edge = new ClangEdge(fileNode, file, ClangEdge::FILE_CONTAIN);
+                    addEdge(edge);
+                }
+            }
+
+            pos++;
+        }
+    }
+
+    attributes.close();
+}
+
+void LowMemoryTAGraph::dumpCurrentFile(int fileNum, string file){
+    //Opens the file list.
+    std::ofstream curFile(curFileFN);
+    if (!curFile.is_open()) return;
+
+    //Writes the current file.
+    curFile << fileNum << endl << file;
+    curFile.close();
+}
+
+void LowMemoryTAGraph::dumpSettings(vector<bs::path> files, TAGraph::ClangExclude exclude, bool blobMode){
+    //Opens the file.
+    std::ofstream curSettings(settingFN);
+    if (!curSettings.is_open()) return;
+
+    //First, dump the files.
+    for (int i = 0; i < files.size(); i++){
+        curSettings << files.at(i);
+        if (i != files.size() - 1) curSettings << ",";
+    }
+    curSettings << endl;
+
+    //Next, dump the excludes.
+    curSettings << exclude.cClass << exclude.cEnum << exclude.cFile << exclude.cFunction << exclude.cStruct <<
+                exclude.cSubSystem << exclude.cUnion << exclude.cVariable;
+
+    curSettings << blobMode;
+    curSettings.close();
+}
+
 bool LowMemoryTAGraph::doesFileExist(string fN){
     struct stat buffer;
     return (stat (fN.c_str(), &buffer) == 0);
@@ -278,7 +414,13 @@ void LowMemoryTAGraph::deleteFile(string fN) {
     remove(fN.c_str());
 }
 
+void LowMemoryTAGraph::setPurgeStatus(bool purge){
+    this->purge = purge;
+}
+
 void LowMemoryTAGraph::purgeCurrentGraph(){
+    if (!purge) return;
+
     //Start by writing everything to disk.
     ofstream instances(instanceFN, std::ios::out | std::ios::app);
     if (!instances.is_open()) return;

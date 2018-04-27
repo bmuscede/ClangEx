@@ -86,11 +86,11 @@ public:
 
     /** TA Operations */
     virtual std::string generateTAFormat();
-    void addNodesToFile(std::map<std::string, ClangNode*> fileSkip);
+    virtual void addNodesToFile(std::map<std::string, ClangNode*> fileSkip);
 
     /** Unresolved Operations */
     virtual void resolveExternalReferences(Printer* print, bool silent = false);
-    void resolveFiles(ClangExclude exclusions);
+    virtual void resolveFiles(ClangExclude exclusions);
     void addPath(std::string path);
 
     static const std::string FILE_ATTRIBUTE;
