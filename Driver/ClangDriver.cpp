@@ -229,7 +229,8 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool lowMemor
             return false;
         }
     } else if (lowMemory){
-        mergeGraph = new LowMemoryTAGraph();
+        if (lowMemoryPath.empty()) mergeGraph = new LowMemoryTAGraph();
+        else mergeGraph = new LowMemoryTAGraph(lowMemoryPath.string());
     } else {
         mergeGraph = new TAGraph();
     }
@@ -365,6 +366,8 @@ bool ClangDriver::recoverFull(string startDir){
 
         //Sets up the file system.
         recoveryMode = true;
+        auto tempLowMem = lowMemoryPath;
+        lowMemoryPath = startDir;
         files.clear();
         for (string curFile : ldFiles) files.push_back(path(curFile));
         toggle = ldExclude;
@@ -373,6 +376,7 @@ bool ClangDriver::recoverFull(string startDir){
 
         //Restores the system.
         recoveryMode = false;
+        lowMemoryPath = tempLowMem;
         files = oldFiles;
         toggle = oldExclude;
 
@@ -486,6 +490,13 @@ int ClangDriver::removeByRegex(string regex) {
     }
 
     return num;
+}
+
+bool ClangDriver::changeLowMemoryLoc(path curLoc){
+    if (!is_directory(curLoc)) return false;
+
+    lowMemoryPath = curLoc;
+    return true;
 }
 
 /**
@@ -753,12 +764,25 @@ bool ClangDriver::readSettings(string loc, vector<string>* files, bool* blobMode
     files->clear();
     for (string curFile : filePath) files->push_back(curFile);
 
-    //Next, sets in the exclude system up.
-    settingFile >> exclude->cClass >> exclude->cEnum >> exclude->cFile >> exclude->cFunction >> exclude->cStruct
-                >> exclude->cSubSystem >> exclude->cUnion >> exclude->cVariable;
-    settingFile >> *blobMode;
+    //Get the booleans.
+    string booleans;
+    getline(settingFile, booleans);
     settingFile.close();
 
+    stringstream sstream = stringstream(booleans);
+
+    //Next, sets in the exclude system up.
+    if (sstream.get() == '1') exclude->cClass = true;
+    if (sstream.get() == '1') exclude->cEnum = true;
+    if (sstream.get() == '1') exclude->cFile = true;
+    if (sstream.get() == '1') exclude->cFunction = true;
+    if (sstream.get() == '1') exclude->cStruct = true;
+    if (sstream.get() == '1') exclude->cSubSystem = true;
+    if (sstream.get() == '1') exclude->cUnion = true;
+    if (sstream.get() == '1') exclude->cVariable = true;
+
+    //Gets blob mode.
+    if (sstream.get() == '1') *blobMode = true;
     return true;
 }
 

@@ -56,6 +56,7 @@ const static string ENABLE_ARG = "enable";
 const static string DISABLE_ARG = "disable";
 const static string SCRIPT_ARG = "script";
 const static string RECOVER_ARG = "recover";
+const static string OLOC_ARG = "outLoc";
 
 /** Const Strings */
 const string HELP_STRING = "Commands that can be used:\n"
@@ -70,10 +71,11 @@ const string HELP_STRING = "Commands that can be used:\n"
         "generate       : Runs ClangEx on loaded files.\n"
         "output         : Outputs generated TA graphs to disk.\n"
         "recover        : Recovers a previous low-memory run.\n"
-        "script         : Runs a script that handles program commands.\n\n"
+        "script         : Runs a script that handles program commands.\n"
+        "outLoc         : Changes the output location for low memory mode.\n\n"
         "For more help type \"help [argument name]\" for more details.";
 const string ABOUT_STRING = "ClangEx - The Fast C/C++ Extractor\n"
-        "University of Waterloo, Copyright 2017\n"
+        "University of Waterloo, Copyright 2018\n"
         "Licensed under GNU Public License v3\n\n"
         "This program is distributed in the hope that it will be useful,\n"
         "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
@@ -270,6 +272,17 @@ void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, str
     ss.str(string());
     ss << *helpMap->at(OUT_ARG).desc;
     (*helpString)[OUT_ARG] = string("Output Help\nUsage: " + OUT_ARG + " [options] outputFile\nOutputs the generated"
+            " graphs to a tuple-attribute (TA) file based on the\nClangEx schema. These models can then be used"
+            " by other programs.\n\n" + ss.str());
+
+    //Generate the help for outLoc.
+    (*helpMap)[OLOC_ARG] = ClangExHandler(OLOC_ARG, po::options_description("Options"));
+    helpMap->at(OLOC_ARG).desc->add_options()
+            ("help,h", "Print help message for output.")
+            ("outputDir,o", po::value<std::vector<std::string>>(), "The output directory for low memory graph.");
+    ss.str(string());
+    ss << *helpMap->at(OLOC_ARG).desc;
+    (*helpString)[OLOC_ARG] = string("Output Help\nUsage: " + OLOC_ARG + " [options] outputFile\nOutputs the generated"
             " graphs to a tuple-attribute (TA) file based on the\nClangEx schema. These models can then be used"
             " by other programs.\n\n" + ss.str());
 }
@@ -832,6 +845,31 @@ void processRecover(string line, po::options_description desc){
     }
 }
 
+void processOutputLoc(string line, po::options_description desc){
+    //Tokenize by space.
+    vector<string> tokens = tokenizeBySpace(line);
+
+    //Next, we check for errors.
+    if (driver.getNumGraphs() > 0) {
+        //TODO: Move graphs in processing.
+        cerr << "Error: You cannot change the current low memory graph output location now." << endl;
+        return;
+    } else if (tokens.size() != 2) {
+        cerr << "Error: You must include at least one file or directory to process." << endl;
+        return;
+    }
+
+    //Now we get the directory.
+    string directory = tokens.at(1);
+    bool status = driver.changeLowMemoryLoc(directory);
+
+    if (!status){
+        cerr << "Error: Graph location did not change! Please supply a different filename." << endl;
+    } else {
+        cout << "Low memory graph location successfully changed to " << directory << "!" << endl;
+    }
+}
+
 /**
  * Processes an individual command.
  * @param line The line entered.
@@ -841,30 +879,45 @@ bool processCommand(string line) {
     if (line.compare("") == 0) return true;
 
     //Checks the commands
-    if (!line.compare(0, HELP_ARG.size(), HELP_ARG)) {
+    if (!line.compare(0, HELP_ARG.size(), HELP_ARG) &&
+        (line[HELP_ARG.size()] == ' ' || line.size() == HELP_ARG.size())) {
         processHelp(line, helpString);
-    } else if (!line.compare(0, ABOUT_ARG.size(), ABOUT_ARG)) {
+    } else if (!line.compare(0, ABOUT_ARG.size(), ABOUT_ARG) &&
+               (line[ABOUT_ARG.size()] == ' ' || line.size() == ABOUT_ARG.size())) {
         processAbout();
-    } else if (!line.compare(0, EXIT_ARG.size(), EXIT_ARG)) {
+    } else if (!line.compare(0, EXIT_ARG.size(), EXIT_ARG) &&
+               (line[EXIT_ARG.size()] == ' ' || line.size() == EXIT_ARG.size())) {
         return processQuit(line);
-    } else if (!line.compare(0, ADD_ARG.size(), ADD_ARG)) {
+    } else if (!line.compare(0, ADD_ARG.size(), ADD_ARG) &&
+               (line[ADD_ARG.size()] == ' ' || line.size() == ADD_ARG.size())) {
         processAdd(line);
-    } else if (!line.compare(0, REMOVE_ARG.size(), REMOVE_ARG)) {
+    } else if (!line.compare(0, REMOVE_ARG.size(), REMOVE_ARG) &&
+               (line[REMOVE_ARG.size()] == ' ' || line.size() == REMOVE_ARG.size())) {
         processRemove(line, *(helpInfo.at(REMOVE_ARG).desc.get()));
-    } else if (!line.compare(0, LIST_ARG.size(), LIST_ARG)) {
+    } else if (!line.compare(0, LIST_ARG.size(), LIST_ARG) &&
+               (line[LIST_ARG.size()] == ' ' || line.size() == LIST_ARG.size())) {
         processList(line, *(helpInfo.at(LIST_ARG).desc.get()));
-    } else if (!line.compare(0, ENABLE_ARG.size(), ENABLE_ARG)) {
+    } else if (!line.compare(0, ENABLE_ARG.size(), ENABLE_ARG) &&
+               (line[ENABLE_ARG.size()] == ' ' || line.size() == ENABLE_ARG.size())) {
         processEnable(line);
-    } else if (!line.compare(0, DISABLE_ARG.size(), DISABLE_ARG)) {
+    } else if (!line.compare(0, DISABLE_ARG.size(), DISABLE_ARG) &&
+               (line[DISABLE_ARG.size()] == ' ' || line.size() == DISABLE_ARG.size())) {
         processDisable(line);
-    } else if (!line.compare(0, GEN_ARG.size(), GEN_ARG)) {
+    } else if (!line.compare(0, GEN_ARG.size(), GEN_ARG) &&
+               (line[GEN_ARG.size()] == ' ' || line.size() == GEN_ARG.size())) {
         processGenerate(line, *(helpInfo.at(GEN_ARG).desc.get()));
-    } else if (!line.compare(0, OUT_ARG.size(), OUT_ARG)) {
+    } else if (!line.compare(0, OUT_ARG.size(), OUT_ARG) &&
+               (line[OUT_ARG.size()] == ' ' || line.size() == OUT_ARG.size())) {
         processOutput(line, *(helpInfo.at(OUT_ARG).desc.get()));
-    } else if (!line.compare(0, SCRIPT_ARG.size(), SCRIPT_ARG)) {
+    } else if (!line.compare(0, SCRIPT_ARG.size(), SCRIPT_ARG) &&
+               (line[SCRIPT_ARG.size()] == ' ' || line.size() == SCRIPT_ARG.size())) {
         processScript(line, *(helpInfo.at(SCRIPT_ARG).desc.get()));
-    } else if (!line.compare(0, RECOVER_ARG.size(), RECOVER_ARG)) {
+    } else if (!line.compare(0, RECOVER_ARG.size(), RECOVER_ARG) &&
+               (line[RECOVER_ARG.size()] == ' ' || line.size() == RECOVER_ARG.size())) {
         processRecover(line, *(helpInfo.at(RECOVER_ARG).desc.get()));
+    } else if (!line.compare(0, OLOC_ARG.size(), OLOC_ARG) &&
+               (line[OLOC_ARG.size()] == ' ' || line.size() == OLOC_ARG.size())) {
+        processOutputLoc(line, *(helpInfo.at(OLOC_ARG).desc.get()));
     } else {
         cerr << "No such command: " << line << "\nType \'help\' for more information." << endl;
     }

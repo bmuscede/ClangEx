@@ -13,6 +13,7 @@
 class LowMemoryTAGraph : public TAGraph {
 public:
     LowMemoryTAGraph();
+    LowMemoryTAGraph(std::string basePath);
     LowMemoryTAGraph(std::string basePath, int curNum);
     ~LowMemoryTAGraph() override;
 

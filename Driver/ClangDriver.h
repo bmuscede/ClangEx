@@ -66,6 +66,9 @@ public:
     int removeByPath(path curPath);
     int removeByRegex(std::string regex);
 
+    /** Low Memory System */
+    bool changeLowMemoryLoc(path curLoc);
+
 private:
     /** Default Arguments */
     const std::string INSTANCE_FLAG = "$INSTANCE";
@@ -81,6 +84,7 @@ private:
     std::vector<TAGraph*> graphs;
     std::vector<path> files;
     std::vector<std::string> ext;
+    path lowMemoryPath = "";
     bool recoveryMode = false;
 
     /** Toggle System */

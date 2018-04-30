@@ -30,6 +30,33 @@ LowMemoryTAGraph::LowMemoryTAGraph(string basePath, int curNum) : TAGraph() {
     curFileFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_FILE_LOC)).string();
 }
 
+LowMemoryTAGraph::LowMemoryTAGraph(string basePath) : TAGraph() {
+    purge = true;
+    fileNumber = LowMemoryTAGraph::currentNumber;
+    LowMemoryTAGraph::currentNumber++;
+
+    instanceFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
+    relationFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
+    mvRelationFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_MV_RELATION_FN)).string();
+    attributeFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_ATTRIBUTE_FN)).string();
+    settingFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_SETTING_LOC)).string();
+    curFileFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_FILE_LOC)).string();
+
+    if (doesFileExist(instanceFN)) deleteFile(instanceFN);
+    if (doesFileExist(relationFN)) deleteFile(relationFN);
+    if (doesFileExist(attributeFN)) deleteFile(attributeFN);
+    std::ofstream f = std::ofstream{ instanceFN };
+    f.close();
+    f = ofstream{ relationFN };
+    f.close();
+    f = ofstream{ attributeFN };
+    f.close();
+    f = ofstream{ settingFN };
+    f.close();
+    f = ofstream{ curFileFN };
+    f.close();
+}
+
 LowMemoryTAGraph::LowMemoryTAGraph() : TAGraph() {
     purge = true;
     fileNumber = LowMemoryTAGraph::currentNumber;
@@ -392,7 +419,7 @@ void LowMemoryTAGraph::dumpSettings(vector<bs::path> files, TAGraph::ClangExclud
 
     //First, dump the files.
     for (int i = 0; i < files.size(); i++){
-        curSettings << files.at(i);
+        curSettings << files.at(i).string();
         if (i != files.size() - 1) curSettings << ",";
     }
     curSettings << endl;
@@ -400,7 +427,6 @@ void LowMemoryTAGraph::dumpSettings(vector<bs::path> files, TAGraph::ClangExclud
     //Next, dump the excludes.
     curSettings << exclude.cClass << exclude.cEnum << exclude.cFile << exclude.cFunction << exclude.cStruct <<
                 exclude.cSubSystem << exclude.cUnion << exclude.cVariable;
-
     curSettings << blobMode;
     curSettings.close();
 }
