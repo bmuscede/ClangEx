@@ -30,6 +30,8 @@ public:
     void dumpSettings(std::vector<boost::filesystem::path> files,
                       TAGraph::ClangExclude exclude, bool blobMode);
 
+    void purgeCurrentGraph();
+
     static const std::string CUR_FILE_LOC;
     static const std::string CUR_SETTING_LOC;
 
@@ -56,7 +58,6 @@ private:
 
     void setPurgeStatus(bool purge);
 
-    void purgeCurrentGraph();
     int getNumberEntities();
 
     std::vector<std::string> tokenize(std::string);

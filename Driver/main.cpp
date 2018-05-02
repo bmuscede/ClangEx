@@ -336,10 +336,15 @@ void processAbout(){
  */
 bool processQuit(string line){
     //Checks for the ! at the end.
-    if (line.at(line.size() - 1) == '!' || changed == false) return false;
+    if (line.at(line.size() - 1) == '!' || changed == false) {
+        driver.cleanup();
+        return false;
+    }
 
     //Ask the user if they want to act.
     bool result = promptForAction("There are still items to be processed. Are you sure you want to quit (Y/N): ");
+    if (!result) driver.cleanup();
+
     return !result;
 }
 

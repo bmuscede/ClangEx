@@ -29,12 +29,11 @@
 #include <boost/foreach.hpp>
 #include <fstream>
 #include <llvm/Support/CommandLine.h>
+#include "clang/Tooling/Tooling.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
 #include "clang/Frontend/FrontendAction.h"
-#include "clang/Tooling/Tooling.h"
-#include "clang/Tooling/CommonOptionsParser.h"
 #include "../Graph/LowMemoryTAGraph.h"
 #include "../TupleAttribute/TAProcessor.h"
 #include "../Walker/ASTWalker.h"
@@ -55,9 +54,17 @@ ClangDriver::ClangDriver() {
 }
 
 /**
- * Destructor. Stub.
+ * Destructor.
  */
-ClangDriver::~ClangDriver() { }
+ClangDriver::~ClangDriver() {
+    cleanup();
+}
+
+void ClangDriver::cleanup(){
+    for (TAGraph* graph : graphs) {
+        delete graph;
+    }
+}
 
 /**
  * Prints the current status of ClangEx.
@@ -200,7 +207,11 @@ bool ClangDriver::disableFeature(string feature){
  */
 bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool lowMemory, int startNum){
     bool success = true;
+
+    int argc = 0;
+    char **argv = prepareArgs(&argc, 0, getNumFiles());
     llvm::cl::OptionCategory* ClangExCategory = new llvm::cl::OptionCategory("ClangEx");
+    CommonOptionsParser* OptionsParser = new CommonOptionsParser(argc, (const char **) argv, *ClangExCategory);
 
     //Sets up the printer.
     Printer* clangPrint = new Printer();
@@ -219,6 +230,10 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool lowMemor
 
         if (!succ) {
             delete clangPrint;
+            delete OptionsParser;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
+            delete[] argv;
+            delete ClangExCategory;
             return false;
         }
 
@@ -226,6 +241,10 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool lowMemor
         TAGraph *graph = processor.writeTAGraph();
         if (graph == nullptr) {
             delete clangPrint;
+            delete OptionsParser;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
+            delete[] argv;
+            delete ClangExCategory;
             return false;
         }
     } else if (lowMemory){
@@ -242,52 +261,11 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool lowMemor
     if (lowMemory) dynamic_cast<LowMemoryTAGraph*>(mergeGraph)->dumpSettings(files, exclude, blobMode);
 
     //Creates the command line arguments.
-    ASTWalker *walker;
-    unique_ptr<FrontendActionFactory> act;
     int fileSplit = (lowMemory) ? FILE_SPLIT : getNumFiles();
+    clangPrint->printProcessStatus(Printer::COMPILING);
     for (int i = startNum; i < getNumFiles(); i += fileSplit) {
-        int argc = 0;
-        char **argv = prepareArgs(&argc, i, i + fileSplit);
-        vector<string> curList;
-        curList.push_back(files.at(i).string());
-
-        if (lowMemory) dynamic_cast<LowMemoryTAGraph*>(mergeGraph)->dumpCurrentFile(i, files.at(i).string());
-
-        //Sets up the processor.
-        CommonOptionsParser* OptionsParser = new CommonOptionsParser(argc, (const char **) argv, *ClangExCategory);
-        ClangTool* Tool = new ClangTool(OptionsParser->getCompilations(),
-                                        (lowMemory) ? curList : OptionsParser->getSourcePathList());
-
-        if (blobMode) {
-            walker = new BlobWalker(clangPrint, lowMemory, exclude, mergeGraph);
-        } else {
-            walker = new PartialWalker(clangPrint, lowMemory, exclude, mergeGraph);
-        }
-
-        //Generates a matcher system.
-        MatchFinder finder;
-
-        //Next, processes the matching conditions.
-        walker->generateASTMatches(&finder);
-
-        //Runs the Clang tool.
-        if (i == 0) clangPrint->printProcessStatus(Printer::COMPILING);
-        act = newFrontendActionFactory(&finder);
-        int code = Tool->run(act.get());
-        act.reset();
-        clangPrint->printFileNameDone();
-
-        //Gets the code and checks for warnings.
-        if (code != 0) {
-            cerr << "Error: Compilation errors were detected." << endl;
-            success = false;
-        }
-
-        delete walker;
-        for (int i = 0; i < argc; i++) delete[] argv[i];
-        delete[] argv;
-        delete OptionsParser;
-        delete Tool;
+        runAnalysis(blobMode, lowMemory, mergeGraph, i, clangPrint, exclude, OptionsParser);
+        if (lowMemory) dynamic_cast<LowMemoryTAGraph*>(mergeGraph)->purgeCurrentGraph();
     }
 
     //Shifts the graphs.
@@ -301,8 +279,56 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool lowMemor
     files.clear();
 
     //Returns the success code.
-    delete ClangExCategory;
     delete clangPrint;
+    delete OptionsParser;
+    for (int i = 0; i < argc; i++) delete[] argv[i];
+    delete[] argv;
+    delete ClangExCategory;
+    return success;
+}
+
+bool ClangDriver::runAnalysis(bool blobMode, bool lowMemory, TAGraph* mergeGraph, int i, Printer* clangPrint,
+                              TAGraph::ClangExclude exclude, CommonOptionsParser* OptionsParser) {
+    ASTWalker *walker;
+    unique_ptr<FrontendActionFactory> act;
+    bool success = true;
+
+    vector<string> curList;
+    curList.push_back(files.at(i).string());
+
+    if (lowMemory) dynamic_cast<LowMemoryTAGraph*>(mergeGraph)->dumpCurrentFile(i, files.at(i).string());
+
+    //Sets up the processor.
+    ClangTool* Tool = new ClangTool(OptionsParser->getCompilations(),
+                                    (lowMemory) ? curList : OptionsParser->getSourcePathList());
+
+    if (blobMode) {
+        walker = new BlobWalker(clangPrint, lowMemory, exclude, mergeGraph);
+    } else {
+        walker = new PartialWalker(clangPrint, lowMemory, exclude, mergeGraph);
+    }
+
+    //Generates a matcher system.
+    MatchFinder finder;
+
+    //Next, processes the matching conditions.
+    walker->generateASTMatches(&finder);
+
+    //Runs the Clang tool.
+    act = newFrontendActionFactory(&finder);
+    int code = Tool->run(act.get());
+    act.reset();
+    clangPrint->printFileNameDone();
+
+    //Gets the code and checks for warnings.
+    if (code != 0) {
+        cerr << "Error: Compilation errors were detected." << endl;
+        success = false;
+    }
+
+    delete walker;
+    delete Tool;
+
     return success;
 }
 

@@ -254,7 +254,8 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const Fu
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::FUNCTION);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Adds parameters.
     graph->addAttribute(node->getID(),
@@ -330,7 +331,8 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
 
     //Creates a variable entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process attributes.
     graph->addAttribute(node->getID(),
@@ -376,7 +378,8 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRe
 
     //Creates a class entry.
     ClangNode* node = new ClangNode(ID, className, ClangNode::CLASS);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process attributes.
     graph->addAttribute(node->getID(),
@@ -415,7 +418,8 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
 
     //Creates a enum entry.
     ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process attributes.
     graph->addAttribute(node->getID(),
@@ -440,7 +444,8 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
 
     //Creates a new enum entry.
     ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM_CONST);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process attributes.
     graph->addAttribute(node->getID(),
@@ -465,7 +470,8 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
 
     //Next, generates the node.
     ClangNode* node = new ClangNode(ID, label, ClangNode::STRUCT);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process the attributes.
     graph->addAttribute(node->getID(),
@@ -493,7 +499,8 @@ void ASTWalker::addUnionDecl(const MatchFinder::MatchResult result, const Record
 
     //Next, generates the node.
     ClangNode* node = new ClangNode(ID, label, ClangNode::UNION);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process the attributes.
     graph->addAttribute(node->getID(),
@@ -729,7 +736,8 @@ void ASTWalker::processEdge(string srcID, string srcLabel, string dstID, string 
     } else {
         edge = new ClangEdge(srcID, dstID, type);
     }
-    graph->addEdge(edge);
+    bool succ = graph->addEdge(edge);
+    if (!succ) return;
 
     //Iterate through our vector and add.
     for (auto mapItem : attributes) {

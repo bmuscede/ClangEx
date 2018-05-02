@@ -49,14 +49,7 @@ TAGraph::TAGraph() {
  * Destructor. Deletes all nodes and edges in the graph.
  */
 TAGraph::~TAGraph() {
-    //Iterate through node list to delete.
-    for (auto it = nodeList.begin(); it != nodeList.end(); it++)
-        delete it->second;
-
-    //Next, iterate through the edge list.
-    for (auto it = edgeSrcList.begin(); it != edgeSrcList.end(); it++)
-        for (ClangEdge* edge : it->second)
-            delete edge;
+    clearGraph();
 }
 
 /**
@@ -68,6 +61,7 @@ TAGraph::~TAGraph() {
 bool TAGraph::addNode(ClangNode *node, bool assumeValid) {
     //Check if the node ID exists.
     if (!assumeValid && nodeExists(node->getID())){
+        delete node;
         return false;
     }
 
@@ -86,8 +80,10 @@ bool TAGraph::addNode(ClangNode *node, bool assumeValid) {
 bool TAGraph::addEdge(ClangEdge *edge, bool assumeValid) {
     //Check if the edge already exists.
     if (!assumeValid && edgeExists(edge->getSrcID(), edge->getDstID(), edge->getType())){
+        delete edge;
         return false;
     } else if (edge->getSrcID().compare(edge->getDstID()) == 0 && edge->getType() == ClangEdge::EdgeType::CONTAINS){
+        delete edge;
         return false;
     }
 
@@ -472,6 +468,8 @@ void TAGraph::resolveFiles(TAGraph::ClangExclude exclusions){
         if ((file->getType() == ClangNode::NodeType::SUBSYSTEM && !exclusions.cSubSystem) ||
             (file->getType() == ClangNode::NodeType::FILE && !exclusions.cFile)) {
             addNode(file, assumeValid);
+        } else {
+            delete file;
         }
     }
 
@@ -495,22 +493,20 @@ void TAGraph::addPath(string path){
 }
 
 void TAGraph::clearGraph(){
-    //Sift through the relations.
-    for (auto it = edgeSrcList.begin(); it != edgeSrcList.end(); it++){
-        for (ClangEdge* edge : it->second){
-            delete edge;
+    for (auto it = edgeSrcList.begin(); it != edgeSrcList.end(); ++it){
+        vector<ClangEdge*> edges = it->second;
+        for (ClangEdge* cur : edges){
+            delete cur;
+            cur = nullptr;
         }
     }
-    edgeSrcList = unordered_map<string, vector<ClangEdge*>>();
-    edgeDstList = unordered_map<string, vector<ClangEdge*>>();
-
-    //Sift through entities.
-    for (auto it = nodeList.begin(); it != nodeList.end(); it++){
-        if (!it->second) continue;
+    edgeSrcList.clear();
+    edgeDstList.clear();
+    for (auto it = nodeList.begin(); it != nodeList.end(); ++it){
         delete it->second;
     }
-    nodeList = unordered_map<string, ClangNode*>();
-    nodeNameList = unordered_map<string, vector<string>>();
+    nodeList.clear();
+    nodeNameList.clear();
 }
 
 string TAGraph::generateTAHeader() {

@@ -30,6 +30,7 @@
 #include <vector>
 #include <string>
 #include <boost/filesystem.hpp>
+#include "clang/Tooling/CommonOptionsParser.h"
 #include "../Graph/TAGraph.h"
 
 using namespace boost::filesystem;
@@ -39,6 +40,8 @@ public:
     /** Constructor/Destructor */
     ClangDriver();
     ~ClangDriver();
+
+    void cleanup();
 
     /** Language Printers */
     std::string printStatus(bool files, bool ta, bool toggle);
@@ -101,6 +104,9 @@ private:
     int addDirectory(path directory);
     int removeFile(path file);
     int removeDirectory(path directory);
+
+    bool runAnalysis(bool blobMode, bool lowMemory, TAGraph* mergeGraph, int i, Printer* clangPrint,
+                     TAGraph::ClangExclude exclude, clang::tooling::CommonOptionsParser* OptionsParser);
 
     /** Enabled Strings */
     std::vector<std::string> getEnabled();
