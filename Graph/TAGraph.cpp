@@ -38,7 +38,7 @@ const string TAGraph::FILE_ATTRIBUTE = "filename";
  * Constructor. Creates all the member variables.
  * @param print The printer type to be used.
  */
-TAGraph::TAGraph(Printer* print) : clangPrinter(print) {
+TAGraph::TAGraph() {
     nodeList = unordered_map<string, ClangNode*>();
     nodeNameList = unordered_map<string, vector<string>>();
     edgeSrcList = unordered_map<string, vector<ClangEdge*>>();
@@ -49,23 +49,7 @@ TAGraph::TAGraph(Printer* print) : clangPrinter(print) {
  * Destructor. Deletes all nodes and edges in the graph.
  */
 TAGraph::~TAGraph() {
-    //Iterate through node list to delete.
-    for (auto it = nodeList.begin(); it != nodeList.end(); it++)
-        delete it->second;
-
-    //Next, iterate through the edge list.
-    for (auto it = edgeSrcList.begin(); it != edgeSrcList.end(); it++)
-        for (ClangEdge* edge : it->second)
-            delete edge;
-}
-
-/**
- * Sets the current printer.
- * @param newPrint The new printer to use.
- */
-void TAGraph::setPrinter(Printer* newPrint){
-    delete clangPrinter;
-    clangPrinter = newPrint;
+    clearGraph();
 }
 
 /**
@@ -77,6 +61,7 @@ void TAGraph::setPrinter(Printer* newPrint){
 bool TAGraph::addNode(ClangNode *node, bool assumeValid) {
     //Check if the node ID exists.
     if (!assumeValid && nodeExists(node->getID())){
+        delete node;
         return false;
     }
 
@@ -94,15 +79,17 @@ bool TAGraph::addNode(ClangNode *node, bool assumeValid) {
  */
 bool TAGraph::addEdge(ClangEdge *edge, bool assumeValid) {
     //Check if the edge already exists.
-    if (!assumeValid && edgeExists(edge->getSrc()->getID(), edge->getDst()->getID(), edge->getType())){
+    if (!assumeValid && edgeExists(edge->getSrcID(), edge->getDstID(), edge->getType())){
+        delete edge;
         return false;
-    } else if (edge->getSrc()->getID().compare(edge->getDst()->getID()) == 0 && edge->getType() == ClangEdge::EdgeType::CONTAINS){
+    } else if (edge->getSrcID().compare(edge->getDstID()) == 0 && edge->getType() == ClangEdge::EdgeType::CONTAINS){
+        delete edge;
         return false;
     }
 
     //Now, check if we already have a contains edge for the source node.
     if (edge->getType() == ClangEdge::EdgeType::CONTAINS) {
-        vector<ClangEdge *> edges = edgeDstList[edge->getDst()->getID()];
+        vector<ClangEdge *> edges = edgeDstList[edge->getDstID()];
         for (ClangEdge *curEdge : edges) {
             if (curEdge->getType() == ClangEdge::EdgeType::CONTAINS) {
                 removeEdge(curEdge);
@@ -111,8 +98,8 @@ bool TAGraph::addEdge(ClangEdge *edge, bool assumeValid) {
     }
 
     //Now, we add the edge.
-    edgeSrcList[edge->getSrc()->getID()].push_back(edge);
-    edgeDstList[edge->getDst()->getID()].push_back(edge);
+    edgeSrcList[edge->getSrcID()].push_back(edge);
+    edgeDstList[edge->getDstID()].push_back(edge);
     return true;
 }
 
@@ -154,18 +141,18 @@ void TAGraph::removeNode(ClangNode *node, bool unsafe) {
  */
 void TAGraph::removeEdge(ClangEdge* edge){
     //We need to delete this edge from both arrays.
-    for (int i = 0; i < edgeSrcList[edge->getSrc()->getID()].size(); i++){
-        ClangEdge* ex = edgeSrcList[edge->getSrc()->getID()].at(i);
-        if (ex->getSrc()->getID().compare(edge->getSrc()->getID()) == 0 && ex->getDst()->getID().compare(edge->getDst()->getID()) == 0 &&
+    for (int i = 0; i < edgeSrcList[edge->getSrcID()].size(); i++){
+        ClangEdge* ex = edgeSrcList[edge->getSrcID()].at(i);
+        if (ex->getSrcID().compare(edge->getSrcID()) == 0 && ex->getDstID().compare(edge->getDstID()) == 0 &&
             ex->getType() == edge->getType()) {
-            edgeSrcList[edge->getSrc()->getID()].erase(edgeSrcList[edge->getSrc()->getID()].begin() + i);
+            edgeSrcList[edge->getSrcID()].erase(edgeSrcList[edge->getSrcID()].begin() + i);
         }
     }
-    for (int i = 0; i < edgeDstList[edge->getDst()->getID()].size(); i++){
-        ClangEdge* ex = edgeDstList[edge->getDst()->getID()].at(i);
-        if (ex->getSrc()->getID().compare(edge->getSrc()->getID()) == 0 && ex->getDst()->getID().compare(edge->getDst()->getID()) == 0 &&
+    for (int i = 0; i < edgeDstList[edge->getDstID()].size(); i++){
+        ClangEdge* ex = edgeDstList[edge->getDstID()].at(i);
+        if (ex->getSrcID().compare(edge->getSrcID()) == 0 && ex->getDstID().compare(edge->getDstID()) == 0 &&
             ex->getType() == edge->getType()) {
-            edgeDstList[edge->getDst()->getID()].erase(edgeDstList[edge->getDst()->getID()].begin() + i);
+            edgeDstList[edge->getDstID()].erase(edgeDstList[edge->getDstID()].begin() + i);
         }
     }
     delete edge;
@@ -283,7 +270,7 @@ ClangEdge* TAGraph::findEdgeByIDs(string IDOne, string IDTwo, ClangEdge::EdgeTyp
 
     //Next, iterate through to find the edge.
     for (ClangEdge* edge : edges){
-        if (edge->getDst()->getID().compare(IDTwo) == 0 && edge->getType() == type) return edge;
+        if (edge->getDstID().compare(IDTwo) == 0 && edge->getType() == type) return edge;
     }
 
     return nullptr;
@@ -365,7 +352,7 @@ bool TAGraph::edgeExists(string IDOne, string IDTwo, ClangEdge::EdgeType type) {
 
     //Iterate through the list.
     for (ClangEdge* edge : edges){
-        if (edge->getDst()->getID().compare(IDTwo) == 0 && edge->getType() == type) return true;
+        if (edge->getDstID().compare(IDTwo) == 0 && edge->getType() == type) return true;
     }
 
     return false;
@@ -376,19 +363,11 @@ bool TAGraph::edgeExists(string IDOne, string IDTwo, ClangEdge::EdgeType type) {
  * @return The string of the TA representation.
  */
 string TAGraph::generateTAFormat() {
-    string format = "";
-
-    //Get the time.
-    char tString[1000];
-    time_t now = time(0);
-    struct tm * p = localtime(&now);
-    strftime(tString, 1000, "%A, %B %d %Y", p);
-
-    //Generate the instances, relationships, and attributes.
-    format += TA_HEADER + " (" + tString + ")" + "\n";
-    format += TA_SCHEMA;
+    string format = generateTAHeader();
+    format += "FACT TUPLE :\n";
     format += generateInstances();
     format += generateRelationships() + "\n";
+    format += "FACT ATTRIBUTE :\n";
     format += generateAttributes() + "\n";
 
     return format;
@@ -434,96 +413,116 @@ void TAGraph::addNodesToFile(map<string, ClangNode*> fileSkip) {
 }
 
 /**
- * Adds a reference edge between two components. Used when one node doesn't yet exist.
- * @param callerID The source ID.
- * @param calleeID The destination ID.
- * @param type The type of edge to add.
- */
-void TAGraph::addUnresolvedRef(string callerID, string calleeID, ClangEdge::EdgeType type) {
-    //Creates the entry for the vector.
-    pair<pair<string, string>, ClangEdge::EdgeType> entry = pair<pair<string, string>, ClangEdge::EdgeType>();
-    entry.first.first = callerID;
-    entry.first.second = calleeID;
-    entry.second = type;
-
-    //Finally, adds it to the unresolved vector.
-    unresolvedRef.push_back(entry);
-}
-
-/**
- * Adds an attribute for some undefined edge.
- * @param callerID The source ID.
- * @param calleeID The destination ID.
- * @param attrName The attribute key.
- * @param attrValue The attribute value.
- */
-void TAGraph::addUnresolvedRefAttr(string callerID, string calleeID, string attrName, string attrValue) {
-    //Find if we already have a attr entry for this list.
-    for (auto current : unresolvedRefAttr){
-        if (current->first.first.compare(callerID) == 0 &&
-            current->first.second.compare(calleeID) == 0 &&
-            current->second.first.compare(attrName) == 0){
-
-            //We already have an entry.
-            current->second.second.push_back(attrValue);
-            return;
-        }
-    }
-
-    //Creates the entry for the vector.
-    pair<pair<string, string>, pair<string, vector<string>>> *entry = new pair<pair<string, string>, pair<string, vector<string>>>();
-
-    entry->first.first = callerID;
-    entry->first.second = calleeID;
-    entry->second.first = attrName;
-    entry->second.second.push_back(attrValue);
-
-    //Adds it to the vector.
-    unresolvedRefAttr.push_back(entry);
-}
-
-/**
  * Goes through the undefined edges and tries to resolve them. If not, deletes the reference.
  * @param silent Whether we output the results or not.
  */
-void TAGraph::resolveExternalReferences(bool silent) {
+void TAGraph::resolveExternalReferences(Printer* print, bool silent) {
     int resolved = 0;
     int unresolved = 0;
+    vector<ClangEdge*> toRemove;
 
-    //Iterate through and resolve.
-    for (int i = 0; i < unresolvedRef.size(); i++){
-        pair<pair<string, string>, ClangEdge::EdgeType> entry = unresolvedRef.at(i);
-
-        //Find the two items.
-        vector<ClangNode*> srcVec = findNodeByName(entry.first.first);
-        vector<ClangNode*> dstVec = findNodeByName(entry.first.second);
-
-        //See if they could be resolved.
-        if (srcVec.size() == 0 || dstVec.size() == 0){
-            unresolved++;
-        } else {
-            ClangNode* src = srcVec.at(0);
-            ClangNode* dst = dstVec.at(0);
-
-            ClangEdge* edge = new ClangEdge(src, dst, entry.second);
-            addEdge(edge);
-
-            //Now, find all associated attributes.
-            vector<pair<string, vector<string>>> attributes = findAttributes(entry.first.first, entry.first.second);
-            for (auto attribute : attributes){
-                for (auto attVal : attribute.second){
-                    addAttribute(src->getID(), dst->getID(), entry.second, attribute.first, attVal);
-                }
+    //Iterate through all the edges and resolve.
+    for (auto it = edgeSrcList.begin(); it != edgeSrcList.end(); it++)
+        for (ClangEdge* edge : it->second){
+            if (edge->isResolved()) {
+                resolved++;
+                continue;
             }
 
+            //Find the appropriate entries.
+            ClangNode* src = nodeList[edge->getSrcID()];
+            ClangNode* dst = nodeList[edge->getDstID()];
+
+            if (!src || !dst){
+                unresolved++;
+                toRemove.push_back(edge);
+                continue;
+            }
+
+            edge->setSrc(src);
+            edge->setDst(dst);
             resolved++;
         }
+
+    //Removes those nodes;
+    for (ClangEdge* edge : toRemove){
+        removeEdge(edge);
     }
 
     //Afterwards, notify of success.
     if (!silent){
-        clangPrinter->printResolveRefDone(resolved, unresolved);
+        print->printResolveRefDone(resolved, unresolved);
     }
+}
+
+void TAGraph::resolveFiles(TAGraph::ClangExclude exclusions){
+    bool assumeValid = true;
+    vector<ClangNode*> fileNodes = vector<ClangNode*>();
+    vector<ClangEdge*> fileEdges = vector<ClangEdge*>();
+
+    //Gets all the associated clang nodes.
+    fileParser.processPaths(fileNodes, fileEdges);
+
+    //Adds them to the graph.
+    for (ClangNode *file : fileNodes) {
+        if ((file->getType() == ClangNode::NodeType::SUBSYSTEM && !exclusions.cSubSystem) ||
+            (file->getType() == ClangNode::NodeType::FILE && !exclusions.cFile)) {
+            addNode(file, assumeValid);
+        } else {
+            delete file;
+        }
+    }
+
+    //Adds the edges to the graph.
+    map<string, ClangNode*> fileSkip;
+    for (ClangEdge *edge : fileEdges) {
+        //Surpasses.
+        if (exclusions.cFile && edge->getDst()->getType() == ClangNode::FILE){
+            fileSkip[edge->getDst()->getID()] = edge->getSrc();
+        } else {
+            addEdge(edge, assumeValid);
+        }
+    }
+
+    //Next, for each item in the graph, add it to a file.
+    addNodesToFile(fileSkip);
+}
+
+void TAGraph::addPath(string path){
+    fileParser.addPath(path);
+}
+
+void TAGraph::clearGraph(){
+    for (auto it = edgeSrcList.begin(); it != edgeSrcList.end(); ++it){
+        vector<ClangEdge*> edges = it->second;
+        for (ClangEdge* cur : edges){
+            delete cur;
+            cur = nullptr;
+        }
+    }
+    edgeSrcList.clear();
+    edgeDstList.clear();
+    for (auto it = nodeList.begin(); it != nodeList.end(); ++it){
+        delete it->second;
+    }
+    nodeList.clear();
+    nodeNameList.clear();
+}
+
+string TAGraph::generateTAHeader() {
+    string format = "";
+
+    //Get the time.
+    char tString[1000];
+    time_t now = time(0);
+    struct tm * p = localtime(&now);
+    strftime(tString, 1000, "%A, %B %d %Y", p);
+
+    //Generate the instances, relationships, and attributes.
+    format += TA_HEADER + " (" + tString + ")" + "\n";
+    format += TA_SCHEMA;
+
+    return format;
 }
 
 /**
@@ -531,7 +530,7 @@ void TAGraph::resolveExternalReferences(bool silent) {
  * @return A string containing the list of instances.
  */
 string TAGraph::generateInstances() {
-    string instances = "FACT TUPLE : \n";
+    string instances = "";
 
     //Iterate through our node list to generate.
     for (auto it = nodeList.begin(); it != nodeList.end(); it++){
@@ -564,7 +563,7 @@ string TAGraph::generateRelationships() {
  * @return A string containing the list of attributes.
  */
 string TAGraph::generateAttributes() {
-    string attributes = "FACT ATTRIBUTE : \n";
+    string attributes = "";
 
     //Iterate through our node list again to generate.
     for (auto it = nodeList.begin(); it != nodeList.end(); it++){
@@ -585,28 +584,4 @@ string TAGraph::generateAttributes() {
     }
 
     return attributes;
-}
-
-/**
- * Finds all attributes for an edge based on some caller ID and destination ID. This is for undefined edges.
- * @param callerID The source ID.
- * @param calleeID The destination ID.
- * @return A collection of attributes for that edges.
- */
-vector<pair<string, vector<string>>> TAGraph::findAttributes(string callerID, string calleeID){
-    vector<pair<string, vector<string>>> values;
-
-    //Find all associated values.
-    for (auto entry : unresolvedRefAttr){
-        if (entry->first.first.compare(callerID) == 0 && entry->first.second.compare(calleeID) == 0){
-            //Adds the entry.
-            pair<string, vector<string>> value;
-            value.first = entry->second.first;
-            value.second = entry->second.second;
-
-            values.push_back(value);
-        }
-    }
-
-    return values;
 }

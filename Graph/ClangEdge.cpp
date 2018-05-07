@@ -87,9 +87,56 @@ ClangEdge::ClangEdge(ClangNode *src, ClangNode *dst, EdgeType type) {
     this->src = src;
     this->dst = dst;
 
+    srcID = src->getID();
+    dstID = dst->getID();
+
     this->type = type;
 
     edgeAttributes = map<string, vector<string>>();
+
+    unresolved = false;
+}
+
+ClangEdge::ClangEdge(ClangNode* src, string dst, EdgeType type){
+    this->src = src;
+    this->dst = nullptr;
+
+    srcID = src->getID();
+    dstID = dst;
+
+    this->type = type;
+
+    edgeAttributes = map<string, vector<string>>();
+
+    unresolved = true;
+}
+
+ClangEdge::ClangEdge(string src, ClangNode* dst, EdgeType type){
+    this->src = nullptr;
+    this->dst = dst;
+
+    srcID = src;
+    dstID = dst->getID();
+
+    this->type = type;
+
+    edgeAttributes = map<string, vector<string>>();
+
+    unresolved = true;
+}
+
+ClangEdge::ClangEdge(string src, string dst, EdgeType type){
+    this->src = nullptr;
+    this->dst = nullptr;
+
+    srcID = src;
+    dstID = dst;
+
+    this->type = type;
+
+    edgeAttributes = map<string, vector<string>>();
+
+    unresolved = true;
 }
 
 /**
@@ -113,6 +160,14 @@ ClangNode* ClangEdge::getDst() {
     return dst;
 }
 
+string ClangEdge::getSrcID(){
+    return srcID;
+}
+
+string ClangEdge::getDstID(){
+    return dstID;
+}
+
 /**
  * Gets the type of the edge.
  * @return The edge type.
@@ -121,12 +176,19 @@ ClangEdge::EdgeType ClangEdge::getType(){
     return type;
 }
 
+bool ClangEdge::isResolved(){
+    return !unresolved;
+}
+
 /**
  * Sets the source node.
  * @param newSrc The new source node to add.
  */
 void ClangEdge::setSrc(ClangNode* newSrc){
     src = newSrc;
+    srcID = newSrc->getID();
+
+    if (src && dst) unresolved = false;
 }
 
 /**
@@ -135,6 +197,9 @@ void ClangEdge::setSrc(ClangNode* newSrc){
  */
 void ClangEdge::setDst(ClangNode* newDst){
     dst = newDst;
+    dstID = newDst->getID();
+
+    if (src && dst) unresolved = false;
 }
 
 /**
@@ -207,7 +272,7 @@ map<string, vector<string>> ClangEdge::getAttributes(){
  * @return The relationship string.
  */
 string ClangEdge::generateRelationship() {
-    return getTypeString(type) + " " + src->getID() + " " + dst->getID();
+    return getTypeString(type) + " " + srcID + " " + dstID;
 }
 
 /**
@@ -219,7 +284,7 @@ string ClangEdge::generateAttribute() {
     if (edgeAttributes.size() == 0) return "";
 
     //Starts the string.
-    string attributeList = "(" + ClangEdge::getTypeString(type) + " " + src->getID() + " " + dst->getID() + ") { ";
+    string attributeList = "(" + ClangEdge::getTypeString(type) + " " + srcID + " " + dstID + ") { ";
 
     //Loop through and add all KVs.
     bool nBegin = false;

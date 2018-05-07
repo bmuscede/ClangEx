@@ -35,6 +35,71 @@ using namespace std;
 Printer::~Printer() {}
 
 /**
+ * Prints information about the merge.
+ * @param fileName The filename being merged.
+ */
+void Printer::printMerge(string fileName){
+    cout << "Reading TA file " << fileName << "..." << endl;
+}
+
+/**
+ * Notifies the file being currently processed.
+ * @param fileName The filename being processed.
+ */
+void Printer::printFileName(string fileName){
+    cout << "\tCurrently processing: " << fileName << endl;
+}
+
+/**
+ * Prints a new line for the next filename.
+ */
+void Printer::printFileNameDone() {
+    cout << endl;
+}
+
+/**
+ * Prints whether the TA generation was successfully or unsuccessfully completed.
+ * @param fileName The filename for the TA file.
+ * @param success Whether the TA file was generated successfully.
+ */
+void Printer::printGenTADone(std::string fileName, bool success) {
+    if (success) {
+        cout << "TA file successfully written to " << fileName << "!" << endl;
+    } else {
+        cout << "Failure! The TA file could not be written to " << fileName << "!" << endl;
+    }
+}
+
+/**
+ * Prints the state of the processor depending on the print status enum.
+ * @param status The status of ClangEx.
+ */
+void Printer::printProcessStatus(Printer::PrintStatus status){
+    switch (status){
+        case Printer::COMPILING:
+            cout << "Compiling the source code..." << endl;
+            break;
+
+        case Printer::RESOLVE_REF:
+            cout << "Resolving external references..." << endl;
+            break;
+
+        case Printer::RESOLVE_FILE:
+            cout << "Resolving source code file paths..." << endl;
+    }
+}
+
+/**
+ * Notifies when the references have been resolved.
+ * @param resolved The number resolved.
+ * @param unresolved The number unresolved.
+ */
+void Printer::printResolveRefDone(int resolved, int unresolved) {
+    cout << "Overall, " << resolved << " references were resolved and " << unresolved
+         << " references could not be resolved." << endl << endl;
+}
+
+/**
  * Method that notifies the user on a processing error.
  * @return The user's repsonse if they want to continue or not.
  */

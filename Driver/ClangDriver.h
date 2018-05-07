@@ -30,6 +30,7 @@
 #include <vector>
 #include <string>
 #include <boost/filesystem.hpp>
+#include "clang/Tooling/CommonOptionsParser.h"
 #include "../Graph/TAGraph.h"
 
 using namespace boost::filesystem;
@@ -39,6 +40,8 @@ public:
     /** Constructor/Destructor */
     ClangDriver();
     ~ClangDriver();
+
+    void cleanup();
 
     /** Language Printers */
     std::string printStatus(bool files, bool ta, bool toggle);
@@ -53,7 +56,9 @@ public:
     bool disableFeature(std::string feature);
 
     /** ClangEx Runner */
-    bool processAllFiles(bool blobMode, std::string mergeFile);
+    bool processAllFiles(bool blobMode, std::string mergeFile, bool lowMemory, int startNum = 0);
+    bool recoverCompact(std::string startDir);
+    bool recoverFull(std::string startDir);
 
     /** Output Helpers */
     bool outputIndividualModel(int modelNum, std::string fileName = std::string());
@@ -64,17 +69,9 @@ public:
     int removeByPath(path curPath);
     int removeByRegex(std::string regex);
 
-    /** Toggle System */
-    typedef struct {
-        bool cSubSystem = false;
-        bool cFile = false;
-        bool cClass = false;
-        bool cFunction = false;
-        bool cVariable = false;
-        bool cEnum = false;
-        bool cStruct = false;
-        bool cUnion = false;
-    } ClangExclude;
+    /** Low Memory System */
+    bool changeLowMemoryLoc(path curLoc);
+
 private:
     /** Default Arguments */
     const std::string INSTANCE_FLAG = "$INSTANCE";
@@ -84,15 +81,18 @@ private:
     const std::string INCLUDE_DIR = "./include";
     const std::string INCLUDE_DIR_LOC = "--extra-arg=-I" + INCLUDE_DIR;
     const int BASE_LEN = 2;
+    const int FILE_SPLIT = 1;
 
     /** Private Variables */
     std::vector<TAGraph*> graphs;
     std::vector<path> files;
     std::vector<std::string> ext;
+    path lowMemoryPath = "";
+    bool recoveryMode = false;
 
     /** Toggle System */
     std::string langString = "\tcSubSystem\n\tcFile\n\tcClass\n\tcFunction\n\tcVariable\n\tcEnum\n\tcStruct\n\tcUnion\n";
-    ClangExclude toggle;
+    TAGraph::ClangExclude toggle;
 
     /** C/C++ Extensions */
     const std::string C_FILE_EXT = ".c";
@@ -105,6 +105,9 @@ private:
     int removeFile(path file);
     int removeDirectory(path directory);
 
+    bool runAnalysis(bool blobMode, bool lowMemory, TAGraph* mergeGraph, int i, Printer* clangPrint,
+                     TAGraph::ClangExclude exclude, clang::tooling::CommonOptionsParser* OptionsParser);
+
     /** Enabled Strings */
     std::vector<std::string> getEnabled();
     std::vector<std::string> getDisabled();
@@ -113,8 +116,18 @@ private:
     bool outputTAString(int modelNum, std::string fileName);
     void deleteTAGraph(int modelNum);
 
+    /** Recovery Helper */
+    std::vector<int> getLMGraphs(std::string startDir);
+    bool readSettings(std::string file, std::vector<std::string>* files, bool* blobMode,
+                      TAGraph::ClangExclude* exclude);
+    int readStartNum(std::string file);
+
     /** Argument Helpers */
-    char** prepareArgs(int *argc);
+    int extractIntegerWords(std::string str);
+    char** prepareArgs(int *argc, int start, int final);
+
+    /** Low Memory System */
+    std::vector<std::string> splitList(std::string list);
 };
 
 

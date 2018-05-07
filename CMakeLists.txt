@@ -49,10 +49,10 @@ set(SOURCE_FILES
         Walker/BlobWalker.h
         TupleAttribute/TAProcessor.cpp
         TupleAttribute/TAProcessor.h
-        Printer/VerbosePrinter.cpp
-        Printer/VerbosePrinter.h
         Printer/Printer.cpp
         Printer/Printer.h
+        Graph/LowMemoryTAGraph.cpp
+        Graph/LowMemoryTAGraph.h
         )
 add_executable(ClangEx ${SOURCE_FILES})
 

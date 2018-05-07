@@ -25,17 +25,20 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <regex>
-#include "../Printer/VerbosePrinter.h"
+#include <unordered_map>
+#include <boost/foreach.hpp>
+#include <fstream>
+#include <llvm/Support/CommandLine.h>
+#include "clang/Tooling/Tooling.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string.hpp>
+#include "clang/Frontend/FrontendAction.h"
+#include "../Graph/LowMemoryTAGraph.h"
 #include "../TupleAttribute/TAProcessor.h"
 #include "../Walker/ASTWalker.h"
 #include "../Walker/BlobWalker.h"
 #include "../Walker/PartialWalker.h"
-#include <ostream>
-#include <fstream>
-#include "clang/Frontend/FrontendAction.h"
-#include "clang/Tooling/Tooling.h"
-#include "clang/Tooling/CommonOptionsParser.h"
-#include <llvm/Support/CommandLine.h>
 
 using namespace std;
 using namespace clang::tooling;
@@ -51,9 +54,17 @@ ClangDriver::ClangDriver() {
 }
 
 /**
- * Destructor. Stub.
+ * Destructor.
  */
-ClangDriver::~ClangDriver() { }
+ClangDriver::~ClangDriver() {
+    cleanup();
+}
+
+void ClangDriver::cleanup(){
+    for (TAGraph* graph : graphs) {
+        delete graph;
+    }
+}
 
 /**
  * Prints the current status of ClangEx.
@@ -194,29 +205,21 @@ bool ClangDriver::disableFeature(string feature){
  * @param verboseMode Whether the user wants verbose output.
  * @return The success of ClangEx.
  */
-bool ClangDriver::processAllFiles(bool blobMode, string mergeFile){
+bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool lowMemory, int startNum){
     bool success = true;
-    llvm::cl::OptionCategory ClangExCategory("ClangEx Options");
+
+    int argc = 0;
+    char **argv = prepareArgs(&argc, 0, getNumFiles());
+    llvm::cl::OptionCategory* ClangExCategory = new llvm::cl::OptionCategory("ClangEx");
+    CommonOptionsParser* OptionsParser = new CommonOptionsParser(argc, (const char **) argv, *ClangExCategory);
 
     //Sets up the printer.
-    Printer* clangPrint = new VerbosePrinter();
-
-    //Creates the command line arguments.
-    int argc = 0;
-    char** argv = prepareArgs(&argc);
-
-    //Get the exclusions.
-    ClangExclude exclude = toggle;
-
-    //Sets up the processor.
-    CommonOptionsParser OptionsParser(argc, (const char**) argv, ClangExCategory);
-    ClangTool Tool(OptionsParser.getCompilations(),
-                   OptionsParser.getSourcePathList());
+    Printer* clangPrint = new Printer();
 
     //Gets whether whether we're dealing with a merge.
-    TAGraph* mergeGraph = nullptr;
+    TAGraph *mergeGraph = nullptr;
     bool merge = false;
-    if (mergeFile.compare("") != 0){
+    if (mergeFile.compare("") != 0) {
         //We're dealing with a merge.
         merge = true;
         clangPrint->printMerge(mergeFile);
@@ -227,28 +230,82 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile){
 
         if (!succ) {
             delete clangPrint;
+            delete OptionsParser;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
+            delete[] argv;
+            delete ClangExCategory;
             return false;
         }
 
         //Gets the graph.
-        TAGraph* graph = processor.writeTAGraph();
+        TAGraph *graph = processor.writeTAGraph();
         if (graph == nullptr) {
             delete clangPrint;
-            return 1;
+            delete OptionsParser;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
+            delete[] argv;
+            delete ClangExCategory;
+            return false;
         }
+    } else if (lowMemory){
+        if (lowMemoryPath.empty()) mergeGraph = new LowMemoryTAGraph();
+        else mergeGraph = new LowMemoryTAGraph(lowMemoryPath.string());
+    } else {
+        mergeGraph = new TAGraph();
     }
 
-    ASTWalker* walker;
-    if (blobMode){
-        if (merge)
-            walker = new BlobWalker(clangPrint, exclude, mergeGraph);
-        else
-            walker = new BlobWalker(clangPrint, exclude);
+    //Get the exclusions.
+    TAGraph::ClangExclude exclude = toggle;
+
+    //Dump settings.
+    if (lowMemory) dynamic_cast<LowMemoryTAGraph*>(mergeGraph)->dumpSettings(files, exclude, blobMode);
+
+    //Creates the command line arguments.
+    int fileSplit = (lowMemory) ? FILE_SPLIT : getNumFiles();
+    clangPrint->printProcessStatus(Printer::COMPILING);
+    for (int i = startNum; i < getNumFiles(); i += fileSplit) {
+        runAnalysis(blobMode, lowMemory, mergeGraph, i, clangPrint, exclude, OptionsParser);
+        if (lowMemory) dynamic_cast<LowMemoryTAGraph*>(mergeGraph)->purgeCurrentGraph();
+    }
+
+    //Shifts the graphs.
+    if (success) {
+        mergeGraph->resolveExternalReferences(clangPrint, false);
+        mergeGraph->resolveFiles(exclude);
+        graphs.push_back(mergeGraph);
+    }
+
+    //Clears the graph.
+    files.clear();
+
+    //Returns the success code.
+    delete clangPrint;
+    delete OptionsParser;
+    for (int i = 0; i < argc; i++) delete[] argv[i];
+    delete[] argv;
+    delete ClangExCategory;
+    return success;
+}
+
+bool ClangDriver::runAnalysis(bool blobMode, bool lowMemory, TAGraph* mergeGraph, int i, Printer* clangPrint,
+                              TAGraph::ClangExclude exclude, CommonOptionsParser* OptionsParser) {
+    ASTWalker *walker;
+    unique_ptr<FrontendActionFactory> act;
+    bool success = true;
+
+    vector<string> curList;
+    curList.push_back(files.at(i).string());
+
+    if (lowMemory) dynamic_cast<LowMemoryTAGraph*>(mergeGraph)->dumpCurrentFile(i, files.at(i).string());
+
+    //Sets up the processor.
+    ClangTool* Tool = new ClangTool(OptionsParser->getCompilations(),
+                                    (lowMemory) ? curList : OptionsParser->getSourcePathList());
+
+    if (blobMode) {
+        walker = new BlobWalker(clangPrint, lowMemory, exclude, mergeGraph);
     } else {
-        if (merge)
-            walker = new PartialWalker(clangPrint, exclude, mergeGraph);
-        else
-            walker = new PartialWalker(clangPrint, exclude);
+        walker = new PartialWalker(clangPrint, lowMemory, exclude, mergeGraph);
     }
 
     //Generates a matcher system.
@@ -258,31 +315,103 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile){
     walker->generateASTMatches(&finder);
 
     //Runs the Clang tool.
-    clangPrint->printProcessStatus(Printer::COMPILING);
-    int code = Tool.run(newFrontendActionFactory(&finder).get());
+    act = newFrontendActionFactory(&finder);
+    int code = Tool->run(act.get());
+    act.reset();
     clangPrint->printFileNameDone();
 
     //Gets the code and checks for warnings.
     if (code != 0) {
-        cerr << "Warning: Compilation errors were detected." << endl;
+        cerr << "Error: Compilation errors were detected." << endl;
         success = false;
     }
 
-    //Shifts the graphs.
-    if (success) {
-        walker->resolveExternalReferences();
-        walker->resolveFiles();
+    delete walker;
+    delete Tool;
 
-        TAGraph *graph = walker->getGraph();
-        graphs.push_back(graph);
+    return success;
+}
+
+bool ClangDriver::recoverCompact(string startDir){
+    path startPath = startDir;
+    if (!is_directory(startPath)){
+        cerr << "Recovery Error: The initial path must be a directory." << endl;
+        return false;
     }
 
-    //Clears the graph.
-    files.clear();
+    //Starts by checking for the TA files in the start directory.
+    vector<int> graphNums = getLMGraphs(startDir);
+    if (graphNums.size() == 0){
+        cerr << "Recovery Error: No graphs were found in the current directory." << endl;
+        return false;
+    }
 
-    //Returns the success code.
-    delete walker;
-    return success;
+    Printer* clangPrint = new Printer();
+
+    //Now, we iterate and compact each graph.
+    for (int gNum : graphNums){
+        TAGraph* cur = new LowMemoryTAGraph(startDir, gNum);
+        cur->resolveExternalReferences(clangPrint, false);
+        cur->resolveFiles(toggle);
+        graphs.push_back(cur);
+    }
+
+    return true;
+}
+
+bool ClangDriver::recoverFull(string startDir){
+    path startPath = startDir;
+    if (!is_directory(startPath)){
+        cerr << "Recovery Error: The initial path must be a directory." << endl;
+        return false;
+    }
+
+    //Starts by checking for the TA files in the start directory.
+    vector<int> graphNums = getLMGraphs(startDir);
+    if (graphNums.size() == 0){
+        cerr << "Recovery Error: No graphs were found in the current directory." << endl;
+        return false;
+    }
+
+    vector<string> ldFiles;
+    bool blobMode;
+    TAGraph::ClangExclude ldExclude;
+
+    for (int gNum : graphNums){
+        bool succ = readSettings(startDir + "/" + to_string(gNum) + "-" + LowMemoryTAGraph::CUR_SETTING_LOC, &ldFiles,
+                                 &blobMode, &ldExclude);
+        if (!succ) {
+            cerr << "Recovery Error: Settings could not be read for this file." << endl;
+            return false;
+        }
+
+        int startNum = readStartNum(startDir + "/" + to_string(gNum) + "-" + LowMemoryTAGraph::CUR_FILE_LOC);
+
+        vector<path> oldFiles = files;
+        TAGraph::ClangExclude oldExclude = toggle;
+
+        //Sets up the file system.
+        recoveryMode = true;
+        auto tempLowMem = lowMemoryPath;
+        lowMemoryPath = startDir;
+        files.clear();
+        for (string curFile : ldFiles) files.push_back(path(curFile));
+        toggle = ldExclude;
+
+        bool code = processAllFiles(blobMode, "", true, startNum);
+
+        //Restores the system.
+        recoveryMode = false;
+        lowMemoryPath = tempLowMem;
+        files = oldFiles;
+        toggle = oldExclude;
+
+        if (!code) {
+            cerr << "Recovery Error: System could not process the current graph." << endl;
+        }
+    }
+
+    return true;
 }
 
 /**
@@ -387,6 +516,33 @@ int ClangDriver::removeByRegex(string regex) {
     }
 
     return num;
+}
+
+bool ClangDriver::changeLowMemoryLoc(path curLoc){
+    if (!is_directory(curLoc)) return false;
+
+    //Get the current loc.
+    vector<int> curG;
+    if (lowMemoryPath.string() == "") lowMemoryPath = ".";
+    curG = getLMGraphs(lowMemoryPath.string());
+
+    //Carry out the move operation.
+    if (curG.size() > 0){
+        for (int cur : curG){
+            string srcRoot = lowMemoryPath.string() + "/" + to_string(cur) + "-";
+            string dstRoot = curLoc.string() + "/" + to_string(cur) + "-";
+            rename(srcRoot + LowMemoryTAGraph::CUR_SETTING_LOC, dstRoot + LowMemoryTAGraph::CUR_SETTING_LOC);
+            rename(srcRoot + LowMemoryTAGraph::CUR_FILE_LOC, dstRoot + LowMemoryTAGraph::CUR_FILE_LOC);
+            rename(srcRoot + LowMemoryTAGraph::BASE_INSTANCE_FN, dstRoot + LowMemoryTAGraph::BASE_INSTANCE_FN);
+            rename(srcRoot + LowMemoryTAGraph::BASE_RELATION_FN, dstRoot + LowMemoryTAGraph::BASE_RELATION_FN);
+            rename(srcRoot + LowMemoryTAGraph::BASE_ATTRIBUTE_FN, dstRoot + LowMemoryTAGraph::BASE_ATTRIBUTE_FN);
+
+            dynamic_cast<LowMemoryTAGraph*>(graphs.at(cur))->changeRoot(curLoc.string());
+        }
+    }
+
+    lowMemoryPath = curLoc;
+    return true;
 }
 
 /**
@@ -607,13 +763,110 @@ void ClangDriver::deleteTAGraph(int modelNum){
     delete curGraph;
 }
 
+vector<int> ClangDriver::getLMGraphs(string startDir){
+    vector<int> results;
+    std::regex fReg("[0-9]+-(instances|relations|attributes).ta");
+
+    //Gets the current directory.
+    path curDir = startDir;
+    unordered_map<int, int> vals;
+    directory_iterator it(curDir), eod;
+    BOOST_FOREACH(path const &cur, std::make_pair(it, eod)){
+        if (!is_regular_file(cur)) continue;
+
+        //Get the extension.
+        string extension = boost::filesystem::extension(cur);
+        if (extension != ".ta" || !regex_match(cur.filename().string(), fReg)) continue;
+
+        int num = extractIntegerWords(cur.filename().string());
+        if (num == -1) continue;
+        if (vals.find(num) != vals.end()){
+            vals[num]++;
+        } else {
+            vals[num] = 1;
+        }
+    }
+
+    //Populate with values.
+    for (auto it = vals.begin(); it != vals.end(); it++){
+        if (it->second == 3){
+            results.push_back(it->first);
+        }
+    }
+
+    //Returns the results.
+    return results;
+}
+
+bool ClangDriver::readSettings(string loc, vector<string>* files, bool* blobMode,
+                               TAGraph::ClangExclude* exclude){
+    std::ifstream settingFile(loc);
+    if (!settingFile.is_open()) return false;
+
+    //Gets the file list.
+    string fileList;
+    getline(settingFile, fileList);
+    vector<string> filePath = splitList(fileList);
+    files->clear();
+    for (string curFile : filePath) files->push_back(curFile);
+
+    //Get the booleans.
+    string booleans;
+    getline(settingFile, booleans);
+    settingFile.close();
+
+    stringstream sstream = stringstream(booleans);
+
+    //Next, sets in the exclude system up.
+    if (sstream.get() == '1') exclude->cClass = true;
+    if (sstream.get() == '1') exclude->cEnum = true;
+    if (sstream.get() == '1') exclude->cFile = true;
+    if (sstream.get() == '1') exclude->cFunction = true;
+    if (sstream.get() == '1') exclude->cStruct = true;
+    if (sstream.get() == '1') exclude->cSubSystem = true;
+    if (sstream.get() == '1') exclude->cUnion = true;
+    if (sstream.get() == '1') exclude->cVariable = true;
+
+    //Gets blob mode.
+    if (sstream.get() == '1') *blobMode = true;
+    return true;
+}
+
+int ClangDriver::readStartNum(std::string file){
+    std::ifstream curFile(file);
+    if (!curFile.is_open()) return 0;
+
+    int fileNum;
+    curFile >> fileNum;
+
+    curFile.close();
+    return fileNum;
+}
+
+int ClangDriver::extractIntegerWords(string str) {
+    stringstream ss;
+    ss << str;
+
+    string temp;
+    int found;
+    while (!ss.eof()) {
+        ss >> temp;
+
+        if (stringstream(temp) >> found) return found;
+
+        temp = "";
+    }
+
+    return -1;
+}
+
 /**
  * Generates an argv array based on the files in the queue and Clang's input format.
  * @param argc The number of tokens.
  * @return The new argv command.
  */
-char** ClangDriver::prepareArgs(int *argc){
-    int size = BASE_LEN + (int) files.size();
+char** ClangDriver::prepareArgs(int *argc, int startVal, int finalVal){
+    int size = BASE_LEN + (finalVal - startVal);
 
     //Sets argc.
     *argc = size;
@@ -630,10 +883,23 @@ char** ClangDriver::prepareArgs(int *argc){
     strcpy(argv[1], INCLUDE_DIR_LOC.c_str());
 
     //Next, loops through the files and copies.
-    for (int i = 0; i < files.size(); i++){
-        argv[i + BASE_LEN] = new char[files.at(i).string().size() + 1];
-        strcpy(argv[i + BASE_LEN], files.at(i).c_str());
+    for (int i = 0, filePos = startVal; filePos < finalVal; i++, filePos++){
+        argv[i + BASE_LEN] = new char[files.at(filePos).string().size() + 1];
+        strcpy(argv[i + BASE_LEN], files.at(filePos).c_str());
     }
 
     return argv;
+}
+
+vector<string> ClangDriver::splitList(std::string list) {
+    stringstream ss(list);
+    vector<string> result;
+
+    while(ss.good()) {
+        string substr;
+        getline( ss, substr, ',' );
+        result.push_back( substr );
+    }
+
+    return result;
 }

@@ -142,7 +142,9 @@ ClangNode::ClangNode(string ID, string name, NodeType type) {
 /**
  * Default destructor.
  */
-ClangNode::~ClangNode() { }
+ClangNode::~ClangNode() {
+
+}
 
 /**
  * Gets the ID of the node.

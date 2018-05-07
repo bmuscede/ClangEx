@@ -4,9 +4,7 @@
 // Created By: Bryan J Muscedere
 // Date: 24/02/17.
 //
-// Abstract method that implements a printer system for ClangEx.
-// Defines methods that both the minimal and verbose printer must
-// have for them to function.
+// Method that implements a printer system for ClangEx.
 //
 // Copyright (C) 2017, Bryan J. Muscedere
 //
@@ -35,18 +33,21 @@ public:
     enum PrintStatus {COMPILING, RESOLVE_REF, RESOLVE_FILE};
     enum ProcessStatusError {RELATION_FIND, ENTITY_ATTRIBUTE, RELATION_ATTRIBUTE};
 
+    /** Constructor */
+    Printer();
+
     /** Destructor */
-    virtual ~Printer();
+    ~Printer();
 
     /** Print Methods */
-    virtual void printMerge(std::string fileName) = 0;
-    virtual void printFileName(std::string fileName) = 0;
-    virtual void printFileNameDone() = 0;
-    virtual void printGenTADone(std::string fileName, bool success) = 0;
-    virtual void printProcessStatus(Printer::PrintStatus status) = 0;
-    virtual bool printProcessFailure();
-    virtual void printResolveRefDone(int resolved, int unresolved) = 0;
-
+    void printMerge(std::string fileName);
+    void printFileName(std::string fileName);
+    void printFileNameDone();
+    void printGenTADone(std::string fileName, bool success);
+    void printProcessStatus(Printer::PrintStatus status);
+    bool printProcessFailure();
+    void printResolveRefDone(int resolved, int unresolved);
+    
     /** Print Error Methods */
     void printErrorTAProcess(int lineNum, std::string message);
     void printErrorTAProcess(Printer::ProcessStatusError type, std::string name);
@@ -54,11 +55,6 @@ public:
     void printErrorTAProcessRead(std::string fileName);
     void printErrorTAProcessWrite(std::string fileName);
     void printErrorTAProcessGraph();
-
-protected:
-    /** Constructor */
-    Printer();
-
 };
 
 #endif //CLANGEX_PRINTER_H

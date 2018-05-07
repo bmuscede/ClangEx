@@ -56,8 +56,8 @@ void FileParse::addPath(string path) {
 
 /**
  * Creates nodes and edges for every single path that was added to the list.
- * @param nodes The created nodes. (Should be empty on invokation).
- * @param edges The created edges. (Should be empty on invokation).
+ * @param nodes The created nodes. (Should be empty on invocation).
+ * @param edges The created edges. (Should be empty on invocation).
  */
 void FileParse::processPaths(vector<ClangNode*>& nodes, vector<ClangEdge*>& edges) {
     //Iterate through all the paths.

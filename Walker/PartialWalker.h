@@ -33,8 +33,9 @@
 class PartialWalker : public ASTWalker {
 public:
     /** Constructor and Destructor */
-    explicit PartialWalker(Printer* print, ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
-               TAGraph* graph = new TAGraph());
+    explicit PartialWalker(Printer* print, bool lowMemory,
+                           TAGraph::ClangExclude exclusions = TAGraph::ClangExclude(),
+                           TAGraph* graph = nullptr);
     ~PartialWalker() override;
 
     /** Methods for running the AST Walker */

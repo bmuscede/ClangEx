@@ -39,8 +39,8 @@ using namespace llvm;
  * @param exclusions The exclusions to use.
  * @param graph The TA Graph to use. Usually starts blank.
  */
-PartialWalker::PartialWalker(Printer* print, ClangDriver::ClangExclude exclusions, TAGraph* graph) :
-        ASTWalker(exclusions, print, graph){ }
+PartialWalker::PartialWalker(Printer* print, bool lowMemory, TAGraph::ClangExclude exclusions, TAGraph* graph) :
+        ASTWalker(exclusions, lowMemory, print, graph){ }
 
 /**
  * Default Destructor.
@@ -149,13 +149,6 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
         //Finds variables in functions or in class declaration.
         finder->addMatcher(varDecl(isExpansionInMainFile()).bind(types[VAR_DEC]), this);
 
-        //Adds scope for variables.
-        /*finder->addMatcher(varDecl(isExpansionInMainFile(),
-                                   hasAncestor(functionDecl().bind(types[INSIDE_FUNC]))).bind(types[VAR_INSIDE]), this);
-        finder->addMatcher(parmVarDecl(isExpansionInMainFile(),
-                                       hasAncestor(functionDecl()
-                                                           .bind(types[INSIDE_FUNC]))).bind(types[PARAM_INSIDE]), this);
-        */
         //Finds variable uses from a function to a variable.
         finder->addMatcher(declRefExpr(hasDeclaration(varDecl(isExpansionInMainFile()).bind(types[VAR_CALL])),
                                        hasAncestor(functionDecl().bind(types[CALLER_VAR])),
@@ -189,13 +182,6 @@ void PartialWalker::generateASTMatches(MatchFinder *finder) {
                                      hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
         finder->addMatcher(functionDecl(isExpansionInMainFile(),
                                         hasAncestor(recordDecl(isStruct()).bind(types[STRUCT_REF]))).bind(types[STRUCT_REF_ITEM]), this);
-        //TODO: Add more items.
-
-        //TODO: Add matcher for variable referencing struct.
-    }
-
-    if (!exclusions.cUnion){
-        //TODO: Implement
     }
 }
 

@@ -30,10 +30,12 @@
 #include <pwd.h>
 #include <zconf.h>
 #include <vector>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/algorithm/string.hpp>
 #include "ClangDriver.h"
 
 using namespace std;
@@ -55,6 +57,8 @@ const static string LIST_ARG = "list";
 const static string ENABLE_ARG = "enable";
 const static string DISABLE_ARG = "disable";
 const static string SCRIPT_ARG = "script";
+const static string RECOVER_ARG = "recover";
+const static string OLOC_ARG = "outLoc";
 
 /** Const Strings */
 const string HELP_STRING = "Commands that can be used:\n"
@@ -68,10 +72,12 @@ const string HELP_STRING = "Commands that can be used:\n"
         "disable        : Disables a collection of language features.\n"
         "generate       : Runs ClangEx on loaded files.\n"
         "output         : Outputs generated TA graphs to disk.\n"
-        "script         : Runs a script that handles program commands.\n\n"
+        "recover        : Recovers a previous low-memory run.\n"
+        "script         : Runs a script that handles program commands.\n"
+        "outLoc         : Changes the output location for low memory mode.\n\n"
         "For more help type \"help [argument name]\" for more details.";
 const string ABOUT_STRING = "ClangEx - The Fast C/C++ Extractor\n"
-        "University of Waterloo, Copyright 2017\n"
+        "University of Waterloo, Copyright 2018\n"
         "Licensed under GNU Public License v3\n\n"
         "This program is distributed in the hope that it will be useful,\n"
         "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
@@ -239,13 +245,25 @@ void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, str
     helpMap->at(GEN_ARG).desc->add_options()
             ("help,h", "Print help message for generate.")
             ("blob,b", "Runs ClangEx in blob mode.")
-            ("verbose,v", "Enables verbose output.")
+            ("low,l", "Enables low-memory mode.")
             ("initial,i", po::value<std::string>(), "An initial TA file to load in to merge.");
     ss.str(string());
     ss << *helpMap->at(GEN_ARG).desc;
     (*helpString)[GEN_ARG] = string("Generate Help\nUsage: " + GEN_ARG + " [options]\nGenerates a graph based on the supplied"
             " C/C++ source files.\nYou must have at least 1 source file in the queue for the graph to be generated.\n"
             "Additionally, in the root directory, there must a \"compile_commands.json\" file.\n\n" + ss.str());
+
+    //Generate the help for recover.
+    (*helpMap)[RECOVER_ARG] = ClangExHandler(RECOVER_ARG, po::options_description("Options"));
+    helpMap->at(RECOVER_ARG).desc->add_options()
+            ("help,h", "Print help message for recover.")
+            ("compact,c", "Just finishes the current TA model.")
+            ("initial,i", po::value<std::string>(), "The initial location.");
+    ss.str(string());
+    ss << *helpMap->at(RECOVER_ARG).desc;
+    (*helpString)[RECOVER_ARG] = string("Recover Help\nUsage: " + RECOVER_ARG + " [options]\nRecovers a TA file that"
+            " was generated from a previous ClangEx run.\nThere must be at least 1 TA file in directory to do this.\n"
+            "Additionally, you can either output as is or re-run the generate command.\n\n" + ss.str());
 
     //Generate the help for output.
     (*helpMap)[OUT_ARG] = ClangExHandler(OUT_ARG, po::options_description("Options"));
@@ -256,6 +274,17 @@ void generateCommandSystem(map<string, ClangExHandler>* helpMap, map<string, str
     ss.str(string());
     ss << *helpMap->at(OUT_ARG).desc;
     (*helpString)[OUT_ARG] = string("Output Help\nUsage: " + OUT_ARG + " [options] outputFile\nOutputs the generated"
+            " graphs to a tuple-attribute (TA) file based on the\nClangEx schema. These models can then be used"
+            " by other programs.\n\n" + ss.str());
+
+    //Generate the help for outLoc.
+    (*helpMap)[OLOC_ARG] = ClangExHandler(OLOC_ARG, po::options_description("Options"));
+    helpMap->at(OLOC_ARG).desc->add_options()
+            ("help,h", "Print help message for output.")
+            ("outputDir,o", po::value<std::vector<std::string>>(), "The output directory for low memory graph.");
+    ss.str(string());
+    ss << *helpMap->at(OLOC_ARG).desc;
+    (*helpString)[OLOC_ARG] = string("Output Help\nUsage: " + OLOC_ARG + " [options] outputFile\nOutputs the generated"
             " graphs to a tuple-attribute (TA) file based on the\nClangEx schema. These models can then be used"
             " by other programs.\n\n" + ss.str());
 }
@@ -309,10 +338,15 @@ void processAbout(){
  */
 bool processQuit(string line){
     //Checks for the ! at the end.
-    if (line.at(line.size() - 1) == '!' || changed == false) return false;
+    if (line.at(line.size() - 1) == '!' || changed == false) {
+        driver.cleanup();
+        return false;
+    }
 
     //Ask the user if they want to act.
     bool result = promptForAction("There are still items to be processed. Are you sure you want to quit (Y/N): ");
+    if (!result) driver.cleanup();
+
     return !result;
 }
 
@@ -389,9 +423,9 @@ void processRemove(string line, po::options_description desc){
     } catch(po::error& e) {
         cerr << "Error: " << e.what() << endl;
         cerr << desc;
+        for (int i = 0; i < argc; i++) delete[] argv[i];
         return;
     }
-
 
     //Checks what operation to perform.
     if (!regex){
@@ -423,6 +457,7 @@ void processRemove(string line, po::options_description desc){
     }
 
     changed = true;
+    for (int i = 0; i < argc; i++) delete[] argv[i];
 }
 
 /**
@@ -450,6 +485,7 @@ void processList(string line, po::options_description desc){
         //Checks if help was enabled.
         if (vm.count("help")) {
             cout << "Usage: list [options]" << endl << desc;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
             return;
         }
 
@@ -469,6 +505,7 @@ void processList(string line, po::options_description desc){
     } catch(po::error& e) {
         cerr << "Error: " << e.what() << endl;
         cerr << desc;
+        for (int i = 0; i < argc; i++) delete[] argv[i];
         return;
     }
 
@@ -479,6 +516,8 @@ void processList(string line, po::options_description desc){
         listItem = driver.printStatus(listFiles, listGraphs, listToggle);
     }
     cout << listItem;
+
+    for (int i = 0; i < argc; i++) delete[] argv[i];
 }
 
 /**
@@ -544,7 +583,7 @@ void processGenerate(string line, po::options_description desc){
 
     bool blobMode = false;
     string mergeFile = "";
-    bool verboseMode = false;
+    bool lowMemory = false;
     po::variables_map vm;
     try {
         po::store(po::parse_command_line(argc, (const char *const *) argv, desc), vm);
@@ -552,6 +591,7 @@ void processGenerate(string line, po::options_description desc){
         //Checks if help was enabled.
         if (vm.count("help")) {
             cout << "Usage: generate [options]" << endl << desc;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
             return;
         }
 
@@ -562,9 +602,13 @@ void processGenerate(string line, po::options_description desc){
         if (vm.count("initial")){
             mergeFile = vm["initial"].as<std::string>();
         }
+        if (vm.count("low")){
+            lowMemory = true;
+        }
     } catch(po::error& e) {
         cerr << "Error: " << e.what() << endl;
         cerr << desc;
+        for (int i = 0; i < argc; i++) delete[] argv[i];
         return;
     }
 
@@ -572,12 +616,13 @@ void processGenerate(string line, po::options_description desc){
     int numFiles = driver.getNumFiles();
     if (numFiles == 0) {
         cerr << "No files are in the queue to be processed. Add some before you continue." << endl;
+        for (int i = 0; i < argc; i++) delete[] argv[i];
         return;
     }
 
     //Next, tells ClangEx to generate them.
     cout << "Processing " << numFiles << " file(s)..." << endl << "This may take some time!" << endl << endl;
-    bool success = driver.processAllFiles(blobMode, mergeFile);
+    bool success = driver.processAllFiles(blobMode, mergeFile, lowMemory);
 
     //Checks the success of the operation.
     if (success) {
@@ -585,6 +630,9 @@ void processGenerate(string line, po::options_description desc){
              << "Graph number is #" << driver.getNumGraphs() - 1 << "." << endl;
         changed = true;
     }
+
+    for (int i = 0; i < argc; i++) delete[] argv[i];
+    delete[] argv;
 }
 
 /**
@@ -614,12 +662,16 @@ void processOutput(string line, po::options_description desc){
         //Checks if help was enabled.
         if (vm.count("help")){
             cout << "Usage: output [options] OutputName" << endl << desc;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
+            delete[] argv;
             return;
         }
 
         //Check the number of graphs.
         if (driver.getNumGraphs() == 0){
             cerr << "Error: There are no graphs to output!" << endl;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
+            delete[] argv;
             return;
         }
 
@@ -649,6 +701,8 @@ void processOutput(string line, po::options_description desc){
     } catch(po::error& e) {
         cerr << "Error: " << e.what() << endl;
         cerr << desc;
+        for (int i = 0; i < argc; i++) delete[] argv[i];
+        delete[] argv;
         return;
     }
 
@@ -670,6 +724,8 @@ void processOutput(string line, po::options_description desc){
             if (indexNum < 0 || indexNum >= driver.getNumGraphs()){
                 cerr << "Error: There are only " << driver.getNumGraphs()
                      << " graphs! " << indexNum << " is out of bounds." << endl;
+                for (int i = 0; i < argc; i++) delete[] argv[i];
+                delete[] argv;
                 return;
             }
 
@@ -683,6 +739,9 @@ void processOutput(string line, po::options_description desc){
         cout << "Contribution networks created successfully." << endl;
         changed = false;
     }
+
+    for (int i = 0; i < argc; i++) delete[] argv[i];
+    delete[] argv;
 }
 
 /**
@@ -711,6 +770,8 @@ void processScript(string line, po::options_description desc){
 
         if (vm.count("help")) {
             cout << "Usage: script [script]" << endl << desc;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
+            delete[] argv;
             return;
         }
 
@@ -719,6 +780,8 @@ void processScript(string line, po::options_description desc){
     } catch(po::error& e) {
         cerr << "Error: " << e.what() << endl;
         cerr << desc;
+        for (int i = 0; i < argc; i++) delete[] argv[i];
+        delete[] argv;
         return;
     }
 
@@ -726,17 +789,93 @@ void processScript(string line, po::options_description desc){
     std::ifstream scriptFile;
     scriptFile.open(filename);
 
+    if (!scriptFile.is_open()){
+        cerr << "Error: The file " << filename << " could not be read!" << endl;
+        return;
+    }
+
     //Loop until we hit eof.
     string curLine;
     bool continueLoop = true;
-    while(!scriptFile.eof() && continueLoop) {
-        getline(scriptFile, curLine);
-        continueLoop = !processCommand(curLine);
+    while(getline(scriptFile, curLine)) {
+        if (curLine == "" || (boost::starts_with(curLine, "//"))) continue;
+        continueLoop = processCommand(curLine);
+        if (!continueLoop) break;
     }
 
     scriptFile.close();
     if (!continueLoop){
+        for (int i = 0; i < argc; i++) delete[] argv[i];
+        delete[] argv;
         _exit(1);
+    }
+    for (int i = 0; i < argc; i++) delete[] argv[i];
+    delete[] argv;
+}
+
+void processRecover(string line, po::options_description desc){
+    //Generates the arguments.
+    vector<string> tokens = tokenizeBySpace(line);
+    char** argv = createArgv(tokens);
+    int argc = (int) tokens.size();
+
+    //Processes the command line args.
+    po::variables_map vm;
+    string initial = ".";
+    bool compact = false;
+    try {
+        po::store(po::command_line_parser(argc, (const char* const*) argv).options(desc)
+                          .run(), vm);
+        po::notify(vm);
+
+        if (vm.count("help")) {
+            cout << "Usage: recover [options]" << endl << desc;
+            for (int i = 0; i < argc; i++) delete[] argv[i];
+            delete[] argv;
+            return;
+        }
+
+        if (vm.count("compact")){
+            compact = true;
+        }
+
+        if (vm.count("initial")){
+            initial = vm["initial"].as<std::string>();
+        }
+    } catch(po::error& e) {
+        cerr << "Error: " << e.what() << endl;
+        cerr << desc;
+        for (int i = 0; i < argc; i++) delete[] argv[i];
+        delete[] argv;
+        return;
+    }
+
+    //Next, prepares the recovery system.
+    if (compact){
+        driver.recoverCompact(initial);
+    } else {
+        driver.recoverFull(initial);
+    }
+}
+
+void processOutputLoc(string line, po::options_description desc){
+    //Tokenize by space.
+    vector<string> tokens = tokenizeBySpace(line);
+
+    //Next, we check for errors.
+    if (tokens.size() != 2) {
+        cerr << "Error: You must include at least one file or directory to process." << endl;
+        return;
+    }
+
+    //Now we get the directory.
+    string directory = tokens.at(1);
+    bool status = driver.changeLowMemoryLoc(directory);
+
+    if (!status){
+        cerr << "Error: Graph location did not change! Please supply a different filename." << endl;
+    } else {
+        cout << "Low memory graph location successfully changed to " << directory << "!" << endl;
     }
 }
 
@@ -745,32 +884,49 @@ void processScript(string line, po::options_description desc){
  * @param line The line entered.
  * @return Whether the program is quit or not.
  */
-bool processCommand(string line){
+bool processCommand(string line) {
     if (line.compare("") == 0) return true;
 
     //Checks the commands
-    if (!line.compare(0, HELP_ARG.size(), HELP_ARG)) {
+    if (!line.compare(0, HELP_ARG.size(), HELP_ARG) &&
+        (line[HELP_ARG.size()] == ' ' || line.size() == HELP_ARG.size())) {
         processHelp(line, helpString);
-    } else if (!line.compare(0, ABOUT_ARG.size(), ABOUT_ARG)){
+    } else if (!line.compare(0, ABOUT_ARG.size(), ABOUT_ARG) &&
+               (line[ABOUT_ARG.size()] == ' ' || line.size() == ABOUT_ARG.size())) {
         processAbout();
-    } else if (!line.compare(0, EXIT_ARG.size(), EXIT_ARG)) {
+    } else if (!line.compare(0, EXIT_ARG.size(), EXIT_ARG) &&
+               (line[EXIT_ARG.size()] == ' ' || line.size() == EXIT_ARG.size())) {
         return processQuit(line);
-    } else if (!line.compare(0, ADD_ARG.size(), ADD_ARG)) {
+    } else if (!line.compare(0, ADD_ARG.size(), ADD_ARG) &&
+               (line[ADD_ARG.size()] == ' ' || line.size() == ADD_ARG.size())) {
         processAdd(line);
-    } else if (!line.compare(0, REMOVE_ARG.size(), REMOVE_ARG)) {
+    } else if (!line.compare(0, REMOVE_ARG.size(), REMOVE_ARG) &&
+               (line[REMOVE_ARG.size()] == ' ' || line.size() == REMOVE_ARG.size())) {
         processRemove(line, *(helpInfo.at(REMOVE_ARG).desc.get()));
-    } else if (!line.compare(0, LIST_ARG.size(), LIST_ARG)) {
+    } else if (!line.compare(0, LIST_ARG.size(), LIST_ARG) &&
+               (line[LIST_ARG.size()] == ' ' || line.size() == LIST_ARG.size())) {
         processList(line, *(helpInfo.at(LIST_ARG).desc.get()));
-    } else if (!line.compare(0, ENABLE_ARG.size(), ENABLE_ARG)){
+    } else if (!line.compare(0, ENABLE_ARG.size(), ENABLE_ARG) &&
+               (line[ENABLE_ARG.size()] == ' ' || line.size() == ENABLE_ARG.size())) {
         processEnable(line);
-    } else if (!line.compare(0, DISABLE_ARG.size(), DISABLE_ARG)){
+    } else if (!line.compare(0, DISABLE_ARG.size(), DISABLE_ARG) &&
+               (line[DISABLE_ARG.size()] == ' ' || line.size() == DISABLE_ARG.size())) {
         processDisable(line);
-    } else if (!line.compare(0, GEN_ARG.size(), GEN_ARG)) {
+    } else if (!line.compare(0, GEN_ARG.size(), GEN_ARG) &&
+               (line[GEN_ARG.size()] == ' ' || line.size() == GEN_ARG.size())) {
         processGenerate(line, *(helpInfo.at(GEN_ARG).desc.get()));
-    } else if (!line.compare(0, OUT_ARG.size(), OUT_ARG)) {
+    } else if (!line.compare(0, OUT_ARG.size(), OUT_ARG) &&
+               (line[OUT_ARG.size()] == ' ' || line.size() == OUT_ARG.size())) {
         processOutput(line, *(helpInfo.at(OUT_ARG).desc.get()));
-    } else if (!line.compare(0, SCRIPT_ARG.size(), SCRIPT_ARG)) {
+    } else if (!line.compare(0, SCRIPT_ARG.size(), SCRIPT_ARG) &&
+               (line[SCRIPT_ARG.size()] == ' ' || line.size() == SCRIPT_ARG.size())) {
         processScript(line, *(helpInfo.at(SCRIPT_ARG).desc.get()));
+    } else if (!line.compare(0, RECOVER_ARG.size(), RECOVER_ARG) &&
+               (line[RECOVER_ARG.size()] == ' ' || line.size() == RECOVER_ARG.size())) {
+        processRecover(line, *(helpInfo.at(RECOVER_ARG).desc.get()));
+    } else if (!line.compare(0, OLOC_ARG.size(), OLOC_ARG) &&
+               (line[OLOC_ARG.size()] == ' ' || line.size() == OLOC_ARG.size())) {
+        processOutputLoc(line, *(helpInfo.at(OLOC_ARG).desc.get()));
     } else {
         cerr << "No such command: " << line << "\nType \'help\' for more information." << endl;
     }
@@ -818,4 +974,6 @@ int main(int argc, const char **argv){
         //Processes the command.
         contLoop = processCommand(line);
     }
+
+    return 0;
 }

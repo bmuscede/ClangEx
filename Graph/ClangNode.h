@@ -92,6 +92,10 @@ private:
         const std::string LOCAL_KEY = "local";
         const std::string PARAM_KEY = "parameter";
 
+        const std::string PUBLIC_KEY = "public";
+        const std::string PRIVATE_KEY = "private";
+        const std::string PROTECTED_KEY = "protected";
+
         /**
          * Gets the scope of the variable.
          * @param decl The variable decl being used.
@@ -114,7 +118,14 @@ private:
          * @param decl The field decl being used.
          */
         std::string getScope(const clang::FieldDecl* decl){
-            return "todo"; //TODO
+            clang::Visibility vis = decl->getVisibility();
+            if (vis == clang::Visibility::DefaultVisibility){
+                return VAR_ATTRIBUTE.PUBLIC_KEY;
+            } else if (vis == clang::Visibility::HiddenVisibility){
+                return VAR_ATTRIBUTE.PRIVATE_KEY;
+            }
+
+            return VAR_ATTRIBUTE.PROTECTED_KEY;
         }
 
         /**
@@ -130,7 +141,7 @@ private:
          * @param decl The field decl being used.
          */
         std::string getStatic(const clang::FieldDecl* decl){
-            return "todo"; //TODO
+            return "unknown";
         }
     } VarStruct;
 

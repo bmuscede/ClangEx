@@ -33,20 +33,30 @@
 #include <unordered_map>
 #include "ClangNode.h"
 #include "ClangEdge.h"
-#include "../Printer/VerbosePrinter.h"
+#include "../Printer/Printer.h"
+#include "../File/FileParse.h"
 
 class TAGraph {
 public:
-    /** Constructor/Destructor */
-    TAGraph(Printer* print = new VerbosePrinter());
-    ~TAGraph();
+    /** Toggle System */
+    typedef struct {
+        bool cSubSystem = false;
+        bool cFile = false;
+        bool cClass = false;
+        bool cFunction = false;
+        bool cVariable = false;
+        bool cEnum = false;
+        bool cStruct = false;
+        bool cUnion = false;
+    } ClangExclude;
 
-    /** Printer Settings */
-    void setPrinter(Printer* newPrint);
+    /** Constructor/Destructor */
+    TAGraph();
+    virtual ~TAGraph();
 
     /** Node/Edge Adders */
-    bool addNode(ClangNode* node, bool assumeValid = false);
-    bool addEdge(ClangEdge* edge, bool assumeValid = false);
+    virtual bool addNode(ClangNode* node, bool assumeValid = false);
+    virtual bool addEdge(ClangEdge* edge, bool assumeValid = false);
 
     /** Node/Edge Removers */
     void removeNode(ClangNode* node, bool unsafe = true);
@@ -75,30 +85,37 @@ public:
     bool edgeExists(std::string IDOne, std::string IDTwo, ClangEdge::EdgeType type);
 
     /** TA Operations */
-    std::string generateTAFormat();
-    void addNodesToFile(std::map<std::string, ClangNode*> fileSkip);
+    virtual std::string generateTAFormat();
+    virtual void addNodesToFile(std::map<std::string, ClangNode*> fileSkip);
 
     /** Unresolved Operations */
-    void addUnresolvedRef(std::string callerID, std::string calleeID, ClangEdge::EdgeType type);
-    void addUnresolvedRefAttr(std::string callerID, std::string calleeID, std::string attrName, std::string attrValue);
-    void resolveExternalReferences(bool silent = false);
+    virtual void resolveExternalReferences(Printer* print, bool silent = false);
+    virtual void resolveFiles(ClangExclude exclusions);
+    void addPath(std::string path);
 
     static const std::string FILE_ATTRIBUTE;
 
-private:
+protected:
+    std::string const INSTANCE_FLAG = "$INSTANCE";
+
     /** TA Variables */
     std::unordered_map<std::string, ClangNode*> nodeList;
     std::unordered_map<std::string, std::vector<std::string>> nodeNameList;
     std::unordered_map<std::string, std::vector<ClangEdge*>> edgeSrcList;
     std::unordered_map<std::string, std::vector<ClangEdge*>> edgeDstList;
 
-    /** Unresolved Variables */
-    std::vector<std::pair<std::pair<std::string, std::string>, ClangEdge::EdgeType>> unresolvedRef;
-    std::vector<std::pair<std::pair<std::string, std::string>,
-            std::pair<std::string, std::vector<std::string>>>*> unresolvedRefAttr;
+    /** Clear Graph */
+    void clearGraph();
 
-    /** Printer Settings */
-    Printer *clangPrinter;
+    /** TA Helper Methods */
+    std::string generateTAHeader();
+    std::string generateInstances();
+    std::string generateRelationships();
+    std::string generateAttributes();
+
+private:
+    /** Settings */
+    FileParse fileParser;
 
     /** TA Const Variables */
     std::string const TA_HEADER = "//Generated TA File";
@@ -118,13 +135,6 @@ private:
             "ic\n}\n\ncClass {\n\tfilename\n\tbaseNum\n\tcolor = (0.2 0.4 0.1)\n\tlabelcolor = (0.0 0.0 0.0)\n}\n\ncEnu"
             "m {\n\tfilename\n\tcolor = (0.9 0.2 0.5)\n\tlabelcolor = (0.0 0.0 0.0)\n}\n\ncEnumConst {\n\tfilename\n\tc"
             "olor = (0.9 0.2 0.5)\n\tlabelcolor = (0.0 0.0 0.0)\n}\n\n(reference) {\n\taccess\n}\n";
-
-    /** TA Helper Methods */
-    std::string generateInstances();
-    std::string generateRelationships();
-    std::string generateAttributes();
-    std::vector<std::pair<std::string, std::vector<std::string>>> findAttributes(std::string callerID,
-                                                                                 std::string calleeID);
 };
 
 

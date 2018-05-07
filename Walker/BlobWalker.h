@@ -33,8 +33,9 @@
 class BlobWalker : public ASTWalker {
 public:
     /** Constructor and Destructor */
-    explicit BlobWalker(Printer* print, ClangDriver::ClangExclude exclusions = ClangDriver::ClangExclude(),
-                  TAGraph* graph = new TAGraph());
+    explicit BlobWalker(Printer* print, bool lowMemory,
+                        TAGraph::ClangExclude exclusions = TAGraph::ClangExclude(),
+                        TAGraph* graph = nullptr);
     ~BlobWalker() override;
 
     /** Methods for running the AST Walker */

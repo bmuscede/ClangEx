@@ -32,6 +32,7 @@
 #include "ASTWalker.h"
 #include "clang/AST/Mangle.h"
 #include "../Graph/ClangNode.h"
+#include "../Graph/LowMemoryTAGraph.h"
 
 using namespace std;
 using namespace clang;
@@ -50,47 +51,6 @@ ASTWalker::~ASTWalker() { }
  */
 TAGraph* ASTWalker::getGraph(){
     return graph;
-}
-
-/**
- * Resolves external references inside the graph. By default, does this silently.
- */
-void ASTWalker::resolveExternalReferences() {
-    graph->resolveExternalReferences(false);
-}
-
-/**
- * Resolves all files that were encountered in processing the AST.
- */
-void ASTWalker::resolveFiles(){
-    bool assumeValid = true;
-    vector<ClangNode*> fileNodes = vector<ClangNode*>();
-    vector<ClangEdge*> fileEdges = vector<ClangEdge*>();
-
-    //Gets all the associated clang nodes.
-    fileParser.processPaths(fileNodes, fileEdges);
-
-    //Adds them to the graph.
-    for (ClangNode *file : fileNodes) {
-        if ((file->getType() == ClangNode::NodeType::SUBSYSTEM && !exclusions.cSubSystem) ||
-                (file->getType() == ClangNode::NodeType::FILE && !exclusions.cFile)) {
-            graph->addNode(file, assumeValid);
-        }
-    }
-
-    //Adds the edges to the graph.
-    map<string, ClangNode*> fileSkip;
-    for (ClangEdge *edge : fileEdges) {
-        //Surpasses.
-        if (exclusions.cFile && edge->getDst()->getType() == ClangNode::FILE){
-            fileSkip[edge->getDst()->getID()] = edge->getSrc();
-        } else {
-            graph->addEdge(edge, assumeValid);
-        }
-    }
-
-    //Next, for each item in the graph, add it to a file.
-    graph->addNodesToFile(fileSkip);
 }
 
 /**
@@ -123,14 +83,18 @@ string ASTWalker::generateMD5(string text){
  * @param print The printer to use.
  * @param existing The existing TA graph (if any).
  */
-ASTWalker::ASTWalker(ClangDriver::ClangExclude ex, Printer *print, TAGraph* existing = new TAGraph()) :
+ASTWalker::ASTWalker(TAGraph::ClangExclude ex, bool lowMemory, Printer *print, TAGraph* existing) :
         clangPrinter(print){
     //Sets the current file name to blank.
     curFileName = "";
 
     //Creates the graph system.
-    graph = existing;
-    graph->setPrinter(print);
+    if (existing == nullptr){
+        if (lowMemory == true) graph = new LowMemoryTAGraph();
+        else graph = new TAGraph();
+    } else {
+        graph = existing;
+    }
 
     //Sets up the exclusions.
     exclusions = ex;
@@ -158,7 +122,7 @@ string ASTWalker::generateFileName(const MatchFinder::MatchResult result,
     string newPath = canonical(fN.normalize()).string();
 
     //Adds the file path.
-    fileParser.addPath(newPath);
+    graph->addPath(newPath);
 
     //Checks if we have a output suppression in place.
     if (!suppressFileOutput && newPath.compare("") != 0) printFileName(newPath);
@@ -290,7 +254,8 @@ void ASTWalker::addFunctionDecl(const MatchFinder::MatchResult results, const Fu
 
     //Creates a new function entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::FUNCTION);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Adds parameters.
     graph->addAttribute(node->getID(),
@@ -366,7 +331,8 @@ void ASTWalker::addVariableDecl(const MatchFinder::MatchResult results,
 
     //Creates a variable entry.
     ClangNode* node = new ClangNode(ID, label, ClangNode::VARIABLE);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process attributes.
     graph->addAttribute(node->getID(),
@@ -412,7 +378,8 @@ void ASTWalker::addClassDecl(const MatchFinder::MatchResult results, const CXXRe
 
     //Creates a class entry.
     ClangNode* node = new ClangNode(ID, className, ClangNode::CLASS);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process attributes.
     graph->addAttribute(node->getID(),
@@ -451,7 +418,8 @@ void ASTWalker::addEnumDecl(const MatchFinder::MatchResult result, const EnumDec
 
     //Creates a enum entry.
     ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process attributes.
     graph->addAttribute(node->getID(),
@@ -476,7 +444,8 @@ void ASTWalker::addEnumConstantDecl(const MatchFinder::MatchResult result, const
 
     //Creates a new enum entry.
     ClangNode* node = new ClangNode(ID, enumName, ClangNode::ENUM_CONST);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process attributes.
     graph->addAttribute(node->getID(),
@@ -501,7 +470,8 @@ void ASTWalker::addStructDecl(const MatchFinder::MatchResult result, const clang
 
     //Next, generates the node.
     ClangNode* node = new ClangNode(ID, label, ClangNode::STRUCT);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process the attributes.
     graph->addAttribute(node->getID(),
@@ -529,7 +499,8 @@ void ASTWalker::addUnionDecl(const MatchFinder::MatchResult result, const Record
 
     //Next, generates the node.
     ClangNode* node = new ClangNode(ID, label, ClangNode::UNION);
-    graph->addNode(node);
+    bool succ = graph->addNode(node);
+    if (!succ) return;
 
     //Process the attributes.
     graph->addAttribute(node->getID(),
@@ -754,25 +725,24 @@ void ASTWalker::processEdge(string srcID, string srcLabel, string dstID, string 
     ClangNode* sourceNode = graph->findNodeByID(srcID);
     ClangNode* destNode = graph->findNodeByID(dstID);
 
-    //Now processes the nodes.
-    if (!sourceNode || !destNode){
-        graph->addUnresolvedRef(srcLabel, dstLabel, type);
-
-        //Iterate through our vector and add.
-        for (auto mapItem : attributes) {
-            //Add attributes.
-            graph->addUnresolvedRefAttr(srcLabel, dstLabel, mapItem.first, mapItem.second);
-        }
+    //Add the edge.
+    ClangEdge* edge;
+    if (sourceNode && destNode){
+        edge = new ClangEdge(sourceNode, destNode, type);
+    } else if (!sourceNode && destNode){
+        edge = new ClangEdge(srcID, destNode, type);
+    } else if (sourceNode && !destNode){
+        edge = new ClangEdge(sourceNode, dstID, type);
     } else {
-        //Add the edge.
-        ClangEdge* edge = new ClangEdge(sourceNode, destNode, type);
-        graph->addEdge(edge);
+        edge = new ClangEdge(srcID, dstID, type);
+    }
+    bool succ = graph->addEdge(edge);
+    if (!succ) return;
 
-        //Iterate through our vector and add.
-        for (auto mapItem : attributes) {
-            graph->addAttribute(edge->getSrc()->getID(), edge->getDst()->getID(), type,
-                                mapItem.first, mapItem.second);
-        }
+    //Iterate through our vector and add.
+    for (auto mapItem : attributes) {
+        graph->addAttribute(edge->getSrcID(), edge->getDstID(), type,
+                            mapItem.first, mapItem.second);
     }
 }
 
