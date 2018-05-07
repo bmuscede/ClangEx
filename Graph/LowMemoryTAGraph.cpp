@@ -17,6 +17,10 @@ namespace bs = boost::filesystem;
 int LowMemoryTAGraph::currentNumber = 0;
 const string LowMemoryTAGraph::CUR_FILE_LOC = "curFile.txt";
 const string LowMemoryTAGraph::CUR_SETTING_LOC = "curSetting.txt";
+const string LowMemoryTAGraph::BASE_INSTANCE_FN = "instances.ta";
+const string LowMemoryTAGraph::BASE_RELATION_FN = "relations.ta";
+const string LowMemoryTAGraph::BASE_MV_RELATION_FN = "old.relations.ta";
+const string LowMemoryTAGraph::BASE_ATTRIBUTE_FN = "attributes.ta";
 
 LowMemoryTAGraph::LowMemoryTAGraph(string basePath, int curNum) : TAGraph() {
     purge = true;
@@ -91,6 +95,15 @@ LowMemoryTAGraph::~LowMemoryTAGraph() {
     if (doesFileExist(attributeFN)) deleteFile(attributeFN);
     if (doesFileExist(settingFN)) deleteFile(settingFN);
     if (doesFileExist(curFileFN)) deleteFile(curFileFN);
+}
+
+void LowMemoryTAGraph::changeRoot(std::string basePath){
+    instanceFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
+    relationFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
+    mvRelationFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_MV_RELATION_FN)).string();
+    attributeFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_ATTRIBUTE_FN)).string();
+    settingFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_SETTING_LOC)).string();
+    curFileFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_FILE_LOC)).string();
 }
 
 bool LowMemoryTAGraph::addNode(ClangNode* node, bool assumeValid){
@@ -212,9 +225,10 @@ void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
 
         //Checks for what type of system we're dealing with.
         if (entry.at(0).compare("(") == 0 || entry.at(0).find("(") == 0) {
-            continue; //TODO!
             //Relation attribute.
             string relID = entry.at(0) + " " + entry.at(1) + " " + entry.at(2);
+            relID.erase(0, 1);
+            relID.erase(relID.size() - 1);
 
             //Check if the relationID matches.
             if (find(removedRels.begin(), removedRels.end(), relID) != removedRels.end()){
@@ -222,7 +236,10 @@ void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
             }
 
             //Generates the attribute list.
+            relID = "(" + relID + ")";
+            entry.erase(entry.begin(), entry.begin() + 3);
             auto attrs = generateStrAttributes(entry);
+            if (attrs.size() == 0) continue;
 
             //Find the attributes.
             if (attrMap.find(relID) == attrMap.end()){
@@ -262,6 +279,7 @@ void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
 
             //Generates the attribute list.
             auto attrs = generateStrAttributes(entry);
+            if (attrs.size() == 0) continue;
 
             //Find the attributes.
             if (attrMap.find(attrName) == attrMap.end()){
@@ -312,7 +330,7 @@ void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
                 attrLine += ") ";
             }
         }
-        destAttr << attrLine + "\n";
+        destAttr << attrLine + " }\n";
     }
     attrMap.clear();
     destAttr.close();

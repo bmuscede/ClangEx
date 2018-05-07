@@ -521,6 +521,26 @@ int ClangDriver::removeByRegex(string regex) {
 bool ClangDriver::changeLowMemoryLoc(path curLoc){
     if (!is_directory(curLoc)) return false;
 
+    //Get the current loc.
+    vector<int> curG;
+    if (lowMemoryPath.string() == "") lowMemoryPath = ".";
+    curG = getLMGraphs(lowMemoryPath.string());
+
+    //Carry out the move operation.
+    if (curG.size() > 0){
+        for (int cur : curG){
+            string srcRoot = lowMemoryPath.string() + "/" + to_string(cur) + "-";
+            string dstRoot = curLoc.string() + "/" + to_string(cur) + "-";
+            rename(srcRoot + LowMemoryTAGraph::CUR_SETTING_LOC, dstRoot + LowMemoryTAGraph::CUR_SETTING_LOC);
+            rename(srcRoot + LowMemoryTAGraph::CUR_FILE_LOC, dstRoot + LowMemoryTAGraph::CUR_FILE_LOC);
+            rename(srcRoot + LowMemoryTAGraph::BASE_INSTANCE_FN, dstRoot + LowMemoryTAGraph::BASE_INSTANCE_FN);
+            rename(srcRoot + LowMemoryTAGraph::BASE_RELATION_FN, dstRoot + LowMemoryTAGraph::BASE_RELATION_FN);
+            rename(srcRoot + LowMemoryTAGraph::BASE_ATTRIBUTE_FN, dstRoot + LowMemoryTAGraph::BASE_ATTRIBUTE_FN);
+
+            dynamic_cast<LowMemoryTAGraph*>(graphs.at(cur))->changeRoot(curLoc.string());
+        }
+    }
+
     lowMemoryPath = curLoc;
     return true;
 }

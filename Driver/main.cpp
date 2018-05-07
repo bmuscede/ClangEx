@@ -30,10 +30,12 @@
 #include <pwd.h>
 #include <zconf.h>
 #include <vector>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/algorithm/string.hpp>
 #include "ClangDriver.h"
 
 using namespace std;
@@ -787,12 +789,18 @@ void processScript(string line, po::options_description desc){
     std::ifstream scriptFile;
     scriptFile.open(filename);
 
+    if (!scriptFile.is_open()){
+        cerr << "Error: The file " << filename << " could not be read!" << endl;
+        return;
+    }
+
     //Loop until we hit eof.
     string curLine;
     bool continueLoop = true;
-    while(!scriptFile.eof() && continueLoop) {
-        getline(scriptFile, curLine);
-        continueLoop = !processCommand(curLine);
+    while(getline(scriptFile, curLine)) {
+        if (curLine == "" || (boost::starts_with(curLine, "//"))) continue;
+        continueLoop = processCommand(curLine);
+        if (!continueLoop) break;
     }
 
     scriptFile.close();
@@ -855,11 +863,7 @@ void processOutputLoc(string line, po::options_description desc){
     vector<string> tokens = tokenizeBySpace(line);
 
     //Next, we check for errors.
-    if (driver.getNumGraphs() > 0) {
-        //TODO: Move graphs in processing.
-        cerr << "Error: You cannot change the current low memory graph output location now." << endl;
-        return;
-    } else if (tokens.size() != 2) {
+    if (tokens.size() != 2) {
         cerr << "Error: You must include at least one file or directory to process." << endl;
         return;
     }

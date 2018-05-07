@@ -17,6 +17,8 @@ public:
     LowMemoryTAGraph(std::string basePath, int curNum);
     ~LowMemoryTAGraph() override;
 
+    void changeRoot(std::string basePath);
+
     bool addNode(ClangNode* node, bool assumeValid = false) override;
     bool addEdge(ClangEdge* edge, bool assumeValid = false) override;
 
@@ -34,13 +36,13 @@ public:
 
     static const std::string CUR_FILE_LOC;
     static const std::string CUR_SETTING_LOC;
+    static const std::string BASE_INSTANCE_FN;
+    static const std::string BASE_RELATION_FN;
+    static const std::string BASE_MV_RELATION_FN;
+    static const std::string BASE_ATTRIBUTE_FN;
 
 private:
     const int PURGE_AMOUNT = 1000;
-    const std::string BASE_INSTANCE_FN = "instances.ta";
-    const std::string BASE_RELATION_FN = "relations.ta";
-    const std::string BASE_MV_RELATION_FN = "old.relations.ta";
-    const std::string BASE_ATTRIBUTE_FN = "attributes.ta";
 
     std::string instanceFN;
     std::string relationFN;
