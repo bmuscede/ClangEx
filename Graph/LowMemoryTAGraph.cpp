@@ -1,6 +1,27 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// LowMemoryTAGraph.cpp
 //
-// Created by bmuscede on 14/03/18.
+// Created By: Bryan J Muscedere
+// Date: 14/03/18.
 //
+// Handles a run of the low-memory system by dumping items to disk.
+// Adds items to the graph and manages resolution and disk dumps.
+//
+// Copyright (C) 2017, Bryan J. Muscedere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <fstream>
 #include <sys/stat.h>
@@ -14,6 +35,7 @@
 using namespace std;
 namespace bs = boost::filesystem;
 
+/** Const Methods */
 int LowMemoryTAGraph::currentNumber = 0;
 const string LowMemoryTAGraph::CUR_FILE_LOC = "curFile.txt";
 const string LowMemoryTAGraph::CUR_SETTING_LOC = "curSetting.txt";
@@ -22,6 +44,11 @@ const string LowMemoryTAGraph::BASE_RELATION_FN = "relations.ta";
 const string LowMemoryTAGraph::BASE_MV_RELATION_FN = "old.relations.ta";
 const string LowMemoryTAGraph::BASE_ATTRIBUTE_FN = "attributes.ta";
 
+/**
+ * Creates a graph with a base and a specific number.
+ * @param basePath The base path to dump to.
+ * @param curNum The graph number.
+ */
 LowMemoryTAGraph::LowMemoryTAGraph(string basePath, int curNum) : TAGraph() {
     purge = true;
     fileNumber = curNum;
@@ -34,6 +61,10 @@ LowMemoryTAGraph::LowMemoryTAGraph(string basePath, int curNum) : TAGraph() {
     curFileFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_FILE_LOC)).string();
 }
 
+/**
+ * Creates a graph with a base.
+ * @param basePath The base path to dump to.
+ */
 LowMemoryTAGraph::LowMemoryTAGraph(string basePath) : TAGraph() {
     purge = true;
     fileNumber = LowMemoryTAGraph::currentNumber;
@@ -61,6 +92,9 @@ LowMemoryTAGraph::LowMemoryTAGraph(string basePath) : TAGraph() {
     f.close();
 }
 
+/**
+ * Generates a default LowMemoryTAGraph.
+ */
 LowMemoryTAGraph::LowMemoryTAGraph() : TAGraph() {
     purge = true;
     fileNumber = LowMemoryTAGraph::currentNumber;
@@ -89,6 +123,9 @@ LowMemoryTAGraph::LowMemoryTAGraph() : TAGraph() {
 
 }
 
+/**
+ * Deletes all the files to disk.
+ */
 LowMemoryTAGraph::~LowMemoryTAGraph() {
     if (doesFileExist(instanceFN)) deleteFile(instanceFN);
     if (doesFileExist(relationFN)) deleteFile(relationFN);
@@ -97,6 +134,10 @@ LowMemoryTAGraph::~LowMemoryTAGraph() {
     if (doesFileExist(curFileFN)) deleteFile(curFileFN);
 }
 
+/**
+ * Changes where the graph is located.
+ * @param basePath The base path to change the location.
+ */
 void LowMemoryTAGraph::changeRoot(std::string basePath){
     instanceFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_INSTANCE_FN)).string();
     relationFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + BASE_RELATION_FN)).string();
@@ -106,6 +147,12 @@ void LowMemoryTAGraph::changeRoot(std::string basePath){
     curFileFN = bs::weakly_canonical(bs::path(basePath + "/" + to_string(fileNumber) + "-" + CUR_FILE_LOC)).string();
 }
 
+/**
+ * Adds a node to the graph.
+ * @param node The node to add.
+ * @param assumeValid Whether we assume it's valid.
+ * @return Whether it was added.
+ */
 bool LowMemoryTAGraph::addNode(ClangNode* node, bool assumeValid){
     //Check the number of entities.
     int amt = getNumberEntities();
@@ -117,6 +164,12 @@ bool LowMemoryTAGraph::addNode(ClangNode* node, bool assumeValid){
     return TAGraph::addNode(node, assumeValid);
 }
 
+/**
+ * Adds an edge to the graph.
+ * @param edge The edge to add.
+ * @param assumeValid Whether we assume it's valid.
+ * @return Whether it was added.
+ */
 bool LowMemoryTAGraph::addEdge(ClangEdge* edge, bool assumeValid){
     //Check the number of entities.
     int amt = getNumberEntities();
@@ -128,6 +181,10 @@ bool LowMemoryTAGraph::addEdge(ClangEdge* edge, bool assumeValid){
     return TAGraph::addEdge(edge, assumeValid);
 }
 
+/**
+ * Generates the TA for this graph.
+ * @return The TA format.
+ */
 string LowMemoryTAGraph::generateTAFormat() {
     string format = generateTAHeader();
     string curLine;
@@ -153,6 +210,10 @@ string LowMemoryTAGraph::generateTAFormat() {
     return format;
 }
 
+/**
+ * Resolves files on disk.
+ * @param exclusions The exclusions to process.
+ */
 void LowMemoryTAGraph::resolveFiles(ClangExclude exclusions){
     //Disable purging.
     setPurgeStatus(false);
@@ -165,6 +226,11 @@ void LowMemoryTAGraph::resolveFiles(ClangExclude exclusions){
     purgeCurrentGraph();
 }
 
+/**
+ * Resolves external references.
+ * @param print The printer that prints messages.
+ * @param silent Whether we should print silently.
+ */
 void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
     //First, purge the current graph.
     purgeCurrentGraph();
@@ -345,6 +411,10 @@ void LowMemoryTAGraph::resolveExternalReferences(Printer* print, bool silent) {
     outI.close();
 }
 
+/**
+ * Adds nodes to a file system.
+ * @param fileSkip Whether we skip files.
+ */
 void LowMemoryTAGraph::addNodesToFile(std::map<std::string, ClangNode*> fileSkip){
     //Load in each attribute.
     ifstream attributes(attributeFN);
@@ -420,6 +490,11 @@ void LowMemoryTAGraph::addNodesToFile(std::map<std::string, ClangNode*> fileSkip
     attributes.close();
 }
 
+/**
+ * Dumps the current file to disk.
+ * @param fileNum The file number.
+ * @param file The file to dump.
+ */
 void LowMemoryTAGraph::dumpCurrentFile(int fileNum, string file){
     //Opens the file list.
     std::ofstream curFile(curFileFN);
@@ -430,6 +505,12 @@ void LowMemoryTAGraph::dumpCurrentFile(int fileNum, string file){
     curFile.close();
 }
 
+/**
+ * Dumps the settings to disk.
+ * @param files The files being processed.
+ * @param exclude The exclusions.
+ * @param blobMode Blob mode toggle.
+ */
 void LowMemoryTAGraph::dumpSettings(vector<bs::path> files, TAGraph::ClangExclude exclude, bool blobMode){
     //Opens the file.
     std::ofstream curSettings(settingFN);
@@ -449,19 +530,35 @@ void LowMemoryTAGraph::dumpSettings(vector<bs::path> files, TAGraph::ClangExclud
     curSettings.close();
 }
 
+/**
+ * Checks whether a file exists.
+ * @param fN The file to check.
+ * @return Whether it exists.
+ */
 bool LowMemoryTAGraph::doesFileExist(string fN){
     struct stat buffer;
     return (stat (fN.c_str(), &buffer) == 0);
 }
 
+/**
+ * Deletes a file.
+ * @param fN The file to delete.
+ */
 void LowMemoryTAGraph::deleteFile(string fN) {
     remove(fN.c_str());
 }
 
+/**
+ * Alters whether we purge.
+ * @param purge The purge toggle.
+ */
 void LowMemoryTAGraph::setPurgeStatus(bool purge){
     this->purge = purge;
 }
 
+/**
+ * Dumps the current TA to disk.
+ */
 void LowMemoryTAGraph::purgeCurrentGraph(){
     if (!purge) return;
 
@@ -485,12 +582,21 @@ void LowMemoryTAGraph::purgeCurrentGraph(){
     clearGraph();
 }
 
+/**
+ * Gets the number of entities in the graph.
+ * @return The number of entities in the graph.
+ */
 int LowMemoryTAGraph::getNumberEntities(){
     //Get the number of keys in the graph.
     auto curAmnt = (int) nodeList.size();
     return curAmnt;
 }
 
+/**
+ * Tokenizes the string based on a space.
+ * @param curString The current string to split.
+ * @return A vector of tokens.
+ */
 vector<string> LowMemoryTAGraph::tokenize(string curString){
     vector<string> tokens;
 
@@ -498,6 +604,11 @@ vector<string> LowMemoryTAGraph::tokenize(string curString){
     return tokens;
 }
 
+/**
+ * Generate a set of attributes based on a vector of tokens.
+ * @param line The vector of tokens.
+ * @return A vector of attributes.
+ */
 vector<pair<string, vector<string>>> LowMemoryTAGraph::generateStrAttributes(std::vector<std::string> line){
     if (line.size() < 3){
         return vector<pair<string, vector<string>>>();

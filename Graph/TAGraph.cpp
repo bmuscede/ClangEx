@@ -455,6 +455,10 @@ void TAGraph::resolveExternalReferences(Printer* print, bool silent) {
     }
 }
 
+/**
+ * Resolves the file in the TA graph.
+ * @param exclusions The TA exclusions.
+ */
 void TAGraph::resolveFiles(TAGraph::ClangExclude exclusions){
     bool assumeValid = true;
     vector<ClangNode*> fileNodes = vector<ClangNode*>();
@@ -488,10 +492,17 @@ void TAGraph::resolveFiles(TAGraph::ClangExclude exclusions){
     addNodesToFile(fileSkip);
 }
 
+/**
+ * Adds a path to the TA graph.
+ * @param path The path to process.
+ */
 void TAGraph::addPath(string path){
     fileParser.addPath(path);
 }
 
+/**
+ * Clears the graph and deletes all items.
+ */
 void TAGraph::clearGraph(){
     for (auto it = edgeSrcList.begin(); it != edgeSrcList.end(); ++it){
         vector<ClangEdge*> edges = it->second;
@@ -509,6 +520,10 @@ void TAGraph::clearGraph(){
     nodeNameList.clear();
 }
 
+/**
+ * Generates a TA header for the top of the file.
+ * @return The TA graph system.
+ */
 string TAGraph::generateTAHeader() {
     string format = "";
 

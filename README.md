@@ -27,7 +27,7 @@ The following diagram higlights the information ClangEx extracts from a target C
 
 ## Installation Details
 ### Prerequisties
-ClangEx is based on `Clang 4.0.0` and requires `CMake 3.0.0` or greater to run. Additionally, to build ClangEx, `Boost` libraries are required. For `Boost`, the computer building ClangEx requires `Boost` version `1.5.8` or greater. If you meet any of these prerequisites, feel free to skip their associated section below.
+ClangEx is based on `Clang 5.0.0` and requires `CMake 3.0.0` or greater to run. Additionally, to build ClangEx, `Boost` libraries are required. For `Boost`, the computer building ClangEx requires `Boost` version `1.6.0` or greater. If you meet any of these prerequisites, feel free to skip their associated section below.
 
 #### Installing CMake
 First, CMake should be installed. On Linux, this is as simple as running:
@@ -106,7 +106,7 @@ $ clang --version
 ```
 
 #### Obtaining Boost Libraries
-Boost libraries are also required. This process is very simple on Debian/Ubuntu systems.
+Boost libraries are also required. This process is very simple on Debian/Ubuntu systems. **You need Boost version 1.6 to proceed.**
 
 Simply run the following command to download and install Boost libraries to your system's `include` path:
 ```
@@ -127,6 +127,13 @@ $ git checkout https://github.com/bmuscede/ClangEx.git
 
 Next, we want to build the source code. This process may take several minutes due to the heavyweight size of the Clang libraries. This guide will build clang to the `ClangEx-Build` directory that is adjacent to the `ClangEx` library. If you want to build to a different directory, replace the following `ClangEx-Build`s  to the directory of your choice.
 
+Next, before ClangEx can be built, two separate environment variables must be set: `LLVM_PATH` and `CLANG\_VER`. The `LLVM_PATH` variable tells ClangEx where LLVM and Clang were built to. The `CLANG_VER` variable is the version of Clang installed. To set these variables, open up \texttt{.bashrc} located in the home directory and add the following lines to the bottom of the file:
+```
+$ export LLVM_PATH=<PATH_TO_CLANG-BUILD>
+$ export CLANG_VER=<VERSION_OF_CLANG>
+```
+Restart the terminal to ensure these variables have been exported.
+
 To build, run the following command:
 ```
 $ mkdir Clang-Build
@@ -134,7 +141,6 @@ $ cd Clang-Build
 $ cmake -G "Unix Makefiles" ../ClangEx
 $ make
 ```
-
 To verify that ClangEx built, ensure the `ClangEx-Build` directory contains a `include` subdirectory and that the ClangEx executable exists. Additionally, run the following to check if it runs:
 ```
 $ ./ClangEx --help
@@ -167,91 +173,4 @@ $ lsedit
 If both `Grok` and `LSEdit` started successfully, SWAGKit was configured on your computer. You are now able to run `ClangEx` and analyze program models!
 
 ## Running ClangEx
-`ClangEx` has its own command line based system that allows for a user to add, remove, and manage extractions automatically. This is a specialized system that improves workflow.
-
-To run, ClangEx without any options enabled, simply run the following:
-```
-$ ./ClangEx
-```
-Once ClangEx runs, you will be presented with a command prompt with your username. From here, you can enter commands to direct ClangEx. By typing `help` you will be presented with all options. 
-
-The following steps provide information on how to do basic analysis with ClangEx. For more advanced options, read the help information included in ClangEx.
-
-### Adding and Removing Files
-To add files to ClangEx, you use the `add` command. Simply type the add command followed by a C/C++ file path or a directory and ClangEx will add it for processing. If you specify a folder, ClangEx will recursively search for all C/C++ files in that directory. An example of the add command:
-```
-$ add /home/main.cpp
-$ add /home/some-folder/
-```
-
-Removing is similar. The `remove` command will remove files or a collection of files based on a regular expression. The `-s` flag will remove a file (you have to specify the full file path). The `-r` flag will remove a collection of files based on a regular expression. An example of the remove command:
-```
-$ remove -s /home/main.cpp
-$ remove -r .*/home/.*
-```
-
-### Running ClangEx on Source Code
-Once files have been added, you can run the ClangEx analyzer. To do this, you simply need to use the `generate` command. This command only works if files have been added. The '-v' command tells ClangEx to generate the AST in verbose mode.
-
-There are two types of processing modes: *Partial Mode* is invoked automatically. *Blob Mode* is invoked with the `-b` flag. Examples of the generate command:
-```
-$ generate -v
-$ generate -b -v
-```
-The first one generates while operating in verbose mode. The second generates in blob mode with verbose output.
-
-**NOTE:** ClangEx requires the use of a compile_commands.json database located in some top level directory that tells ClangEx how to compile the files.
-
-### Output TA Models
-Once ClangEx generated the TA model from the previous step, it now can be outputted. To do this, simply use the `output` command. While there are many different options, the most simple usage of this command is the following:
-```
-$ output SampleTA
-```
-
-This creates a TA file called SampleTA.ta.
-
-## ClangEx Analysis Modes
-Since C/C++ can be a tricky language to analyze, there are two different analysis methodologies that `ClangEx` supports. The two modes are called *Partial* and *Blob*. **By default, partial analysis is performed*.
-
-### Partial Analysis - [Default]
-Partial analysis is enabled by default on `ClangEx`. Essentially, partial analysis only looks at source files directly passed to the Clang compiler. What that means is that models can be generated for specific segments by simply omitting any unnecessary source files.
-
-In this mode, only code in the source files supplied are used. **Header files are ignored** since there is no way to distinguish between headers for other source files in the C/C++ language.
-
----
-**Pros of this Approach:**
-
-* Clean models that only contain files you want analyzed.
-
-**Cons of this Approach:**
-
-* Items used solely in the header file will be ignored.
-* Doesn't really work well with C/C++ programs outside of "academic" or "well-written" source files.
----
-
-Since this mode is enabled by default on `ClangEx` there is no need to invoke any flags. Simply run `ClangEx` as shown in the **Running ClangEx - [Default Options]** section.
-
-### Blob Analysis
-Blob analysis is a special type of analysis in `ClangEx` that considers all files "included" in a source file. Essentially the blob analysis system will look at items in the source file as well as header files included (*does not include system header files*). These declarations and definitions will be put in their appropriate file in the model.
-
-The name *blob* simply refers to the fact that for one source file being analyzed, you may actually insert several files (and their associated features) in the model.
-
----
-**Pros of this Approach:**
-
-* Models are generated exactly as you expect.
-* Items only used in header files are included.
-
-**Cons of this Approach:**
-
-* Selective analysis won't work. Once source file could mean numerous files inserted into the model.
-
----
-
-For this mode, don't worry if you see that ClangEx is analyzing a file more than once. This redundancy is due to the `#include`s in source files.
-
-## Current Issues
-Currently ClangEx has the following things that need to be fixed:
-1. Partial analysis is not complete. Unions, Structs, and variable scopes.
-2. Printer is not fully working. Be sure that it works properly.
-3. Field attributes for things like scope do not work.
+ClangEx usage instructions can be found in the Appendix of my thesis located [here.](https://storage.googleapis.com/wzukusers/user-32438510/documents/5aa1b51dc6e45zKYaonW/MastersThesis.pdf) 

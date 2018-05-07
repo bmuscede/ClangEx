@@ -60,6 +60,9 @@ ClangDriver::~ClangDriver() {
     cleanup();
 }
 
+/**
+ * Cleans up memory.
+ */
 void ClangDriver::cleanup(){
     for (TAGraph* graph : graphs) {
         delete graph;
@@ -287,6 +290,17 @@ bool ClangDriver::processAllFiles(bool blobMode, string mergeFile, bool lowMemor
     return success;
 }
 
+/**
+ * Conducts analysis on the files to generate a model.
+ * @param blobMode Blob mode toggle.
+ * @param lowMemory Low memory mode toggle.
+ * @param mergeGraph Graph to merge in.
+ * @param i The starting file.
+ * @param clangPrint System to print messages.
+ * @param exclude Items to exclude.
+ * @param OptionsParser ClangEx options.
+ * @return Whether the analysis was successful.
+ */
 bool ClangDriver::runAnalysis(bool blobMode, bool lowMemory, TAGraph* mergeGraph, int i, Printer* clangPrint,
                               TAGraph::ClangExclude exclude, CommonOptionsParser* OptionsParser) {
     ASTWalker *walker;
@@ -332,6 +346,11 @@ bool ClangDriver::runAnalysis(bool blobMode, bool lowMemory, TAGraph* mergeGraph
     return success;
 }
 
+/**
+ * Recovers a low memory run. Only resolves.
+ * @param startDir The starting directory.
+ * @return Whether the recovery worked.
+ */
 bool ClangDriver::recoverCompact(string startDir){
     path startPath = startDir;
     if (!is_directory(startPath)){
@@ -359,6 +378,11 @@ bool ClangDriver::recoverCompact(string startDir){
     return true;
 }
 
+/**
+ * Recovers a low memory run. Picks up where the run last stopped.
+ * @param startDir The initial location.
+ * @return Whether the run was successful.
+ */
 bool ClangDriver::recoverFull(string startDir){
     path startPath = startDir;
     if (!is_directory(startPath)){
@@ -518,6 +542,11 @@ int ClangDriver::removeByRegex(string regex) {
     return num;
 }
 
+/**
+ * Changes the location of the low memory mode output.
+ * @param curLoc The location to change to.
+ * @return Whether the change was successful.
+ */
 bool ClangDriver::changeLowMemoryLoc(path curLoc){
     if (!is_directory(curLoc)) return false;
 
@@ -763,6 +792,11 @@ void ClangDriver::deleteTAGraph(int modelNum){
     delete curGraph;
 }
 
+/**
+ * Gets the number for all the low memory graphs in the file.
+ * @param startDir The start directory to look in.
+ * @return A vector of low memory graph numbers.
+ */
 vector<int> ClangDriver::getLMGraphs(string startDir){
     vector<int> results;
     std::regex fReg("[0-9]+-(instances|relations|attributes).ta");
@@ -798,6 +832,14 @@ vector<int> ClangDriver::getLMGraphs(string startDir){
     return results;
 }
 
+/**
+ * Reads the setting file for a previous low memory run.
+ * @param loc The location to read.
+ * @param files The files in the setting.
+ * @param blobMode The blob mode toggle in the settings.
+ * @param exclude The exclusions in the settings.
+ * @return Whether the read was successful.
+ */
 bool ClangDriver::readSettings(string loc, vector<string>* files, bool* blobMode,
                                TAGraph::ClangExclude* exclude){
     std::ifstream settingFile(loc);
@@ -832,6 +874,11 @@ bool ClangDriver::readSettings(string loc, vector<string>* files, bool* blobMode
     return true;
 }
 
+/**
+ * Gets the initial file to start reading again.
+ * @param file The file to read.
+ * @return The start number.
+ */
 int ClangDriver::readStartNum(std::string file){
     std::ifstream curFile(file);
     if (!curFile.is_open()) return 0;
@@ -843,6 +890,11 @@ int ClangDriver::readStartNum(std::string file){
     return fileNum;
 }
 
+/**
+ * Gets integers from a string.
+ * @param str The string to extract.
+ * @return The integer that was extracted.
+ */
 int ClangDriver::extractIntegerWords(string str) {
     stringstream ss;
     ss << str;
@@ -891,6 +943,11 @@ char** ClangDriver::prepareArgs(int *argc, int startVal, int finalVal){
     return argv;
 }
 
+/**
+ * Splits by a comma delimiter.
+ * @param list The initial string.
+ * @return The vector of tokens.
+ */
 vector<string> ClangDriver::splitList(std::string list) {
     stringstream ss(list);
     vector<string> result;

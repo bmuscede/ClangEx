@@ -142,6 +142,12 @@ string ASTWalker::generateID(const MatchFinder::MatchResult result, const NamedD
     return name;
 }
 
+/**
+ * Generates a lable of the decl.
+ * @param result The match result.
+ * @param curDecl The current decl.
+ * @return The generated string.
+ */
 string ASTWalker::generateLabel(const MatchFinder::MatchResult result, const NamedDecl* curDecl) {
     string name = curDecl->getNameAsString();
     if (isa<RecordDecl>(curDecl) && (dyn_cast<RecordDecl>(curDecl)->isStruct()

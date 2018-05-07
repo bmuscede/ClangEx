@@ -813,6 +813,11 @@ void processScript(string line, po::options_description desc){
     delete[] argv;
 }
 
+/**
+ * Processes the recover command.
+ * @param line The line of the command.
+ * @param desc The program options system.
+ */
 void processRecover(string line, po::options_description desc){
     //Generates the arguments.
     vector<string> tokens = tokenizeBySpace(line);
@@ -858,6 +863,11 @@ void processRecover(string line, po::options_description desc){
     }
 }
 
+/**
+ * Processes the outLoc command.
+ * @param line The line with the command.
+ * @param desc The program options system.
+ */
 void processOutputLoc(string line, po::options_description desc){
     //Tokenize by space.
     vector<string> tokens = tokenizeBySpace(line);

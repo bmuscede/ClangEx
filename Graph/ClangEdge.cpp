@@ -97,6 +97,12 @@ ClangEdge::ClangEdge(ClangNode *src, ClangNode *dst, EdgeType type) {
     unresolved = false;
 }
 
+/**
+ * Constructor. Creates an edge with a source, destination, and edge type.
+ * @param src The source node.
+ * @param dst The destination node.
+ * @param type The edge type.
+ */
 ClangEdge::ClangEdge(ClangNode* src, string dst, EdgeType type){
     this->src = src;
     this->dst = nullptr;
@@ -111,6 +117,12 @@ ClangEdge::ClangEdge(ClangNode* src, string dst, EdgeType type){
     unresolved = true;
 }
 
+/**
+ * Constructor. Creates an edge with a source, destination, and edge type.
+ * @param src The source node.
+ * @param dst The destination node.
+ * @param type The edge type.
+ */
 ClangEdge::ClangEdge(string src, ClangNode* dst, EdgeType type){
     this->src = nullptr;
     this->dst = dst;
@@ -125,6 +137,12 @@ ClangEdge::ClangEdge(string src, ClangNode* dst, EdgeType type){
     unresolved = true;
 }
 
+/**
+ * Constructor. Creates an edge with a source, destination, and edge type.
+ * @param src The source node.
+ * @param dst The destination node.
+ * @param type The edge type.
+ */
 ClangEdge::ClangEdge(string src, string dst, EdgeType type){
     this->src = nullptr;
     this->dst = nullptr;
@@ -160,10 +178,18 @@ ClangNode* ClangEdge::getDst() {
     return dst;
 }
 
+/**
+ * Gets the source ID.
+ * @return The source ID.
+ */
 string ClangEdge::getSrcID(){
     return srcID;
 }
 
+/**
+ * Gets the destination ID.
+ * @return The destination ID.
+ */
 string ClangEdge::getDstID(){
     return dstID;
 }
@@ -176,6 +202,10 @@ ClangEdge::EdgeType ClangEdge::getType(){
     return type;
 }
 
+/**
+ * Checks if the edge is resolved.
+ * @return Boolean indicating if the edge is resolved.
+ */
 bool ClangEdge::isResolved(){
     return !unresolved;
 }
