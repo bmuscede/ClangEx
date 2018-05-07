@@ -122,12 +122,12 @@ First, we must checkout the current version of ClangEx from GitHub. This will be
 
 To download, run the following:
 ```
-$ git checkout https://github.com/bmuscede/ClangEx.git
+$ git clone https://github.com/bmuscede/ClangEx.git
 ```
 
 Next, we want to build the source code. This process may take several minutes due to the heavyweight size of the Clang libraries. This guide will build clang to the `ClangEx-Build` directory that is adjacent to the `ClangEx` library. If you want to build to a different directory, replace the following `ClangEx-Build`s  to the directory of your choice.
 
-Next, before ClangEx can be built, two separate environment variables must be set: `LLVM_PATH` and `CLANG\_VER`. The `LLVM_PATH` variable tells ClangEx where LLVM and Clang were built to. The `CLANG_VER` variable is the version of Clang installed. To set these variables, open up \texttt{.bashrc} located in the home directory and add the following lines to the bottom of the file:
+Next, before ClangEx can be built, two separate environment variables must be set: `LLVM_PATH` and `CLANG\_VER`. The `LLVM_PATH` is a variable that tells ClangEx where LLVM and Clang were built to. The `CLANG_VER` variable is the version of Clang installed. To set these variables, open up \texttt{.bashrc} located in the home directory and add the following lines to the bottom of the file:
 ```
 $ export LLVM_PATH=<PATH_TO_CLANG-BUILD>
 $ export CLANG_VER=<VERSION_OF_CLANG>
