@@ -18,7 +18,6 @@ else()
     message( FATAL_ERROR "The LLVM_PATH environment variable is not set. Please set it before compiling ClangEx." )
 endif()
 
-set(LLVM_PATH /home/bmuscede/Applications/Clang/llvm-build)
 link_directories(${LLVM_PATH}/lib)
 include_directories(${LLVM_PATH}/include)
 
